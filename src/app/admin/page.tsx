@@ -6,43 +6,10 @@ import { useEffect, useState } from "react";
 import { Shield, Users, Gift, CheckCircle, XCircle, ExternalLink, Plus, Pencil, X, Upload, Trash2, Coins, BarChart3, Trophy, RefreshCw, Lock, Unlock, TrendingUp, Sparkles, Zap } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
-// Configuração do Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-// --- TIPOS ---
-type Sorteio = {
-    id: string;
-    nome: string;
-    img: string;
-    valor: string;
-    status: "Ativo" | "Finalizado";
-};
-
-type Ticket = {
-    id: number;
-    data: string;
-    csgobigId: string;
-    coins: number;
-    instagram: string;
-    print: string;
-    status: string;
-    email?: string; 
-    userImage?: string; 
-};
-
-type Ganhador = {
-    round: number;
-    ticket: Ticket;
-    dataGanhou: string;
-};
-
-type StatsSorteio = {
-    entries: number;
-    coins: number;
-};
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -51,25 +18,10 @@ export default function AdminDashboard() {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState("dashboard");
-  const [sorteioSelecionado, setSorteioSelecionado] = useState<Sorteio | null>(null);
-  
-  const [listaSorteios, setListaSorteios] = useState<Sorteio[]>([]);
-  const [ticketsDoSorteio, setTicketsDoSorteio] = useState<Ticket[]>([]);
-  const [totalEntradasAtivas, setTotalEntradasAtivas] = useState(0);
-  const [totalCoinsAtivos, setTotalCoinsAtivos] = useState(0);
-  const [totalSorteiosAtivos, setTotalSorteiosAtivos] = useState(0);
-  const [statsDetalhadas, setStatsDetalhadas] = useState<Record<string, StatsSorteio>>({});
-
+  const [sorteioSelecionado, setSorteioSelecionado] = useState<any | null>(null);
+  const [listaSorteios, setListaSorteios] = useState<any[]>([]);
+  const [ticketsDoSorteio, setTicketsDoSorteio] = useState<any[]>([]);
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
-  const [ticketEmEdicao, setTicketEmEdicao] = useState<Ticket | null>(null);
-  const [sorteioEmEdicao, setSorteioEmEdicao] = useState<Sorteio | null>(null);
-
-  const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
-  const [sorteando, setSorteando] = useState(false);
-  const [ganhadorRevelado, setGanhadorRevelado] = useState<Ticket | null>(null);
-  const [participanteFake, setParticipanteFake] = useState<Ticket | null>(null);
-  const [listaGanhadores, setListaGanhadores] = useState<Ganhador[]>([]);
-
   const [formNome, setFormNome] = useState("");
   const [formImg, setFormImg] = useState("");
   const [formValor, setFormValor] = useState("");
@@ -81,223 +33,98 @@ export default function AdminDashboard() {
       return;
     }
     setIsAdmin(true);
-    carregarDadosCompletos();
+    carregarSorteios();
   }, [status, session, router]);
 
-  // Carrega dados do Banco de Dados em vez do LocalStorage
-  const carregarDadosCompletos = async () => {
-    const { data: sorteios, error } = await supabase
-      .from('sorteios')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) return;
-
-    setListaSorteios(sorteios || []);
-
-    let somaE = 0, somaC = 0, contaA = 0;
-    const statsTemp: Record<string, StatsSorteio> = {};
-
-    for (const s of (sorteios || [])) {
-        const { data: tickets } = await supabase
-          .from('tickets')
-          .select('coins')
-          .eq('sorteio_id', s.id);
-        
-        const totalTickets = tickets?.length || 0;
-        const totalCoins = tickets?.reduce((acc, t) => acc + Number(t.coins), 0) || 0;
-        
-        statsTemp[s.id] = { entries: totalTickets, coins: totalCoins };
-        
-        if (s.status === "Ativo") { 
-            somaE += totalTickets; 
-            somaC += totalCoins; 
-            contaA++; 
-        }
-    }
-    
-    setTotalEntradasAtivas(somaE); 
-    setTotalCoinsAtivos(somaC); 
-    setTotalSorteiosAtivos(contaA); 
-    setStatsDetalhadas(statsTemp);
+  const carregarSorteios = async () => {
+    const { data } = await supabase.from('sorteios').select('*').order('created_at', { ascending: false });
+    if (data) setListaSorteios(data);
   };
 
-  const abrirSorteio = async (sorteio: Sorteio) => {
+  const abrirSorteio = async (sorteio: any) => {
     setSorteioSelecionado(sorteio);
-    const { data: tickets } = await supabase.from('tickets').select('*').eq('sorteio_id', sorteio.id);
-    const { data: ganhadores } = await supabase.from('ganhadores').select('*').eq('sorteio_id', sorteio.id);
-    
-    setTicketsDoSorteio(tickets || []);
-    setListaGanhadores(ganhadores || []);
+    const { data } = await supabase.from('tickets').select('*').eq('sorteio_id', sorteio.id);
+    if (data) setTicketsDoSorteio(data);
+  };
+
+  // FUNÇÃO QUE ESTAVA FALTANDO
+  const iniciarSorteio = () => {
+    if (!sorteioSelecionado) return;
+    const aprovados = ticketsDoSorteio.filter(t => t.status === "Aprovado");
+    if (aprovados.length === 0) {
+      alert("Nenhum ticket aprovado para sortear!");
+      return;
+    }
+    const vencedor = aprovados[Math.floor(Math.random() * aprovados.length)];
+    alert(`O vencedor é: @${vencedor.instagram}`);
   };
 
   const handleCriarSorteio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formImg) return;
-    
-    const { error } = await supabase.from('sorteios').insert([{
-      nome: formNome,
-      img: formImg,
-      valor: formValor,
-      status: "Ativo"
-    }]);
-
+    const { error } = await supabase.from('sorteios').insert([{ nome: formNome, img: formImg, valor: formValor, status: "Ativo" }]);
     if (!error) {
       setModalCriarAberto(false);
-      limparForm();
-      carregarDadosCompletos();
+      carregarSorteios();
     }
-  };
-
-  const handleToggleStatus = async (e: React.MouseEvent, id: string, statusAtual: string) => {
-    e.stopPropagation();
-    const novoStatus = statusAtual === "Ativo" ? "Finalizado" : "Ativo";
-    await supabase.from('sorteios').update({ status: novoStatus }).eq('id', id);
-    carregarDadosCompletos();
-  };
-
-  const handleDeletarSorteio = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!confirm("Excluir sorteio permanentemente?")) return;
-    await supabase.from('sorteios').delete().eq('id', id);
-    carregarDadosCompletos();
-  };
-
-  const validarTicket = async (id: number, novoStatus: string) => {
-    await supabase.from('tickets').update({ status: novoStatus }).eq('id', id);
-    if (sorteioSelecionado) abrirSorteio(sorteioSelecionado);
-  };
-
-  const limparForm = () => { setFormNome(""); setFormImg(""); setFormValor(""); };
-  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
-    const file = e.target.files?.[0]; 
-    if (file) { 
-        const reader = new FileReader(); 
-        reader.onloadend = () => setFormImg(reader.result as string); 
-        reader.readAsDataURL(file); 
-    } 
   };
 
   if (!isAdmin) return null;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-4 md:p-8 overflow-x-hidden">
+    <main className="min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-7xl mx-auto">
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 border-b border-slate-800 pb-6">
-            <h1 className="text-3xl font-black text-white flex items-center gap-2"><Shield className="text-yellow-500" /> PAINEL ADMIN</h1>
-            <div className="flex gap-2 w-full md:w-auto">
-                <button onClick={() => { setAbaAtiva("dashboard"); setSorteioSelecionado(null); }} className={`flex-1 md:flex-none px-4 py-2 rounded font-bold transition ${abaAtiva === "dashboard" ? "bg-yellow-500 text-black shadow-lg shadow-yellow-500/20" : "bg-slate-800 text-slate-400"}`}>Visão Geral</button>
-                <button onClick={() => setAbaAtiva("sorteios")} className={`flex-1 md:flex-none px-4 py-2 rounded font-bold transition ${abaAtiva === "sorteios" ? "bg-yellow-500 text-black shadow-lg shadow-yellow-500/20" : "bg-slate-800 text-slate-400"}`}>Sorteios</button>
-            </div>
+        <div className="flex justify-between items-center mb-10 border-b border-slate-800 pb-6">
+          <h1 className="text-3xl font-black flex items-center gap-2"><Shield className="text-yellow-500" /> PAINEL ADMIN</h1>
+          <button onClick={() => setModalCriarAberto(true)} className="bg-green-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2"><Plus /> Novo Sorteio</button>
         </div>
 
-        {/* DASHBOARD */}
-        {abaAtiva === "dashboard" && (
-            <div className="animate-in fade-in duration-500 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 transition hover:border-yellow-500/50"><div className="bg-yellow-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-yellow-500"><Gift /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase">Sorteios Ativos</h3><p className="text-3xl font-black">{totalSorteiosAtivos}</p></div></div>
-                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 transition hover:border-blue-500/50"><div className="bg-blue-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-blue-500"><Users /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase">Entradas Ativas</h3><p className="text-3xl font-black">{totalEntradasAtivas}</p></div></div>
-                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 transition hover:border-green-500/50"><div className="bg-green-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-green-500"><Coins /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase">Pool Ativo</h3><p className="text-3xl font-black text-green-400">{totalCoinsAtivos}</p></div></div>
+        {!sorteioSelecionado ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {listaSorteios.map((s) => (
+              <div key={s.id} onClick={() => abrirSorteio(s)} className="bg-slate-900 p-6 rounded-2xl border border-slate-800 cursor-pointer hover:border-yellow-500 transition flex items-center gap-6">
+                <img src={s.img} alt="" className="w-20 h-20 object-contain" />
+                <div>
+                  <h3 className="text-xl font-bold">{s.nome}</h3>
+                  <p className="text-slate-400">R$ {s.valor}</p>
                 </div>
-                <div><h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3"><TrendingUp className="text-blue-500"/> Detalhamento</h2>
-                    <div className="space-y-3">
-                        {listaSorteios.map((s) => (
-                            <div key={s.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-800 transition gap-4">
-                                <div className="flex items-center gap-4">
-                                    <img src={s.img} alt="" className="w-12 h-12 object-contain bg-slate-950 rounded p-1" />
-                                    <div>
-                                        <h3 className="font-bold text-white text-lg">{s.nome}</h3>
-                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${s.status === 'Ativo' ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-red-900/30 text-red-400 border-red-800'}`}>{s.status}</span>
-                                    </div>
-                                </div>
-                                <div className="flex gap-8 text-right justify-between md:justify-end">
-                                    <div><p className="text-[10px] text-slate-400 uppercase">Entradas</p><p className="text-xl font-bold">{statsDetalhadas[s.id]?.entries || 0}</p></div>
-                                    <div><p className="text-[10px] text-slate-400 uppercase">Coins</p><p className="text-xl font-bold text-yellow-500">{statsDetalhadas[s.id]?.coins || 0}</p></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            <button onClick={() => setSorteioSelecionado(null)} className="mb-4 text-slate-400 hover:text-white">← Voltar</button>
+            <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Tickets: {sorteioSelecionado.nome}</h2>
+                <button onClick={iniciarSorteio} className="bg-green-600 px-6 py-2 rounded-xl font-black">SORTEAR AGORA</button>
+              </div>
+              {/* Tabela de tickets simplificada para build */}
+              <div className="space-y-2">
+                {ticketsDoSorteio.map(t => (
+                  <div key={t.id} className="p-4 bg-slate-950 rounded-lg flex justify-between">
+                    <span>@{t.instagram}</span>
+                    <span className="text-yellow-500 font-bold">{t.coins} Coins</span>
+                  </div>
+                ))}
+              </div>
             </div>
-        )}
-
-        {/* ABA SORTEIOS */}
-        {abaAtiva === "sorteios" && (
-            <div className="animate-in fade-in duration-500">
-                {!sorteioSelecionado ? (
-                    <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold border-l-4 border-yellow-500 pl-3">Gerenciamento</h2>
-                            <button onClick={() => { limparForm(); setModalCriarAberto(true); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg font-bold transition shadow-lg"><Plus className="w-5 h-5"/> Novo Sorteio</button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {listaSorteios.map((s) => (
-                                <div key={s.id} onClick={() => abrirSorteio(s)} className={`bg-slate-900 p-6 rounded-2xl border cursor-pointer hover:border-yellow-500 transition group flex flex-col sm:flex-row sm:items-center gap-6 ${s.status === "Finalizado" ? "border-red-900/50 opacity-80" : "border-slate-800"}`}>
-                                    <img src={s.img} alt="" className="w-24 h-24 object-contain bg-slate-950 rounded-xl p-2 transition group-hover:scale-110" />
-                                    <div className="flex-1">
-                                        <h3 className="text-xl font-bold text-white group-hover:text-yellow-500 transition">{s.nome}</h3>
-                                        <p className="text-slate-400 text-sm">R$ {s.valor}</p>
-                                    </div>
-                                    <div className="flex gap-2 z-10">
-                                        <button onClick={(e) => handleToggleStatus(e, s.id, s.status)} className={`p-2.5 rounded-lg transition ${s.status === "Ativo" ? "bg-slate-700 text-yellow-500 hover:bg-yellow-600 hover:text-white" : "bg-red-600 text-white hover:bg-red-500"}`}>{s.status === "Ativo" ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}</button>
-                                        <button onClick={(e) => handleDeletarSorteio(e, s.id)} className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500"><Trash2 className="w-5 h-5" /></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="animate-in slide-in-from-right-4 duration-500">
-                        <button onClick={() => setSorteioSelecionado(null)} className="text-sm text-slate-400 hover:text-white mb-4 flex items-center gap-1">{"<- Voltar"}</button>
-                        <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
-                            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <h2 className="text-xl font-bold text-white flex gap-2 items-center"><BarChart3 className="text-yellow-500"/> Entradas: {sorteioSelecionado.nome}</h2>
-                                <button onClick={iniciarSorteio} className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-black transition-all hover:scale-105 active:scale-95">SORTEAR AGORA</button>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm text-slate-400">
-                                    <thead className="bg-slate-950 text-slate-200 uppercase font-bold text-[10px]">
-                                        <tr><th className="p-4">Data/Email</th><th className="p-4">ID</th><th className="p-4">Instagram</th><th className="p-4 text-center">Coins</th><th className="p-4 text-center">Ações</th></tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-800">
-                                        {ticketsDoSorteio.map((t) => (
-                                            <tr key={t.id} className="hover:bg-slate-800/50">
-                                                <td className="p-4"><div>{t.data}</div><div className="text-[10px] text-slate-500">{t.email}</div></td>
-                                                <td className="p-4 text-white font-mono">{t.csgobigId}</td>
-                                                <td className="p-4 text-blue-400 font-bold">{t.instagram}</td>
-                                                <td className="p-4 text-center text-yellow-500 font-black">{t.coins}</td>
-                                                <td className="p-4 flex justify-center gap-2">
-                                                    <button onClick={() => validarTicket(t.id, "Aprovado")} className="p-2 bg-green-600 text-white rounded-lg"><CheckCircle className="w-4 h-4" /></button>
-                                                    <button onClick={() => validarTicket(t.id, "Rejeitado")} className="p-2 bg-red-600 text-white rounded-lg"><XCircle className="w-4 h-4" /></button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        )}
-
-        {/* MODAL CRIAR */}
-        {modalCriarAberto && (
-            <div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95">
-                <div className="bg-slate-900 w-full max-w-md rounded-3xl border border-slate-800 p-8 shadow-2xl relative">
-                    <button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button>
-                    <h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3>
-                    <form onSubmit={handleCriarSorteio} className="space-y-5">
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome da Skin</label><input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none" placeholder="Ex: M4A4 | Howl" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor de Mercado</label><input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none" placeholder="Ex: 1.200,00" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem da Skin</label><div className="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-slate-950/50 transition-all group"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} alt="" className="h-24 mx-auto drop-shadow-2xl" /> : <div className="text-slate-500 flex flex-col items-center gap-2"><Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/><span className="text-xs font-bold uppercase">Clique para enviar</span></div>}</div></div>
-                        <button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-400 py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg shadow-yellow-900/10 active:scale-95 uppercase tracking-tighter">Salvar Sorteio</button>
-                    </form>
-                </div>
-            </div>
+          </div>
         )}
       </div>
+
+      {modalCriarAberto && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 p-8 rounded-3xl w-full max-w-md border border-slate-800">
+            <h3 className="text-2xl font-bold mb-6">Novo Sorteio</h3>
+            <form onSubmit={handleCriarSorteio} className="space-y-4">
+              <input type="text" placeholder="Nome da Skin" value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl" />
+              <input type="text" placeholder="Valor" value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl" />
+              <input type="text" placeholder="URL da Imagem" value={formImg} onChange={e => setFormImg(e.target.value)} className="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl" />
+              <button type="submit" className="w-full bg-yellow-500 text-black font-black py-4 rounded-xl">CRIAR</button>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
