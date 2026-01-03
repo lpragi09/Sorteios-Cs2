@@ -135,11 +135,12 @@ export default function AdminDashboard() {
     loopSorteio();
   };
 
-  // --- BOTÃO CORRIGIDO AQUI ---
+  // --- FUNÇÃO ATUALIZADA PARA SALVAR NO SUPABASE ---
   const handleCriarSorteio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formImg) return alert("Por favor, selecione uma imagem primeiro!");
     
+    // Envia direto para a tabela do banco de dados
     const { error } = await supabase.from('sorteios').insert([{
       nome: formNome,
       img: formImg,
@@ -151,8 +152,9 @@ export default function AdminDashboard() {
       setModalCriarAberto(false);
       setFormNome(""); setFormImg(""); setFormValor("");
       carregarDadosCompletos();
+      alert("✅ Sucesso! Sorteio criado globalmente.");
     } else {
-      alert("Erro no Supabase: " + error.message);
+      alert("Erro ao salvar no Supabase: " + error.message);
     }
   };
 
