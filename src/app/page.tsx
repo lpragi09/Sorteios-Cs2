@@ -93,7 +93,7 @@ export default function Home() {
   return (
     <main className="min-h-screen text-white pb-20 pt-10 bg-slate-950">
       <div className="max-w-7xl mx-auto p-6">
-        <h1 className="text-4xl font-bold mb-2 text-center md:text-left">Sorteios Ativossssssssss 🔥</h1>
+        <h1 className="text-4xl font-bold mb-2 text-center md:text-left">Sorteios Ativos 🔥</h1>
         <p className="text-slate-400 mb-8 text-center md:text-left">Escolha uma skin e participe.</p>
         
         <div className={listaSorteios.length === 1 ? "flex justify-center" : "grid grid-cols-1 md:grid-cols-2 gap-8"}>
