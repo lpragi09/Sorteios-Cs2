@@ -135,12 +135,15 @@ export default function AdminDashboard() {
     loopSorteio();
   };
 
-  // --- FUNÇÃO ATUALIZADA PARA SALVAR NO SUPABASE ---
   const handleCriarSorteio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formImg) return alert("Por favor, selecione uma imagem primeiro!");
+    if (!formImg) return alert("Selecione uma imagem!");
     
-    // Envia direto para a tabela do banco de dados
+    // Se a imagem for muito grande, o Supabase corta a conexão (NetworkError)
+    if (formImg.length > 200000) { 
+      return alert("Imagem muito pesada! Tente um print menor ou uma imagem de baixa resolução.");
+    }
+
     const { error } = await supabase.from('sorteios').insert([{
       nome: formNome,
       img: formImg,
@@ -148,13 +151,13 @@ export default function AdminDashboard() {
       status: "Ativo"
     }]);
 
-    if (!error) {
+    if (error) {
+      alert("Erro no Supabase: " + error.message);
+    } else {
       setModalCriarAberto(false);
       setFormNome(""); setFormImg(""); setFormValor("");
       carregarDadosCompletos();
-      alert("✅ Sucesso! Sorteio criado globalmente.");
-    } else {
-      alert("Erro ao salvar no Supabase: " + error.message);
+      alert("✅ Sorteio criado com sucesso!");
     }
   };
 
