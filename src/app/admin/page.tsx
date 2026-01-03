@@ -142,7 +142,7 @@ export default function AdminDashboard() {
     setSalvando(true);
 
     try {
-      // 1. Upload para o Cloudinary
+    // 1. Upload para o Cloudinary com tratamento de rede
       const formData = new FormData();
       formData.append("file", formImgFile);
       formData.append("upload_preset", UPLOAD_PRESET);
@@ -150,11 +150,17 @@ export default function AdminDashboard() {
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData,
-        mode: 'cors', // Adicione esta linha para garantir a permissão
+        // Adicionamos estas configurações para evitar o NetworkError
+        mode: 'cors',
+        credentials: 'omit' 
       });
 
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || "Erro na conexão com Cloudinary");
+      }
+
       const data = await res.json();
-      if (!data.secure_url) throw new Error("Falha no upload da imagem");
 
       // 2. Salvar o link no Supabase
       const { error } = await supabase.from('sorteios').insert([{
