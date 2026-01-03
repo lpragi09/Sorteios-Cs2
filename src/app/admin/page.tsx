@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Shield, Users, Gift, CheckCircle, XCircle, Plus, X, Upload, Trash2, Coins, BarChart3, Trophy, Lock, Unlock, TrendingUp, Sparkles } from "lucide-react";
+import { Shield, Users, Gift, CheckCircle, XCircle, Plus, X, Link as LinkIcon, Trash2, Coins, BarChart3, Trophy, Lock, Unlock, TrendingUp, Sparkles } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
 // Configuração do Supabase
@@ -11,10 +11,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-// CONFIGURAÇÕES DO CLOUDINARY (Dados que você pegou)
-const CLOUD_NAME = "diq8r25pl";
-const UPLOAD_PRESET = "sorteiocs2";
 
 type Sorteio = {
     id: string;
@@ -60,7 +56,7 @@ export default function AdminDashboard() {
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
   const [formNome, setFormNome] = useState("");
   const [formValor, setFormValor] = useState("");
-  const [formImgFile, setFormImgFile] = useState<File | null>(null); // Guardamos o arquivo puro
+  const [formImgUrl, setFormImgUrl] = useState(""); // Novo campo para URL
   const [salvando, setSalvando] = useState(false);
 
   const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
@@ -130,64 +126,17 @@ export default function AdminDashboard() {
     loopSorteio();
   };
 
-  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setFormImgFile(file);
-  };
-
   const handleCriarSorteio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formImgFile) return alert("Selecione uma imagem!");
+    if (!formImgUrl) return alert("Por favor, insira o link da imagem!");
     
     setSalvando(true);
 
     try {
-      // ETAPA A: Compressão da imagem no cliente para evitar NetworkError
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      const compressedFile = await new Promise<Blob>((resolve, reject) => {
-        img.onload = () => {
-          // Define tamanho máximo de 1200px (mantendo proporção)
-          let width = img.width;
-          let height = img.height;
-          if (width > 1200) {
-            height = (1200 / width) * height;
-            width = 1200;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          ctx?.drawImage(img, 0, 0, width, height);
-          // Converte para JPEG com 80% de qualidade (muito leve)
-          canvas.toBlob((blob) => blob ? resolve(blob) : reject(), 'image/jpeg', 0.8);
-        };
-        img.onerror = reject;
-        img.src = URL.createObjectURL(formImgFile);
-      });
-
-      // ETAPA B: Envio para o Cloudinary
-      const formData = new FormData();
-      formData.append("file", compressedFile, "skin.jpg");
-      formData.append("upload_preset", UPLOAD_PRESET);
-
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-        method: "POST",
-        body: formData,
-        mode: 'cors', // Necessário para evitar bloqueio de rede
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error?.message || "Erro no servidor de imagens");
-      }
-
-      const data = await res.json();
-
-      // ETAPA C: Salvar link no Supabase
+      // Salva diretamente o link no banco
       const { error } = await supabase.from('sorteios').insert([{
         nome: formNome,
-        img: data.secure_url,
+        img: formImgUrl,
         valor: formValor,
         status: "Ativo"
       }]);
@@ -196,12 +145,12 @@ export default function AdminDashboard() {
 
       alert("✅ Sorteio criado com sucesso!");
       setModalCriarAberto(false);
-      setFormNome(""); setFormValor(""); setFormImgFile(null);
+      setFormNome(""); setFormValor(""); setFormImgUrl("");
       carregarDadosCompletos();
 
     } catch (err: any) {
       console.error(err);
-      alert("Erro de conexão: Tente uma imagem diferente ou use uma aba anônima.");
+      alert("Erro ao salvar: " + err.message);
     } finally {
       setSalvando(false);
     }
@@ -316,21 +265,12 @@ export default function AdminDashboard() {
                             <input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: 1.200,00" />
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem da Skin</label>
-                            <div className="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-slate-950/50 transition-all group">
-                                <input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                {formImgFile ? (
-                                    <div className="text-white">
-                                        <p className="text-xs font-bold">{formImgFile.name}</p>
-                                        <span className="text-[10px] text-slate-500">Pronto para upload</span>
-                                    </div>
-                                ) : (
-                                    <div className="text-slate-500 flex flex-col items-center gap-2">
-                                        <Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/>
-                                        <span className="text-xs font-bold uppercase">Clique para selecionar arquivo</span>
-                                    </div>
-                                )}
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Link da Imagem</label>
+                            <div className="relative">
+                                <LinkIcon className="absolute left-4 top-4 text-slate-500 w-5 h-5" />
+                                <input type="url" required value={formImgUrl} onChange={e => setFormImgUrl(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 pl-12 text-white focus:border-yellow-500 outline-none transition-all text-sm" placeholder="https://i.imgur.com/link.png" />
                             </div>
+                            <p className="text-[9px] text-slate-500 mt-2 ml-1">Hospede no Imgur e cole o "Link Direto" aqui.</p>
                         </div>
                         <button type="submit" disabled={salvando} className={`w-full ${salvando ? 'bg-slate-800 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-400'} py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg uppercase tracking-tighter`}>
                             {salvando ? "Salvando..." : "Salvar Sorteio"}
