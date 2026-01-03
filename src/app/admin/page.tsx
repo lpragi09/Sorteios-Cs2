@@ -66,7 +66,7 @@ export default function AdminDashboard() {
 
   const abrirSorteio = async (sorteio: any) => {
     setSorteioSelecionado(sorteio);
-    // CORREÇÃO: Busca as entradas garantindo que o ID do sorteio bata exatamente
+    // Busca tickets garantindo que filtramos pelo ID correto
     const { data: tickets } = await supabase
       .from('tickets')
       .select('*')
@@ -74,6 +74,21 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false });
     
     setTicketsDoSorteio(tickets || []);
+  };
+
+  const handleUpdateSorteio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSalvando(true);
+    try {
+      const { error } = await supabase.from('sorteios').update({ 
+        nome: modalEditarSorteio.nome, 
+        valor: modalEditarSorteio.valor, 
+        img: modalEditarSorteio.img 
+      }).eq('id', modalEditarSorteio.id);
+      if (error) throw error;
+      setModalEditarSorteio(null);
+      carregarDadosCompletos();
+    } catch (err: any) { alert(err.message); } finally { setSalvando(false); }
   };
 
   const handleUpdateTicket = async (e: React.FormEvent) => {
@@ -92,10 +107,20 @@ export default function AdminDashboard() {
     } catch (err: any) { alert(err.message); } finally { setSalvando(false); }
   };
 
-  const validarTicket = async (id: number, novoStatus: string) => {
-    await supabase.from('tickets').update({ status: novoStatus }).eq('id', id);
-    if (sorteioSelecionado) abrirSorteio(sorteioSelecionado);
+  const handleToggleStatus = async (e: any, id: string, statusAtual: string) => {
+    e.stopPropagation();
+    const novoStatus = statusAtual === "Ativo" ? "Finalizado" : "Ativo";
+    await supabase.from('sorteios').update({ status: novoStatus }).eq('id', id);
     carregarDadosCompletos();
+  };
+
+  const handleDeletarSorteio = async (e: any, id: string) => {
+    e.stopPropagation();
+    if (confirm("Deseja realmente excluir este sorteio e todas as suas entradas?")) {
+        await supabase.from('tickets').delete().eq('sorteio_id', id);
+        await supabase.from('sorteios').delete().eq('id', id);
+        carregarDadosCompletos();
+    }
   };
 
   if (!isAdmin) return null;
@@ -106,8 +131,8 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center mb-10 border-b border-slate-800 pb-6">
             <h1 className="text-2xl font-black text-yellow-500">PAINEL ADMIN</h1>
             <div className="flex gap-2">
-                <button onClick={() => {setAbaAtiva("dashboard"); setSorteioSelecionado(null)}} className={`px-4 py-2 rounded-lg font-bold ${abaAtiva === "dashboard" ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-400"}`}>Visão Geral</button>
-                <button onClick={() => setAbaAtiva("sorteios")} className={`px-4 py-2 rounded-lg font-bold ${abaAtiva === "sorteios" ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-400"}`}>Sorteios</button>
+                <button onClick={() => {setAbaAtiva("dashboard"); setSorteioSelecionado(null)}} className={`px-4 py-2 rounded-lg font-bold ${abaAtiva === "dashboard" ? "bg-yellow-500 text-black shadow-lg shadow-yellow-500/20" : "bg-slate-800 text-slate-400"}`}>Visão Geral</button>
+                <button onClick={() => setAbaAtiva("sorteios")} className={`px-4 py-2 rounded-lg font-bold ${abaAtiva === "sorteios" ? "bg-yellow-500 text-black shadow-lg shadow-yellow-500/20" : "bg-slate-800 text-slate-400"}`}>Sorteios</button>
             </div>
         </div>
 
@@ -151,14 +176,16 @@ export default function AdminDashboard() {
         {abaAtiva === "sorteios" && !sorteioSelecionado && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in">
                 {listaSorteios.map((s) => (
-                    <div key={s.id} onClick={() => abrirSorteio(s)} className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 cursor-pointer hover:border-yellow-500 transition">
+                    <div key={s.id} onClick={() => abrirSorteio(s)} className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 cursor-pointer hover:border-yellow-500 transition relative">
                         <img src={s.img} className="w-20 h-20 object-contain bg-black rounded-lg p-2" />
                         <div className="flex-1">
                             <h3 className="text-lg font-bold">{s.nome}</h3>
                             <p className="text-slate-400 text-sm">R$ {s.valor}</p>
                         </div>
                         <div className="flex gap-2">
-                           {s.status === "Finalizado" ? <Lock className="text-red-500"/> : <Unlock className="text-yellow-500"/>}
+                           <button onClick={(e) => { e.stopPropagation(); setModalEditarSorteio(s); }} className="p-2 bg-blue-600 rounded text-white hover:bg-blue-500"><Edit size={18}/></button>
+                           <button onClick={(e) => handleToggleStatus(e, s.id, s.status)} className="p-2 bg-slate-800 rounded">{s.status === "Finalizado" ? <Lock className="text-red-500" size={18}/> : <Unlock className="text-yellow-500" size={18}/>}</button>
+                           <button onClick={(e) => handleDeletarSorteio(e, s.id)} className="p-2 bg-red-600 rounded text-white hover:bg-red-500"><Trash2 size={18}/></button>
                         </div>
                     </div>
                 ))}
@@ -175,7 +202,7 @@ export default function AdminDashboard() {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-950 text-slate-500 uppercase text-[10px]">
                             <tr>
-                                <th className="p-4">Usuário / Email</th>
+                                <th className="p-4">Usuário</th>
                                 <th className="p-4">Big ID</th>
                                 <th className="p-4">Coins</th>
                                 <th className="p-4 text-center">Ações</th>
@@ -183,7 +210,7 @@ export default function AdminDashboard() {
                         </thead>
                         <tbody className="divide-y divide-slate-800">
                             {ticketsDoSorteio.length === 0 ? (
-                                <tr><td colSpan={4} className="p-10 text-center text-slate-500">Nenhuma entrada encontrada aqui.</td></tr>
+                                <tr><td colSpan={4} className="p-10 text-center text-slate-500">Nenhuma entrada encontrada para este sorteio específico.</td></tr>
                             ) : (
                                 ticketsDoSorteio.map((t) => (
                                     <tr key={t.id} className="hover:bg-slate-800/30 transition">
@@ -196,8 +223,8 @@ export default function AdminDashboard() {
                                         <td className="p-4 flex justify-center gap-2">
                                             <button onClick={() => setModalEditarTicket(t)} className="p-2 bg-slate-800 rounded text-blue-400 hover:bg-slate-700"><Edit size={16}/></button>
                                             {t.print && <a href={t.print} target="_blank" className="p-2 bg-slate-800 rounded text-green-400 hover:bg-slate-700"><Eye size={16}/></a>}
-                                            <button onClick={() => validarTicket(t.id, 'Aprovado')} className="p-2 bg-green-600 rounded text-white hover:bg-green-500"><CheckCircle size={16}/></button>
-                                            <button onClick={() => validarTicket(t.id, 'Rejeitado')} className="p-2 bg-red-600 rounded text-white hover:bg-red-500"><XCircle size={16}/></button>
+                                            <button onClick={() => supabase.from('tickets').update({status:'Aprovado'}).eq('id',t.id).then(()=>abrirSorteio(sorteioSelecionado))} className="p-2 bg-green-600 rounded text-white hover:bg-green-500"><CheckCircle size={16}/></button>
+                                            <button onClick={() => supabase.from('tickets').update({status:'Rejeitado'}).eq('id',t.id).then(()=>abrirSorteio(sorteioSelecionado))} className="p-2 bg-red-600 rounded text-white hover:bg-red-500"><XCircle size={16}/></button>
                                         </td>
                                     </tr>
                                 ))
@@ -208,18 +235,33 @@ export default function AdminDashboard() {
             </div>
         )}
 
-        {/* MODAL EDITAR TICKET (Corrigir ID, Coins, IG) */}
+        {/* MODAL EDITAR SORTEIO */}
+        {modalEditarSorteio && (
+            <div className="fixed inset-0 bg-black/90 z-[1001] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
+                <div className="bg-slate-900 w-full max-w-md rounded-3xl p-8 border border-slate-800 shadow-2xl">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Edit className="text-blue-500"/> EDITAR SORTEIO</h3>
+                    <form onSubmit={handleUpdateSorteio} className="space-y-4">
+                        <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarSorteio.nome} onChange={e => setModalEditarSorteio({...modalEditarSorteio, nome: e.target.value})} />
+                        <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarSorteio.valor} onChange={e => setModalEditarSorteio({...modalEditarSorteio, valor: e.target.value})} />
+                        <input type="url" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarSorteio.img} onChange={e => setModalEditarSorteio({...modalEditarSorteio, img: e.target.value})} />
+                        <div className="flex gap-2 pt-4">
+                            <button type="button" onClick={() => setModalEditarSorteio(null)} className="flex-1 bg-slate-800 py-4 rounded-xl font-bold hover:bg-slate-700 transition">Cancelar</button>
+                            <button type="submit" className="flex-1 bg-yellow-500 py-4 rounded-xl font-black text-black hover:bg-yellow-400 transition">SALVAR</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+
+        {/* MODAL EDITAR TICKET */}
         {modalEditarTicket && (
             <div className="fixed inset-0 bg-black/90 z-[1001] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
-                <div className="bg-slate-900 w-full max-w-md rounded-3xl p-8 border border-slate-800">
+                <div className="bg-slate-900 w-full max-w-md rounded-3xl p-8 border border-slate-800 shadow-2xl">
                     <h3 className="text-xl font-bold mb-6 text-yellow-500">EDITAR PARTICIPANTE</h3>
                     <form onSubmit={handleUpdateTicket} className="space-y-4">
-                        <div><label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Instagram</label>
-                        <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarTicket.instagram} onChange={e => setModalEditarTicket({...modalEditarTicket, instagram: e.target.value})} /></div>
-                        <div><label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Big ID</label>
-                        <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarTicket.csgobigId} onChange={e => setModalEditarTicket({...modalEditarTicket, csgobigId: e.target.value})} /></div>
-                        <div><label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Coins</label>
-                        <input type="number" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarTicket.coins} onChange={e => setModalEditarTicket({...modalEditarTicket, coins: e.target.value})} /></div>
+                        <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarTicket.instagram} onChange={e => setModalEditarTicket({...modalEditarTicket, instagram: e.target.value})} />
+                        <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarTicket.csgobigId} onChange={e => setModalEditarTicket({...modalEditarTicket, csgobigId: e.target.value})} />
+                        <input type="number" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4" value={modalEditarTicket.coins} onChange={e => setModalEditarTicket({...modalEditarTicket, coins: e.target.value})} />
                         <div className="flex gap-2 pt-2">
                             <button type="button" onClick={() => setModalEditarTicket(null)} className="flex-1 bg-slate-800 py-4 rounded-xl font-bold uppercase text-xs">Fechar</button>
                             <button type="submit" className="flex-1 bg-yellow-500 py-4 rounded-xl font-black text-black text-xs uppercase">Salvar</button>
