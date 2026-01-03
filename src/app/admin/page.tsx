@@ -150,6 +150,7 @@ export default function AdminDashboard() {
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData,
+        mode: 'cors', // Adicione esta linha para garantir a permissão
       });
 
       const data = await res.json();
