@@ -6,16 +6,15 @@ import { useEffect, useState } from "react";
 import { Shield, Users, Gift, CheckCircle, XCircle, Plus, X, Upload, Trash2, Coins, BarChart3, Trophy, Lock, Unlock, TrendingUp, Sparkles } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
-// Altere a criação do cliente no topo do arquivo
+// Configuração do Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    global: {
-      fetch: (...args) => fetch(...args), // Força o fetch padrão do navegador
-    },
-  }
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// CONFIGURAÇÕES DO CLOUDINARY (Dados que você pegou)
+const CLOUD_NAME = "diq8r25pl";
+const UPLOAD_PRESET = "sorteiocs2";
 
 type Sorteio = {
     id: string;
@@ -35,12 +34,6 @@ type Ticket = {
     status: string;
     email?: string; 
     userImage?: string; 
-};
-
-type Ganhador = {
-    round: number;
-    ticket: Ticket;
-    dataGanhou: string;
 };
 
 type StatsSorteio = {
@@ -67,10 +60,8 @@ export default function AdminDashboard() {
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
   const [formNome, setFormNome] = useState("");
   const [formValor, setFormValor] = useState("");
-  
-  // ALTERAÇÃO 1: State agora guarda o arquivo bruto (File)
-  const [formImgFile, setFormImgFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [formImgFile, setFormImgFile] = useState<File | null>(null); // Guardamos o arquivo puro
+  const [salvando, setSalvando] = useState(false);
 
   const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
   const [sorteando, setSorteando] = useState(false);
@@ -139,60 +130,50 @@ export default function AdminDashboard() {
     loopSorteio();
   };
 
-  // ALTERAÇÃO 2: handleImagemChange salva o arquivo original
-  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
-    const file = e.target.files?.[0]; 
-    if (file) { 
-        setFormImgFile(file);
-    } 
+  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setFormImgFile(file);
   };
 
-  // ALTERAÇÃO 3: Lógica de Upload para Storage + Insert no Banco
   const handleCriarSorteio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formImgFile) return alert("Por favor, selecione uma imagem!");
+    if (!formImgFile) return alert("Selecione uma imagem!");
     
-    setUploading(true);
+    setSalvando(true);
 
     try {
-      // 1. Gerar nome único para o arquivo
-      const fileExt = formImgFile.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `skins/${fileName}`;
+      // 1. Upload para o Cloudinary
+      const formData = new FormData();
+      formData.append("file", formImgFile);
+      formData.append("upload_preset", UPLOAD_PRESET);
 
-      // 2. Upload para o bucket "sorteios"
-      const { error: uploadError } = await supabase.storage
-        .from("sorteios")
-        .upload(filePath, formImgFile);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      const data = await res.json();
+      if (!data.secure_url) throw new Error("Falha no upload da imagem");
 
-      // 3. Pegar a URL pública (não expira)
-      const { data: urlData } = supabase.storage
-        .from("sorteios")
-        .getPublicUrl(filePath);
-
-      const publicImageUrl = urlData.publicUrl;
-
-      // 4. Salvar no banco de dados
-      const { error: dbError } = await supabase.from('sorteios').insert([{
+      // 2. Salvar o link no Supabase
+      const { error } = await supabase.from('sorteios').insert([{
         nome: formNome,
-        img: publicImageUrl, // Apenas o link agora
+        img: data.secure_url, // Agora salvamos apenas o link curto
         valor: formValor,
         status: "Ativo"
       }]);
 
-      if (dbError) throw dbError;
+      if (error) throw error;
 
+      alert("✅ Sorteio criado com sucesso!");
       setModalCriarAberto(false);
       setFormNome(""); setFormValor(""); setFormImgFile(null);
       carregarDadosCompletos();
-      alert("✅ Sorteio criado com sucesso!");
 
     } catch (err: any) {
-      alert("Erro no processo: " + err.message);
+      alert("Erro: " + err.message);
     } finally {
-      setUploading(false);
+      setSalvando(false);
     }
   };
 
@@ -321,12 +302,8 @@ export default function AdminDashboard() {
                                 )}
                             </div>
                         </div>
-                        <button 
-                            type="submit" 
-                            disabled={uploading}
-                            className={`w-full ${uploading ? 'bg-slate-700' : 'bg-yellow-500 hover:bg-yellow-400'} py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg uppercase tracking-tighter`}
-                        >
-                            {uploading ? "Salvando..." : "Salvar Sorteio"}
+                        <button type="submit" disabled={salvando} className={`w-full ${salvando ? 'bg-slate-800 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-400'} py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg uppercase tracking-tighter`}>
+                            {salvando ? "Salvando..." : "Salvar Sorteio"}
                         </button>
                     </form>
                 </div>
