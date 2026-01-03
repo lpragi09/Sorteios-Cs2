@@ -139,9 +139,9 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!formImg) return alert("Selecione uma imagem!");
     
-    // Se a imagem for muito grande, o Supabase corta a conexão (NetworkError)
+    // Bloqueia imagens gigantes que causam o NetworkError
     if (formImg.length > 200000) { 
-      return alert("Imagem muito pesada! Tente um print menor ou uma imagem de baixa resolução.");
+      return alert("Imagem muito pesada! Use um print pequeno ou uma imagem de baixa resolução.");
     }
 
     const { error } = await supabase.from('sorteios').insert([{
