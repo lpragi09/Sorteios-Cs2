@@ -3,16 +3,14 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Shield, Users, Gift, CheckCircle, XCircle, ExternalLink, Plus, Pencil, X, Upload, Trash2, Coins, BarChart3, Trophy, RefreshCw, Lock, Unlock, TrendingUp, Sparkles, Zap } from "lucide-react";
+import { Shield, Users, Gift, CheckCircle, XCircle, Plus, X, Upload, Trash2, Coins, BarChart3, Trophy, Lock, Unlock, TrendingUp, Sparkles } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
-// Configuração do Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// --- TIPOS ---
 type Sorteio = {
     id: string;
     nome: string;
@@ -62,14 +60,16 @@ export default function AdminDashboard() {
 
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
   const [formNome, setFormNome] = useState("");
-  const [formImg, setFormImg] = useState("");
   const [formValor, setFormValor] = useState("");
+  
+  // ALTERAÇÃO 1: State agora guarda o arquivo bruto (File)
+  const [formImgFile, setFormImgFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
   const [sorteando, setSorteando] = useState(false);
   const [ganhadorRevelado, setGanhadorRevelado] = useState<Ticket | null>(null);
   const [participanteFake, setParticipanteFake] = useState<Ticket | null>(null);
-  const [listaGanhadores, setListaGanhadores] = useState<Ganhador[]>([]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -102,9 +102,7 @@ export default function AdminDashboard() {
   const abrirSorteio = async (sorteio: Sorteio) => {
     setSorteioSelecionado(sorteio);
     const { data: tickets } = await supabase.from('tickets').select('*').eq('sorteio_id', sorteio.id);
-    const { data: ganhadores } = await supabase.from('ganhadores').select('*').eq('sorteio_id', sorteio.id);
     setTicketsDoSorteio(tickets || []);
-    setListaGanhadores(ganhadores || []);
   };
 
   const iniciarSorteio = () => {
@@ -135,51 +133,62 @@ export default function AdminDashboard() {
     loopSorteio();
   };
 
+  // ALTERAÇÃO 2: handleImagemChange salva o arquivo original
+  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
+    const file = e.target.files?.[0]; 
+    if (file) { 
+        setFormImgFile(file);
+    } 
+  };
+
+  // ALTERAÇÃO 3: Lógica de Upload para Storage + Insert no Banco
   const handleCriarSorteio = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Teste sem imagem para ver se o banco aceita
-  const { error } = await supabase.from('sorteios').insert([{
-    nome: formNome,
-    img: "https://via.placeholder.com/150", // Link temporário
-    valor: formValor,
-    status: "Ativo"
-  }]);
+    e.preventDefault();
+    if (!formImgFile) return alert("Por favor, selecione uma imagem!");
+    
+    setUploading(true);
 
-  if (error) {
-    alert("ERRO DO SUPA: " + error.message);
-  } else {
-    alert("✅ SALVOU! O problema era o peso da imagem.");
-    setModalCriarAberto(false);
-    carregarDadosCompletos();
-  }
-};
+    try {
+      // 1. Gerar nome único para o arquivo
+      const fileExt = formImgFile.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `skins/${fileName}`;
 
-const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const img = new Image();
-      img.src = reader.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 600; // Define um tamanho máximo
-        const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
+      // 2. Upload para o bucket "sorteios"
+      const { error: uploadError } = await supabase.storage
+        .from("sorteios")
+        .upload(filePath, formImgFile);
 
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (uploadError) throw uploadError;
 
-        // Converte para Base64 bem leve (qualidade 0.7)
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-        setFormImg(compressedBase64);
-      };
-    };
-    reader.readAsDataURL(file);
-  }
-};
+      // 3. Pegar a URL pública (não expira)
+      const { data: urlData } = supabase.storage
+        .from("sorteios")
+        .getPublicUrl(filePath);
+
+      const publicImageUrl = urlData.publicUrl;
+
+      // 4. Salvar no banco de dados
+      const { error: dbError } = await supabase.from('sorteios').insert([{
+        nome: formNome,
+        img: publicImageUrl, // Apenas o link agora
+        valor: formValor,
+        status: "Ativo"
+      }]);
+
+      if (dbError) throw dbError;
+
+      setModalCriarAberto(false);
+      setFormNome(""); setFormValor(""); setFormImgFile(null);
+      carregarDadosCompletos();
+      alert("✅ Sorteio criado com sucesso!");
+
+    } catch (err: any) {
+      alert("Erro no processo: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleToggleStatus = async (e: React.MouseEvent, id: string, statusAtual: string) => {
     e.stopPropagation();
@@ -206,7 +215,6 @@ const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     <main className="min-h-screen bg-slate-950 text-white p-4 md:p-8 overflow-x-hidden">
       <div className="max-w-7xl mx-auto">
         
-        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 border-b border-slate-800 pb-6">
             <h1 className="text-3xl font-black text-white flex items-center gap-2"><Shield className="text-yellow-500" /> PAINEL ADMIN</h1>
             <div className="flex gap-2 w-full md:w-auto">
@@ -215,7 +223,6 @@ const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
         </div>
 
-        {/* --- DASHBOARD --- */}
         {abaAtiva === "dashboard" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -229,7 +236,6 @@ const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
         )}
 
-        {/* --- ABA SORTEIOS --- */}
         {abaAtiva === "sorteios" && (
             <div className="animate-in fade-in duration-500">
                 {!sorteioSelecionado ? (
@@ -249,14 +255,12 @@ const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
         )}
 
-        {/* --- MODAL DE SORTEIO ÉPICO --- */}
         {modalSorteioAberto && (
             <div className="fixed inset-0 bg-slate-950 z-[999] flex flex-col items-center justify-center p-4 md:p-10">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.08),transparent)] animate-pulse"></div>
                 {!ganhadorRevelado && (
                    <button onClick={() => setModalSorteioAberto(false)} className="absolute top-8 right-8 text-slate-600 hover:text-white transition z-50"><X className="w-8 h-8"/></button>
                 )}
-                
                 <div className="w-full max-w-2xl text-center relative z-10">
                     {sorteando ? (
                         <div className="space-y-12 animate-in zoom-in-90 duration-300">
@@ -280,10 +284,47 @@ const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
         )}
 
-        {/* --- MODAL CRIAR --- */}
         {modalCriarAberto && (
             <div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95">
-                <div className="bg-slate-900 w-full max-w-md rounded-3xl border border-slate-800 p-8 shadow-2xl relative"><button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3><form onSubmit={handleCriarSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome da Skin</label><input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: M4A4 | Howl" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor de Mercado</label><input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: 1.200,00" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem da Skin</label><div className="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-slate-950/50 transition-all group"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} alt="" className="h-24 mx-auto drop-shadow-2xl" /> : <div className="text-slate-500 flex flex-col items-center gap-2"><Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/><span className="text-xs font-bold uppercase">Clique para enviar</span></div>}</div></div><button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-400 py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg shadow-yellow-900/10 active:scale-95 uppercase tracking-tighter">Salvar Sorteio</button></form></div></div>
+                <div className="bg-slate-900 w-full max-w-md rounded-3xl border border-slate-800 p-8 shadow-2xl relative">
+                    <button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button>
+                    <h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3>
+                    <form onSubmit={handleCriarSorteio} className="space-y-5">
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome da Skin</label>
+                            <input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: M4A4 | Howl" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor de Mercado</label>
+                            <input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: 1.200,00" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem da Skin</label>
+                            <div className="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-slate-950/50 transition-all group">
+                                <input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                {formImgFile ? (
+                                    <div className="text-white">
+                                        <p className="text-xs font-bold">{formImgFile.name}</p>
+                                        <span className="text-[10px] text-slate-500">Pronto para upload</span>
+                                    </div>
+                                ) : (
+                                    <div className="text-slate-500 flex flex-col items-center gap-2">
+                                        <Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/>
+                                        <span className="text-xs font-bold uppercase">Clique para selecionar arquivo</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <button 
+                            type="submit" 
+                            disabled={uploading}
+                            className={`w-full ${uploading ? 'bg-slate-700' : 'bg-yellow-500 hover:bg-yellow-400'} py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg uppercase tracking-tighter`}
+                        >
+                            {uploading ? "Salvando..." : "Salvar Sorteio"}
+                        </button>
+                    </form>
+                </div>
+            </div>
         )}
       </div>
     </main>
