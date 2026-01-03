@@ -161,18 +161,30 @@ export default function AdminDashboard() {
     }
   };
 
- const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
-  const file = e.target.files?.[0]; 
-  if (file) { 
-    // Se o arquivo for maior que 100kb (aproximadamente), ele bloqueia
-    if (file.size > 102400) { 
-      alert("A imagem é muito pesada! Use um print pequeno ou uma imagem de até 100kb para evitar o erro de rede.");
-      return;
-    }
-    const reader = new FileReader(); 
-    reader.onloadend = () => setFormImg(reader.result as string); 
-    reader.readAsDataURL(file); 
-  } 
+const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.src = reader.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 600; // Define um tamanho máximo
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Converte para Base64 bem leve (qualidade 0.7)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        setFormImg(compressedBase64);
+      };
+    };
+    reader.readAsDataURL(file);
+  }
 };
 
   const handleToggleStatus = async (e: React.MouseEvent, id: string, statusAtual: string) => {
