@@ -136,30 +136,24 @@ export default function AdminDashboard() {
   };
 
   const handleCriarSorteio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formImg) return alert("Selecione uma imagem!");
-    
-    // Bloqueia imagens gigantes que causam o NetworkError
-    if (formImg.length > 200000) { 
-      return alert("Imagem muito pesada! Use um print pequeno ou uma imagem de baixa resolução.");
-    }
+  e.preventDefault();
+  
+  // Teste sem imagem para ver se o banco aceita
+  const { error } = await supabase.from('sorteios').insert([{
+    nome: formNome,
+    img: "https://via.placeholder.com/150", // Link temporário
+    valor: formValor,
+    status: "Ativo"
+  }]);
 
-    const { error } = await supabase.from('sorteios').insert([{
-      nome: formNome,
-      img: formImg,
-      valor: formValor,
-      status: "Ativo"
-    }]);
-
-    if (error) {
-      alert("Erro no Supabase: " + error.message);
-    } else {
-      setModalCriarAberto(false);
-      setFormNome(""); setFormImg(""); setFormValor("");
-      carregarDadosCompletos();
-      alert("✅ Sorteio criado com sucesso!");
-    }
-  };
+  if (error) {
+    alert("ERRO DO SUPA: " + error.message);
+  } else {
+    alert("✅ SALVOU! O problema era o peso da imagem.");
+    setModalCriarAberto(false);
+    carregarDadosCompletos();
+  }
+};
 
 const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
