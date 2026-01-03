@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    // ATENÇÃO: Isso permite o build mesmo com erros de tipo
+    // Permite que o build termine mesmo se houver erros de TypeScript
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Isso ignora avisos de variáveis não usadas durante o build
+    // Impede que avisos de variáveis não usadas travem o deploy
     ignoreDuringBuilds: true,
   },
 };
