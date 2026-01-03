@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Shield, Users, Gift, CheckCircle, XCircle, ExternalLink, Plus, Pencil, X, Upload, Trash2, Coins, BarChart3, Trophy, RefreshCw, Lock, Unlock, TrendingUp, Sparkles, Zap } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
+// Configuração do Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -60,18 +61,15 @@ export default function AdminDashboard() {
   const [statsDetalhadas, setStatsDetalhadas] = useState<Record<string, StatsSorteio>>({});
 
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
-  const [ticketEmEdicao, setTicketEmEdicao] = useState<Ticket | null>(null);
-  const [sorteioEmEdicao, setSorteioEmEdicao] = useState<Sorteio | null>(null);
+  const [formNome, setFormNome] = useState("");
+  const [formImg, setFormImg] = useState("");
+  const [formValor, setFormValor] = useState("");
 
   const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
   const [sorteando, setSorteando] = useState(false);
   const [ganhadorRevelado, setGanhadorRevelado] = useState<Ticket | null>(null);
   const [participanteFake, setParticipanteFake] = useState<Ticket | null>(null);
   const [listaGanhadores, setListaGanhadores] = useState<Ganhador[]>([]);
-
-  const [formNome, setFormNome] = useState("");
-  const [formImg, setFormImg] = useState("");
-  const [formValor, setFormValor] = useState("");
 
   useEffect(() => {
     if (status === "loading") return;
@@ -137,10 +135,10 @@ export default function AdminDashboard() {
     loopSorteio();
   };
 
-  // BOTÃO ARRUMADO AQUI
+  // --- BOTÃO CORRIGIDO AQUI ---
   const handleCriarSorteio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formImg) return alert("Selecione uma imagem!");
+    if (!formImg) return alert("Por favor, selecione uma imagem primeiro!");
     
     const { error } = await supabase.from('sorteios').insert([{
       nome: formNome,
@@ -151,9 +149,20 @@ export default function AdminDashboard() {
 
     if (!error) {
       setModalCriarAberto(false);
-      limparForm();
+      setFormNome(""); setFormImg(""); setFormValor("");
       carregarDadosCompletos();
+    } else {
+      alert("Erro no Supabase: " + error.message);
     }
+  };
+
+  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
+    const file = e.target.files?.[0]; 
+    if (file) { 
+        const reader = new FileReader(); 
+        reader.onloadend = () => setFormImg(reader.result as string); 
+        reader.readAsDataURL(file); 
+    } 
   };
 
   const handleToggleStatus = async (e: React.MouseEvent, id: string, statusAtual: string) => {
@@ -175,16 +184,6 @@ export default function AdminDashboard() {
     if (sorteioSelecionado) abrirSorteio(sorteioSelecionado);
   };
 
-  const limparForm = () => { setFormNome(""); setFormImg(""); setFormValor(""); };
-  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
-    const file = e.target.files?.[0]; 
-    if (file) { 
-        const reader = new FileReader(); 
-        reader.onloadend = () => setFormImg(reader.result as string); 
-        reader.readAsDataURL(file); 
-    } 
-  };
-
   if (!isAdmin) return null;
 
   return (
@@ -200,7 +199,7 @@ export default function AdminDashboard() {
             </div>
         </div>
 
-        {/* --- ABA DASHBOARD --- */}
+        {/* --- DASHBOARD --- */}
         {abaAtiva === "dashboard" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -219,7 +218,7 @@ export default function AdminDashboard() {
             <div className="animate-in fade-in duration-500">
                 {!sorteioSelecionado ? (
                     <div>
-                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold border-l-4 border-yellow-500 pl-3">Gerenciamento</h2><button onClick={() => { limparForm(); setModalCriarAberto(true); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg font-bold transition shadow-lg shadow-green-900/20"><Plus className="w-5 h-5"/> Novo Sorteio</button></div>
+                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold border-l-4 border-yellow-500 pl-3">Gerenciamento</h2><button onClick={() => { setModalCriarAberto(true); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg font-bold transition shadow-lg"><Plus className="w-5 h-5"/> Novo Sorteio</button></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{listaSorteios.map((s) => (<div key={s.id} onClick={() => abrirSorteio(s)} className={`bg-slate-900 p-6 rounded-2xl border cursor-pointer hover:border-yellow-500 transition group relative flex flex-col sm:flex-row sm:items-center gap-6 ${s.status === "Finalizado" ? "border-red-900/50 opacity-80" : "border-slate-800"}`}><img src={s.img} alt="" className="w-24 h-24 object-contain bg-slate-950 rounded-xl p-2 transition group-hover:scale-110" /><div className="flex-1"><h3 className="text-xl font-bold text-white group-hover:text-yellow-500 transition">{s.nome}</h3><p className="text-slate-400 text-sm">R$ {s.valor}</p>{s.status === "Finalizado" && <span className="text-red-500 font-bold text-[10px] uppercase mt-1 inline-block border border-red-500 px-2 rounded">Encerrado</span>}</div><div className="flex gap-2 z-10"><button onClick={(e) => handleToggleStatus(e, s.id, s.status)} className={`p-2.5 rounded-lg shadow-lg transition ${s.status === "Ativo" ? "bg-slate-700 text-yellow-500 hover:bg-yellow-600 hover:text-white" : "bg-red-600 text-white hover:bg-red-500"}`}>{s.status === "Ativo" ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}</button><button onClick={(e) => handleDeletarSorteio(e, s.id)} className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500"><Trash2 className="w-5 h-5" /></button></div></div>))}</div>
                     </div>
                 ) : (
