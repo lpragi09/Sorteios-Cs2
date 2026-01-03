@@ -9,7 +9,15 @@ import { createClient } from "@supabase/supabase-js";
 // Configuração do Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: false // Evita erros de escrita no navegador
+    },
+    global: {
+      headers: { 'x-my-custom-header': 'my-app' }
+    }
+  }
 );
 
 type Sorteio = {
