@@ -158,14 +158,19 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
-    const file = e.target.files?.[0]; 
-    if (file) { 
-        const reader = new FileReader(); 
-        reader.onloadend = () => setFormImg(reader.result as string); 
-        reader.readAsDataURL(file); 
-    } 
-  };
+ const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
+  const file = e.target.files?.[0]; 
+  if (file) { 
+    // Se o arquivo for maior que 100kb (aproximadamente), ele bloqueia
+    if (file.size > 102400) { 
+      alert("A imagem é muito pesada! Use um print pequeno ou uma imagem de até 100kb para evitar o erro de rede.");
+      return;
+    }
+    const reader = new FileReader(); 
+    reader.onloadend = () => setFormImg(reader.result as string); 
+    reader.readAsDataURL(file); 
+  } 
+};
 
   const handleToggleStatus = async (e: React.MouseEvent, id: string, statusAtual: string) => {
     e.stopPropagation();
