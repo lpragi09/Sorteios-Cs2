@@ -4,6 +4,13 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CheckCircle, Clock, Coins, AlertCircle, Trophy, XCircle, Ban } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+
+// Inicialização do cliente Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type Ticket = {
     id: number;
@@ -12,68 +19,86 @@ type Ticket = {
     csgobigId: string;
     coins: number;
     status: string;
-    // Campos visuais adicionados na montagem
     nomeSorteio?: string;
     imgSorteio?: string;
-    resultado?: "GANHOU" | "PERDEU" | "AGUARDANDO"; // Novo status final
+    resultado?: "GANHOU" | "PERDEU" | "AGUARDANDO";
 };
 
 export default function MeusSorteiosPage() {
   const { data: session } = useSession();
   const [ticketsUsuario, setTicketsUsuario] = useState<Ticket[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     if (!session?.user?.email) return;
 
-    // 1. Pega lista de todos os sorteios
-    const sorteios = JSON.parse(localStorage.getItem("lista_sorteios") || "[]");
-    let meusTickets: Ticket[] = [];
+    const buscarMeusDados = async () => {
+      setCarregando(true);
+      
+      // 1. Busca todos os sorteios do banco
+      const { data: sorteios } = await supabase
+        .from('sorteios')
+        .select('*');
 
-    // 2. Varre cada sorteio
-    sorteios.forEach((sorteio: any) => {
-        // Pega os tickets deste sorteio
-        const ticketsDoSorteio = JSON.parse(localStorage.getItem(`tickets_${sorteio.id}`) || "[]");
-        
-        // Pega a lista de GANHADORES deste sorteio
-        const listaGanhadores = JSON.parse(localStorage.getItem(`ganhadores_${sorteio.id}`) || "[]");
-        
-        // Filtra só os tickets do usuário logado
-        const meus = ticketsDoSorteio.filter((t: any) => t.email === session.user?.email);
-        
-        // Adiciona informações extras para exibir na tela
-        const meusComInfo = meus.map((t: any) => {
+      if (!sorteios) return;
+
+      let meusTicketsAcumulados: Ticket[] = [];
+
+      // 2. Para cada sorteio, busca os tickets do usuário e se ele ganhou
+      for (const sorteio of sorteios) {
+        // Busca tickets do usuário neste sorteio
+        const { data: tickets } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('sorteio_id', sorteio.id)
+          .eq('email', session.user?.email);
+
+        // Busca se houve ganhadores para este sorteio
+        const { data: ganhadores } = await supabase
+          .from('ganhadores')
+          .select('*')
+          .eq('sorteio_id', sorteio.id);
+
+        if (tickets) {
+          const processados = tickets.map((t: any) => {
             let resultadoFinal: "GANHOU" | "PERDEU" | "AGUARDANDO" = "AGUARDANDO";
 
-            // Verifica se esse ticket específico ganhou
-            const souGanhador = listaGanhadores.find((g: any) => g.ticket.id === t.id);
+            // Verifica se o ticket ID está na lista de ganhadores
+            const souGanhador = ganhadores?.find((g: any) => g.ticket_id === t.id);
 
             if (souGanhador) {
-                resultadoFinal = "GANHOU";
-            } else if (listaGanhadores.length > 0) {
-                // Se já tem ganhadores e eu não sou um deles...
-                // Aqui depende da regra: Se for sorteio de 3 itens, pode ser que ainda role.
-                // Mas para feedback visual, se já rodou a roleta, mostramos que já foi sorteado.
-                resultadoFinal = "PERDEU";
+              resultadoFinal = "GANHOU";
+            } else if (ganhadores && ganhadores.length > 0) {
+              resultadoFinal = "PERDEU";
             }
 
             return {
-                ...t, 
-                nomeSorteio: sorteio.nome,
-                imgSorteio: sorteio.img,
-                resultado: resultadoFinal
+              id: t.id,
+              data: new Date(t.data).toLocaleString(),
+              email: t.email,
+              csgobigId: t.csgobig_id,
+              coins: t.coins,
+              status: t.status,
+              nomeSorteio: sorteio.nome,
+              imgSorteio: sorteio.img,
+              resultado: resultadoFinal
             };
-        });
+          });
+          meusTicketsAcumulados = [...meusTicketsAcumulados, ...processados];
+        }
+      }
 
-        meusTickets = [...meusTickets, ...meusComInfo];
-    });
+      // Ordena: Mais recentes primeiro
+      meusTicketsAcumulados.sort((a, b) => b.id - a.id);
+      setTicketsUsuario(meusTicketsAcumulados);
+      setCarregando(false);
+    };
 
-    // Ordena: Mais recentes primeiro
-    meusTickets.sort((a, b) => b.id - a.id);
-
-    setTicketsUsuario(meusTickets);
+    buscarMeusDados();
   }, [session]);
 
   if (!session) return <div className="p-20 text-center text-white">Faça login para ver seus depósitos.</div>;
+  if (carregando) return <div className="p-20 text-center text-white italic">Carregando seus depósitos...</div>;
 
   const totalCoins = ticketsUsuario.reduce((acc, t) => acc + Number(t.coins), 0);
 
@@ -95,7 +120,6 @@ export default function MeusSorteiosPage() {
                           "bg-slate-900 border-slate-800 hover:border-slate-700"}`}
                     >
                         
-                        {/* Se ganhou, coloca um efeito de brilho no fundo */}
                         {ticket.resultado === "GANHOU" && (
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <Trophy className="w-32 h-32 text-green-500" />
@@ -105,6 +129,7 @@ export default function MeusSorteiosPage() {
                         <div className="flex items-center gap-4 z-10">
                             <img 
                                 src={ticket.imgSorteio} 
+                                alt=""
                                 className="w-16 h-16 object-contain bg-slate-950 rounded p-2 border border-slate-800" 
                             />
                             <div>
@@ -113,10 +138,9 @@ export default function MeusSorteiosPage() {
                                     ID: {ticket.csgobigId} • {ticket.data}
                                 </p>
                                 
-                                {/* Exibe o status da validação se ainda não foi sorteado */}
                                 {ticket.resultado === "AGUARDANDO" && (
                                     <div className="mt-2 flex items-center gap-2">
-                                        {ticket.status === "Em análise" && <span className="text-yellow-500 text-xs flex items-center gap-1"><Clock className="w-3 h-3"/> Analisando Depósito</span>}
+                                        {ticket.status === "Pendente" && <span className="text-yellow-500 text-xs flex items-center gap-1"><Clock className="w-3 h-3"/> Analisando Depósito</span>}
                                         {ticket.status === "Rejeitado" && <span className="text-red-500 text-xs flex items-center gap-1"><XCircle className="w-3 h-3"/> Depósito Rejeitado</span>}
                                         {ticket.status === "Aprovado" && <span className="text-green-500 text-xs flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Confirmado</span>}
                                     </div>
@@ -129,7 +153,6 @@ export default function MeusSorteiosPage() {
                                 <Coins className="w-4 h-4" /> {ticket.coins}
                             </span>
 
-                            {/* STATUS FINAL DO SORTEIO */}
                             {ticket.resultado === "GANHOU" && (
                                 <div className="flex items-center gap-2 text-green-400 font-black bg-green-950/50 px-4 py-2 rounded border border-green-500/50 animate-pulse">
                                     <Trophy className="w-5 h-5" /> VOCÊ GANHOU!
