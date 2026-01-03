@@ -30,11 +30,11 @@ export default function Home() {
   }, []);
 
   const carregarDados = () => {
-    const salvos = localStorage.getItem("lista_sorteios");
+    const salvos = typeof window !== "undefined" ? localStorage.getItem("lista_sorteios") : null;
     if (salvos) {
         setListaSorteios(JSON.parse(salvos));
     } else {
-        const padrao = [{ 
+        const padrao: Sorteio[] = [{ 
             id: "ak47", 
             nome: "AK-47 | Redline", 
             img: "https://steamcommunity-a.akamaihd.net/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvN0_rTKQXw/360fx360f",
@@ -47,7 +47,7 @@ export default function Home() {
   };
 
   const abrirModal = (sorteio: Sorteio) => {
-    if (sorteio.status === "Finalizado") return; // Bloqueia clique
+    if (sorteio.status === "Finalizado") return;
     if (!session) { signIn("google"); return; }
     setSorteioSelecionado(sorteio);
     setCsgobigId(""); setQtdCoins(""); setInstagram(""); setArquivoPrint(null);
@@ -85,15 +85,13 @@ export default function Home() {
         status: "Em análise"
     };
 
-    const novaLista = [...ticketsAtuais, novoTicket];
-    localStorage.setItem(chaveStorage, JSON.stringify(novaLista));
-    
+    localStorage.setItem(chaveStorage, JSON.stringify([...ticketsAtuais, novoTicket]));
     setModalAberto(false);
-    alert(`✅ Sucesso! Você entrou no sorteio da ${sorteioSelecionado.nome}.`);
+    alert(`✅ Sucesso! Você entrou no sorteio.`);
   };
 
   return (
-    <main className="min-h-screen text-white pb-20 pt-10">
+    <main className="min-h-screen text-white pb-20 pt-10 bg-slate-950">
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-4xl font-bold mb-2 text-center md:text-left">Sorteios Ativos 🔥</h1>
         <p className="text-slate-400 mb-8 text-center md:text-left">Escolha uma skin e participe.</p>
@@ -102,7 +100,6 @@ export default function Home() {
             {listaSorteios.map((sorteio) => (
                 <div key={sorteio.id} className={`bg-slate-900 rounded-2xl border overflow-hidden flex flex-col transition relative group ${listaSorteios.length === 1 ? "w-full max-w-4xl" : "w-full"} ${sorteio.status === "Finalizado" ? "border-red-900/50 opacity-90" : "border-slate-800 hover:border-yellow-500/50"}`}>
                     
-                    {/* STATUS */}
                     <div className="absolute top-6 right-6 z-10">
                         {sorteio.status === "Ativo" ? (
                             <div className="flex items-center gap-3 bg-slate-950/80 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700/50 shadow-xl">
@@ -121,7 +118,7 @@ export default function Home() {
                     </div>
 
                     <div className="bg-slate-800/50 p-8 flex items-center justify-center relative h-72">
-                        <img src={sorteio.img} alt="Skin" className={`max-h-full drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "hover:scale-110" : "grayscale"}`} />
+                        <img src={sorteio.img} alt="" className={`max-h-full drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "hover:scale-110" : "grayscale"}`} />
                     </div>
 
                     <div className="p-8 flex flex-col flex-1">
@@ -158,7 +155,17 @@ export default function Home() {
                         <div><label className="text-xs text-slate-400 ml-1 font-bold text-yellow-500">Coins</label><input type="number" placeholder="50" value={qtdCoins} onChange={e=>setQtdCoins(e.target.value)} className="w-full bg-slate-950 border border-yellow-500/50 rounded p-3 text-white outline-none focus:border-yellow-500 font-bold"/></div>
                     </div>
                     <div><label className="text-xs text-slate-400 ml-1 font-bold">Instagram</label><input type="text" placeholder="@seu.insta" value={instagram} onChange={e=>setInstagram(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white outline-none focus:border-yellow-500"/></div>
-                    <div className="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer relative hover:bg-slate-800 transition group"><input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />{arquivoPrint ? (<div className="flex flex-col items-center"><img src={arquivoPrint} className="h-24 rounded mb-2 border border-slate-600 object-cover"/><span className="text-green-400 text-xs font-bold">Print Carregado!</span></div>) : (<><ImageIcon className="w-8 h-8 text-slate-500 mx-auto mb-2"/><span className="text-slate-400 text-sm font-bold">Enviar Comprovante</span></>)}</div>
+                    <div className="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer relative hover:bg-slate-800 transition group">
+                        <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                        {arquivoPrint ? (
+                            <div className="flex flex-col items-center">
+                                <img src={arquivoPrint} alt="" className="h-24 rounded mb-2 border border-slate-600 object-cover"/>
+                                <span className="text-green-400 text-xs font-bold">Print Carregado!</span>
+                            </div>
+                        ) : (
+                            <><ImageIcon className="w-8 h-8 text-slate-500 mx-auto mb-2"/><span className="text-slate-400 text-sm font-bold">Enviar Comprovante</span></>
+                        )}
+                    </div>
                     <button type="submit" className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-lg font-bold text-white transition shadow-lg text-lg">ENVIAR</button>
                 </form>
             </div>
