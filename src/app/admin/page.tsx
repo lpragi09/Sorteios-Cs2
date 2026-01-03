@@ -85,7 +85,12 @@ export default function AdminDashboard() {
     const statsTemp: Record<string, StatsSorteio> = {};
 
     for (const s of sorteios) {
-        const { data: tickets } = await supabase.from('tickets').select('coins').eq('sorteio_id', s.id);
+        // BUSCA FLEXÍVEL: Tenta pelo ID ou pelo Nome
+        const { data: tickets } = await supabase
+            .from('tickets')
+            .select('coins')
+            .or(`sorteio_id.eq.${s.id},sorteio_nome.eq."${s.nome}"`);
+        
         const totalTickets = tickets?.length || 0;
         const totalCoins = tickets?.reduce((acc, t) => acc + Number(t.coins), 0) || 0;
         statsTemp[s.id] = { entries: totalTickets, coins: totalCoins };
@@ -96,11 +101,11 @@ export default function AdminDashboard() {
 
   const abrirSorteio = async (sorteio: Sorteio) => {
     setSorteioSelecionado(sorteio);
-    // BUSCA CORRIGIDA: Força a atualização da lista de tickets baseada no ID correto
+    // BUSCA FLEXÍVEL: Tenta pelo ID ou pelo Nome para garantir que a lista não venha vazia
     const { data: tickets } = await supabase
         .from('tickets')
         .select('*')
-        .eq('sorteio_id', sorteio.id)
+        .or(`sorteio_id.eq.${sorteio.id},sorteio_nome.eq."${sorteio.nome}"`)
         .order('created_at', { ascending: false });
     
     setTicketsDoSorteio(tickets || []);
