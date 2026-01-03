@@ -142,30 +142,52 @@ export default function AdminDashboard() {
     setSalvando(true);
 
     try {
-    // 1. Upload para o Cloudinary com tratamento de rede
+      // ETAPA A: Compressão da imagem no cliente para evitar NetworkError
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      const compressedFile = await new Promise<Blob>((resolve, reject) => {
+        img.onload = () => {
+          // Define tamanho máximo de 1200px (mantendo proporção)
+          let width = img.width;
+          let height = img.height;
+          if (width > 1200) {
+            height = (1200 / width) * height;
+            width = 1200;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          // Converte para JPEG com 80% de qualidade (muito leve)
+          canvas.toBlob((blob) => blob ? resolve(blob) : reject(), 'image/jpeg', 0.8);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(formImgFile);
+      });
+
+      // ETAPA B: Envio para o Cloudinary
       const formData = new FormData();
-      formData.append("file", formImgFile);
+      formData.append("file", compressedFile, "skin.jpg");
       formData.append("upload_preset", UPLOAD_PRESET);
 
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData,
-        // Adicionamos estas configurações para evitar o NetworkError
-        mode: 'cors',
-        credentials: 'omit' 
+        mode: 'cors', // Necessário para evitar bloqueio de rede
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error?.message || "Erro na conexão com Cloudinary");
+        throw new Error(errorData.error?.message || "Erro no servidor de imagens");
       }
 
       const data = await res.json();
 
-      // 2. Salvar o link no Supabase
+      // ETAPA C: Salvar link no Supabase
       const { error } = await supabase.from('sorteios').insert([{
         nome: formNome,
-        img: data.secure_url, // Agora salvamos apenas o link curto
+        img: data.secure_url,
         valor: formValor,
         status: "Ativo"
       }]);
@@ -178,7 +200,8 @@ export default function AdminDashboard() {
       carregarDadosCompletos();
 
     } catch (err: any) {
-      alert("Erro: " + err.message);
+      console.error(err);
+      alert("Erro de conexão: Tente uma imagem diferente ou use uma aba anônima.");
     } finally {
       setSalvando(false);
     }
