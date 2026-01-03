@@ -3,6 +3,13 @@
 import { useSession, signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { X, Image as ImageIcon, Lock } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+
+// Inicialização do cliente Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type Sorteio = {
     id: string;
@@ -17,6 +24,7 @@ export default function Home() {
   const [listaSorteios, setListaSorteios] = useState<Sorteio[]>([]);
   const [sorteioSelecionado, setSorteioSelecionado] = useState<Sorteio | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   
   const [csgobigId, setCsgobigId] = useState("");
   const [qtdCoins, setQtdCoins] = useState("");
@@ -25,24 +33,20 @@ export default function Home() {
 
   useEffect(() => {
     carregarDados();
+    // Atualiza automaticamente quando a janela ganha foco
     window.addEventListener("focus", carregarDados);
     return () => window.removeEventListener("focus", carregarDados);
   }, []);
 
-  const carregarDados = () => {
-    const salvos = typeof window !== "undefined" ? localStorage.getItem("lista_sorteios") : null;
-    if (salvos) {
-        setListaSorteios(JSON.parse(salvos));
-    } else {
-        const padrao: Sorteio[] = [{ 
-            id: "ak47", 
-            nome: "AK-47 | Redline", 
-            img: "https://steamcommunity-a.akamaihd.net/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvN0_rTKQXw/360fx360f",
-            valor: "150,00",
-            status: "Ativo"
-        }];
-        setListaSorteios(padrao);
-        localStorage.setItem("lista_sorteios", JSON.stringify(padrao));
+  const carregarDados = async () => {
+    // Busca sorteios direto do Supabase em vez do LocalStorage
+    const { data, error } = await supabase
+      .from('sorteios')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+        setListaSorteios(data);
     }
   };
 
@@ -63,31 +67,35 @@ export default function Home() {
     }
   };
 
-  const confirmarParticipacao = (e: React.FormEvent) => {
+  const confirmarParticipacao = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!csgobigId || !qtdCoins || !instagram || !arquivoPrint || !sorteioSelecionado) {
       alert("Preencha todos os dados!");
       return;
     }
 
-    const chaveStorage = `tickets_${sorteioSelecionado.id}`;
-    const ticketsAtuais = JSON.parse(localStorage.getItem(chaveStorage) || "[]");
+    setEnviando(true);
 
-    const novoTicket = {
-        id: Date.now(),
-        data: new Date().toLocaleString(),
+    // Insere o ticket diretamente na tabela do Supabase
+    const { error } = await supabase.from('tickets').insert([{
+        sorteio_id: sorteioSelecionado.id,
         email: session?.user?.email,
         userImage: session?.user?.image,
-        csgobigId,
+        csgobig_id: csgobigId,
         coins: Number(qtdCoins),
-        instagram,
-        print: arquivoPrint,
-        status: "Em análise"
-    };
+        instagram: instagram,
+        print_url: arquivoPrint, // Nota: idealmente você subiria isso para o Storage, mas aqui mantemos o base64 para rapidez
+        status: "Pendente"
+    }]);
 
-    localStorage.setItem(chaveStorage, JSON.stringify([...ticketsAtuais, novoTicket]));
-    setModalAberto(false);
-    alert(`✅ Sucesso! Você entrou no sorteio.`);
+    setEnviando(false);
+
+    if (error) {
+        alert("Erro ao enviar: " + error.message);
+    } else {
+        setModalAberto(false);
+        alert(`✅ Sucesso! Sua participação na ${sorteioSelecionado.nome} foi enviada para análise.`);
+    }
   };
 
   return (
@@ -118,7 +126,7 @@ export default function Home() {
                     </div>
 
                     <div className="bg-slate-800/50 p-8 flex items-center justify-center relative h-72">
-                        <img src={sorteio.img} alt="" className={`max-h-full drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "hover:scale-110" : "grayscale"}`} />
+                        <img src={sorteio.img} alt="Skin do Sorteio" className={`max-h-full drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "hover:scale-110" : "grayscale"}`} />
                     </div>
 
                     <div className="p-8 flex flex-col flex-1">
@@ -159,14 +167,16 @@ export default function Home() {
                         <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                         {arquivoPrint ? (
                             <div className="flex flex-col items-center">
-                                <img src={arquivoPrint} alt="" className="h-24 rounded mb-2 border border-slate-600 object-cover"/>
+                                <img src={arquivoPrint} alt="Comprovante" className="h-24 rounded mb-2 border border-slate-600 object-cover"/>
                                 <span className="text-green-400 text-xs font-bold">Print Carregado!</span>
                             </div>
                         ) : (
                             <><ImageIcon className="w-8 h-8 text-slate-500 mx-auto mb-2"/><span className="text-slate-400 text-sm font-bold">Enviar Comprovante</span></>
                         )}
                     </div>
-                    <button type="submit" className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-lg font-bold text-white transition shadow-lg text-lg">ENVIAR</button>
+                    <button type="submit" disabled={enviando} className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-lg font-bold text-white transition shadow-lg text-lg disabled:opacity-50">
+                        {enviando ? "ENVIANDO..." : "ENVIAR"}
+                    </button>
                 </form>
             </div>
         </div>
