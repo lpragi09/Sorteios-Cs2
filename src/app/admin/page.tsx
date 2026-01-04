@@ -3,14 +3,9 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Shield, Users, Gift, CheckCircle, XCircle, Plus, X, Upload, Trash2, Coins, BarChart3, Trophy, Lock, Unlock, TrendingUp, Sparkles, Edit, Eye, AlertCircle } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { Shield, Users, Gift, CheckCircle, XCircle, ExternalLink, Plus, Pencil, Save, X, Upload, Trash2 } from "lucide-react";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
+// TIPO DE DADOS
 type Sorteio = {
     id: string;
     nome: string;
@@ -22,20 +17,12 @@ type Sorteio = {
 type Ticket = {
     id: number;
     data: string;
-    csgobigId?: string; // Pode vir assim
-    csgobigid?: string; // Ou assim (padrão do supabase)
+    csgobigId: string;
     coins: number;
     instagram: string;
     print: string;
     status: string;
-    email?: string; 
-    userImage?: string; 
-    sorteio_nome?: string;
-};
-
-type StatsSorteio = {
-    entries: number;
-    coins: number;
+    email?: string;
 };
 
 export default function AdminDashboard() {
@@ -43,30 +30,24 @@ export default function AdminDashboard() {
   const router = useRouter();
   const ADMIN_EMAIL = "lpmragi@gmail.com";
 
+  // ESTADOS PRINCIPAIS
   const [isAdmin, setIsAdmin] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState("dashboard");
   const [sorteioSelecionado, setSorteioSelecionado] = useState<Sorteio | null>(null);
   
+  // DADOS
   const [listaSorteios, setListaSorteios] = useState<Sorteio[]>([]);
   const [ticketsDoSorteio, setTicketsDoSorteio] = useState<Ticket[]>([]);
-  const [totalEntradasAtivas, setTotalEntradasAtivas] = useState(0);
-  const [totalCoinsAtivos, setTotalCoinsAtivos] = useState(0);
-  const [totalSorteiosAtivos, setTotalSorteiosAtivos] = useState(0);
-  const [statsDetalhadas, setStatsDetalhadas] = useState<Record<string, StatsSorteio>>({});
 
+  // MODAIS
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
-  const [modalEditarSorteio, setModalEditarSorteio] = useState<Sorteio | null>(null);
-  const [modalEditarTicket, setModalEditarTicket] = useState<any>(null); // Usando any no modal para flexibilidade
+  const [ticketEmEdicao, setTicketEmEdicao] = useState<Ticket | null>(null);
+  const [sorteioEmEdicao, setSorteioEmEdicao] = useState<Sorteio | null>(null); // NOVO: Para editar o sorteio
 
+  // FORMULÁRIO (REUTILIZÁVEL PARA CRIAR E EDITAR)
   const [formNome, setFormNome] = useState("");
+  const [formImg, setFormImg] = useState("");
   const [formValor, setFormValor] = useState("");
-  const [formImgFile, setFormImgFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-
-  const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
-  const [sorteando, setSorteando] = useState(false);
-  const [ganhadorRevelado, setGanhadorRevelado] = useState<Ticket | null>(null);
-  const [participanteFake, setParticipanteFake] = useState<Ticket | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -75,223 +56,263 @@ export default function AdminDashboard() {
       return;
     }
     setIsAdmin(true);
-    carregarDadosCompletos();
-  }, [status, session, router]);
+    carregarSorteios();
+  }, [status, session]);
 
-  const carregarDadosCompletos = async () => {
-    const { data: sorteios } = await supabase.from('sorteios').select('*').order('created_at', { ascending: false });
-    if (!sorteios) return;
-    setListaSorteios(sorteios);
-
-    let somaE = 0, somaC = 0, contaA = 0;
-    const statsTemp: Record<string, StatsSorteio> = {};
-
-    for (const s of sorteios) {
-        // Busca híbrida para garantir contagem correta
-        const { data: tickets } = await supabase.from('tickets').select('coins').or(`sorteio_id.eq.${s.id},sorteio_nome.eq."${s.nome}"`);
-        const totalTickets = tickets?.length || 0;
-        const totalCoins = tickets?.reduce((acc, t) => acc + Number(t.coins), 0) || 0;
-        statsTemp[s.id] = { entries: totalTickets, coins: totalCoins };
-        if (s.status === "Ativo") { somaE += totalTickets; somaC += totalCoins; contaA++; }
+  // --- CARREGAMENTO ---
+  const carregarSorteios = () => {
+    const salvos = localStorage.getItem("lista_sorteios");
+    if (salvos) {
+        setListaSorteios(JSON.parse(salvos));
+    } else {
+        const padrao: Sorteio = { 
+            id: "ak47", 
+            nome: "AK-47 | Redline", 
+            img: "https://steamcommunity-a.akamaihd.net/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvN0_rTKQXw/360fx360f",
+            valor: "150,00",
+            status: "Ativo"
+        };
+        setListaSorteios([padrao]);
+        localStorage.setItem("lista_sorteios", JSON.stringify([padrao]));
     }
-    setTotalEntradasAtivas(somaE); setTotalCoinsAtivos(somaC); setTotalSorteiosAtivos(contaA); setStatsDetalhadas(statsTemp);
   };
 
-  const abrirSorteio = async (sorteio: Sorteio) => {
+  const abrirSorteio = (sorteio: Sorteio) => {
     setSorteioSelecionado(sorteio);
-    
-    // Busca tickets pelo ID ou Nome
-    const { data: tickets } = await supabase
-        .from('tickets')
-        .select('*')
-        .or(`sorteio_id.eq.${sorteio.id},sorteio_nome.eq."${sorteio.nome}"`)
-        .order('created_at', { ascending: false });
-    
-    setTicketsDoSorteio(tickets || []);
+    const ticketsSalvos = localStorage.getItem(`tickets_${sorteio.id}`);
+    if (ticketsSalvos) {
+        setTicketsDoSorteio(JSON.parse(ticketsSalvos));
+    } else {
+        setTicketsDoSorteio([]);
+    }
   };
 
-  const iniciarSorteio = () => {
-    if (!sorteioSelecionado) return;
-    const aprovados = ticketsDoSorteio.filter(t => t.status === "Aprovado");
-    if (aprovados.length === 0) return alert("Nenhum ticket aprovado para sortear!");
-    
-    setModalSorteioAberto(true);
-    setSorteando(true);
-    setGanhadorRevelado(null);
+  // --- HANDLER DE IMAGEM ---
+  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormImg(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-    let interacoes = 0;
-    const maxInteracoes = 50;
-    const vencedorReal = aprovados[Math.floor(Math.random() * aprovados.length)];
+  // --- AÇÕES DE SORTEIO ---
 
-    const loopSorteio = () => {
-        setParticipanteFake(aprovados[Math.floor(Math.random() * aprovados.length)]);
-        interacoes++;
-        let delay = interacoes < 30 ? 50 : interacoes < 45 ? 150 : 400;
+  const handleCriarSorteio = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formImg) { alert("Selecione uma imagem!"); return; }
 
-        if (interacoes < maxInteracoes) {
-            setTimeout(loopSorteio, delay);
-        } else {
-            setSorteando(false);
-            setGanhadorRevelado(vencedorReal);
-        }
+    const novoSorteio: Sorteio = {
+        id: Date.now().toString(),
+        nome: formNome,
+        img: formImg,
+        valor: formValor,
+        status: "Ativo"
     };
-    loopSorteio();
+    const novaLista = [...listaSorteios, novoSorteio];
+    setListaSorteios(novaLista);
+    localStorage.setItem("lista_sorteios", JSON.stringify(novaLista));
+    
+    setModalCriarAberto(false);
+    limparForm();
+    alert("Sorteio criado!");
   };
 
-  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
-    const file = e.target.files?.[0]; 
-    if (file) setFormImgFile(file);
+  // NOVO: Excluir Sorteio
+  const handleDeletarSorteio = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Impede de abrir o sorteio ao clicar no botão
+    if (!confirm("Tem certeza que deseja EXCLUIR este sorteio? Essa ação não tem volta.")) return;
+
+    const novaLista = listaSorteios.filter(s => s.id !== id);
+    setListaSorteios(novaLista);
+    localStorage.setItem("lista_sorteios", JSON.stringify(novaLista));
+    // Opcional: Limpar tickets desse sorteio
+    localStorage.removeItem(`tickets_${id}`);
   };
 
-  const handleCriarSorteio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formImgFile) return alert("Selecione uma imagem!");
-    setUploading(true);
-    try {
-      const fileExt = formImgFile.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `skins/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from("sorteios").upload(filePath, formImgFile);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("sorteios").getPublicUrl(filePath);
-      const { error: dbError } = await supabase.from('sorteios').insert([{
-        nome: formNome, img: urlData.publicUrl, valor: formValor, status: "Ativo"
-      }]);
-      if (dbError) throw dbError;
-      setModalCriarAberto(false);
-      setFormNome(""); setFormValor(""); setFormImgFile(null);
-      carregarDadosCompletos();
-      alert("✅ Sorteio criado!");
-    } catch (err: any) { alert("Erro: " + err.message); } finally { setUploading(false); }
-  };
-
-  const handleEditarSorteio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!modalEditarSorteio) return;
-    setUploading(true);
-    try {
-        const { error } = await supabase.from('sorteios').update({
-            nome: modalEditarSorteio.nome, valor: modalEditarSorteio.valor
-        }).eq('id', modalEditarSorteio.id);
-        if (error) throw error;
-        setModalEditarSorteio(null);
-        carregarDadosCompletos();
-        alert("✅ Atualizado!");
-    } catch (err: any) { alert(err.message); } finally { setUploading(false); }
-  };
-
-  const handleEditarTicket = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!modalEditarTicket) return;
-    setUploading(true);
-    try {
-        // Tenta atualizar usando csgobigid (minúsculo) se o ID estiver vindo assim
-        const { error } = await supabase.from('tickets').update({
-            csgobigid: modalEditarTicket.csgobigId || modalEditarTicket.csgobigid, 
-            coins: modalEditarTicket.coins, 
-            instagram: modalEditarTicket.instagram
-        }).eq('id', modalEditarTicket.id);
-        
-        if (error) throw error;
-        
-        setModalEditarTicket(null);
-        if (sorteioSelecionado) abrirSorteio(sorteioSelecionado);
-        await carregarDadosCompletos(); 
-        alert("✅ Ticket atualizado!");
-    } catch (err: any) { alert(err.message); } finally { setUploading(false); }
-  };
-
-  const handleToggleStatus = async (e: React.MouseEvent, id: string, statusAtual: string) => {
+  // NOVO: Abrir Modal de Edição de Sorteio
+  const handleAbrirEdicaoSorteio = (e: React.MouseEvent, sorteio: Sorteio) => {
     e.stopPropagation();
-    const novoStatus = statusAtual === "Ativo" ? "Finalizado" : "Ativo";
-    await supabase.from('sorteios').update({ status: novoStatus }).eq('id', id);
-    await carregarDadosCompletos(); 
+    setSorteioEmEdicao(sorteio);
+    setFormNome(sorteio.nome);
+    setFormValor(sorteio.valor);
+    setFormImg(sorteio.img);
   };
 
-  const handleDeletarSorteio = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!confirm("Excluir sorteio permanentemente?")) return;
-    await supabase.from('sorteios').delete().eq('id', id);
-    await carregarDadosCompletos();
+  // NOVO: Salvar Edição de Sorteio
+  const handleSalvarEdicaoSorteio = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sorteioEmEdicao) return;
+
+    const novaLista = listaSorteios.map(s => 
+        s.id === sorteioEmEdicao.id 
+            ? { ...s, nome: formNome, valor: formValor, img: formImg } 
+            : s
+    );
+
+    setListaSorteios(novaLista);
+    localStorage.setItem("lista_sorteios", JSON.stringify(novaLista));
+    
+    setSorteioEmEdicao(null);
+    limparForm();
+    alert("Sorteio atualizado!");
   };
 
-  const validarTicket = async (id: number, status: string) => {
-    await supabase.from('tickets').update({ status }).eq('id', id);
-    if (sorteioSelecionado) abrirSorteio(sorteioSelecionado);
-    await carregarDadosCompletos();
+  const limparForm = () => {
+    setFormNome("");
+    setFormImg("");
+    setFormValor("");
   };
 
-  // Helper para renderizar o status colorido
-  const renderStatus = (status: string) => {
-      if (status === 'Aprovado') return <span className="bg-green-900/30 text-green-400 border border-green-800 text-[10px] px-2 py-1 rounded font-bold uppercase flex items-center gap-1 w-fit"><CheckCircle size={10}/> Aprovado</span>;
-      if (status === 'Rejeitado') return <span className="bg-red-900/30 text-red-400 border border-red-800 text-[10px] px-2 py-1 rounded font-bold uppercase flex items-center gap-1 w-fit"><XCircle size={10}/> Rejeitado</span>;
-      return <span className="bg-yellow-900/30 text-yellow-400 border border-yellow-800 text-[10px] px-2 py-1 rounded font-bold uppercase flex items-center gap-1 w-fit"><AlertCircle size={10}/> Pendente</span>;
+  // --- AÇÕES DE TICKET ---
+  const validarTicket = (id: number, novoStatus: "Aprovado" | "Rejeitado") => {
+    const novaLista = ticketsDoSorteio.map(t => 
+        t.id === id ? { ...t, status: novoStatus } : t
+    );
+    setTicketsDoSorteio(novaLista);
+    if (sorteioSelecionado) {
+        localStorage.setItem(`tickets_${sorteioSelecionado.id}`, JSON.stringify(novaLista));
+    }
+  };
+
+  const salvarEdicaoTicket = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticketEmEdicao || !sorteioSelecionado) return;
+
+    const novaLista = ticketsDoSorteio.map(t => 
+        t.id === ticketEmEdicao.id ? ticketEmEdicao : t
+    );
+    setTicketsDoSorteio(novaLista);
+    localStorage.setItem(`tickets_${sorteioSelecionado.id}`, JSON.stringify(novaLista));
+    setTicketEmEdicao(null);
+    alert("Dados do ticket atualizados!");
   };
 
   if (!isAdmin) return null;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-4 md:p-8 overflow-x-hidden">
+    <main className="min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 border-b border-slate-800 pb-6">
-            <h1 className="text-3xl font-black text-white flex items-center gap-2 tracking-tighter"><Shield className="text-yellow-500" /> PAINEL ADMIN</h1>
-            <div className="flex gap-2 w-full md:w-auto">
-                <button onClick={() => { setAbaAtiva("dashboard"); setSorteioSelecionado(null); }} className={`flex-1 md:flex-none px-4 py-2 rounded-lg font-bold transition-all ${abaAtiva === "dashboard" ? "bg-yellow-500 text-black shadow-lg" : "bg-slate-800 text-slate-400"}`}>Visão Geral</button>
-                <button onClick={() => setAbaAtiva("sorteios")} className={`flex-1 md:flex-none px-4 py-2 rounded-lg font-bold transition-all ${abaAtiva === "sorteios" ? "bg-yellow-500 text-black shadow-yellow-500/20 shadow-lg" : "bg-slate-800 text-slate-400"}`}>Sorteios</button>
-            </div>
+        
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-10 border-b border-slate-800 pb-6">
+          <h1 className="text-3xl font-black text-white flex items-center gap-2">
+             <Shield className="text-yellow-500" /> PAINEL ADMIN
+          </h1>
+          <div className="flex gap-2">
+            <button onClick={() => { setAbaAtiva("dashboard"); setSorteioSelecionado(null); }} className={`px-4 py-2 rounded font-bold transition ${abaAtiva === "dashboard" ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-400"}`}>Visão Geral</button>
+            <button onClick={() => setAbaAtiva("sorteios")} className={`px-4 py-2 rounded font-bold transition ${abaAtiva === "sorteios" ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-400"}`}>Gerenciar Sorteios</button>
+          </div>
         </div>
 
+        {/* --- DASHBOARD --- */}
         {abaAtiva === "dashboard" && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 transition hover:border-yellow-500/50 hover:bg-slate-900/80"><div className="bg-yellow-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-yellow-500"><Gift /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase">Sorteios Ativos</h3><p className="text-3xl font-black">{totalSorteiosAtivos}</p></div></div>
-                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 transition hover:border-blue-500/50 hover:bg-slate-900/80"><div className="bg-blue-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-blue-500"><Users /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase">Entradas Ativas</h3><p className="text-3xl font-black">{totalEntradasAtivas}</p></div></div>
-                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex items-center gap-4 transition hover:border-green-500/50 hover:bg-slate-900/80"><div className="bg-green-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-green-500"><Coins /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase">Pool Ativo</h3><p className="text-3xl font-black text-green-400">{totalCoinsAtivos}</p></div></div>
-                </div>
-                <div><h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3"><TrendingUp className="text-blue-500"/> Detalhamento Individual</h2>
-                    <div className="space-y-3">{listaSorteios.map((s) => (<div key={s.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-800 transition gap-4"><div className="flex items-center gap-4"><img src={s.img} alt="" className="w-12 h-12 object-contain bg-slate-950 rounded p-1" /><div><h3 className="font-bold text-white text-lg">{s.nome}</h3><span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${s.status === 'Ativo' ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-red-900/30 text-red-400 border-red-800'}`}>{s.status}</span></div></div><div className="flex gap-8 text-right justify-between md:justify-end"><div><p className="text-[10px] text-slate-400 uppercase">Entradas</p><p className="text-xl font-bold">{statsDetalhadas[s.id]?.entries || 0}</p></div><div><p className="text-[10px] text-slate-400 uppercase">Coins</p><p className="text-xl font-bold text-yellow-500">{statsDetalhadas[s.id]?.coins || 0}</p></div></div></div>))}</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in">
+                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <div className="bg-yellow-500/10 w-12 h-12 rounded-full flex items-center justify-center text-yellow-500 mb-4"><Gift /></div>
+                    <h3 className="text-slate-400 text-xs font-bold uppercase">Sorteios Ativos</h3>
+                    <p className="text-3xl font-bold mt-1">{listaSorteios.length}</p>
                 </div>
             </div>
         )}
 
+        {/* --- SORTEIOS --- */}
         {abaAtiva === "sorteios" && (
-            <div className="animate-in fade-in duration-500">
+            <div className="animate-in fade-in">
                 {!sorteioSelecionado ? (
+                    // LISTA DE SORTEIOS
                     <div>
-                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold border-l-4 border-yellow-500 pl-3">Gerenciamento</h2><button onClick={() => { setModalCriarAberto(true); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg font-bold transition shadow-lg"><Plus className="w-5 h-5"/> Novo Sorteio</button></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{listaSorteios.map((s) => (<div key={s.id} onClick={() => abrirSorteio(s)} className={`bg-slate-900 p-6 rounded-2xl border cursor-pointer hover:border-yellow-500 transition group relative flex flex-col sm:flex-row sm:items-center gap-6 ${s.status === "Finalizado" ? "border-red-900/50 opacity-80" : "border-slate-800"}`}><img src={s.img} alt="" className="w-24 h-24 object-contain bg-slate-950 rounded-xl p-2 transition group-hover:scale-110" /><div className="flex-1"><h3 className="text-xl font-bold text-white group-hover:text-yellow-500 transition">{s.nome}</h3><p className="text-slate-400 text-sm">R$ {s.valor}</p>{s.status === "Finalizado" && <span className="text-red-500 font-bold text-[10px] uppercase mt-1 inline-block border border-red-500 px-2 rounded">Encerrado</span>}</div><div className="flex gap-2 z-10"><button onClick={(e) => { e.stopPropagation(); setModalEditarSorteio(s); }} className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500"><Edit size={18}/></button><button onClick={(e) => handleToggleStatus(e, s.id, s.status)} className={`p-2.5 rounded-lg shadow-lg transition ${s.status === "Ativo" ? "bg-slate-700 text-yellow-500 hover:bg-yellow-600 hover:text-white" : "bg-red-600 text-white hover:bg-red-500"}`}>{s.status === "Ativo" ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}</button><button onClick={(e) => handleDeletarSorteio(e, s.id)} className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500"><Trash2 className="w-5 h-5" /></button></div></div>))}</div>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold border-l-4 border-yellow-500 pl-3">Sorteios Disponíveis</h2>
+                            <button onClick={() => { limparForm(); setModalCriarAberto(true); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded font-bold transition">
+                                <Plus className="w-5 h-5"/> Novo Sorteio
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {listaSorteios.map((sorteio) => (
+                                <div key={sorteio.id} onClick={() => abrirSorteio(sorteio)} className="bg-slate-900 p-6 rounded-xl border border-slate-800 cursor-pointer hover:border-yellow-500 transition group relative flex items-center gap-6">
+                                    <img src={sorteio.img} className="w-20 h-20 object-contain bg-slate-950 rounded p-2" />
+                                    <div className="flex-1">
+                                        <h3 className="text-xl font-bold text-white group-hover:text-yellow-500 transition">{sorteio.nome}</h3>
+                                        <p className="text-slate-400 text-sm">R$ {sorteio.valor}</p>
+                                    </div>
+                                    
+                                    {/* BOTÕES DE AÇÃO DO SORTEIO */}
+                                    <div className="flex gap-2 z-10">
+                                        <button 
+                                            onClick={(e) => handleAbrirEdicaoSorteio(e, sorteio)}
+                                            className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded shadow-lg transition"
+                                            title="Editar Sorteio"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => handleDeletarSorteio(e, sorteio.id)}
+                                            className="p-2 bg-red-600 hover:bg-red-500 text-white rounded shadow-lg transition"
+                                            title="Excluir Sorteio"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ) : (
-                    <div className="animate-in slide-in-from-right-4 duration-500">
-                        <button onClick={() => setSorteioSelecionado(null)} className="text-sm text-slate-400 hover:text-white mb-4 flex items-center gap-1 transition-colors">{"← Voltar"}</button>
-                        <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
-                            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4"><h2 className="text-xl font-bold text-white flex gap-2 items-center"><BarChart3 className="text-yellow-500"/> Entradas: {sorteioSelecionado.nome}</h2><button onClick={iniciarSorteio} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-green-900/40 transition-all hover:scale-105 active:scale-95"><Sparkles className="w-5 h-5"/> SORTEAR AGORA</button></div>
+                    // DENTRO DO SORTEIO (LISTA DE TICKETS)
+                    <div>
+                        <button onClick={() => setSorteioSelecionado(null)} className="text-sm text-slate-400 hover:text-white mb-4 flex items-center gap-1">{"<- Voltar"}</button>
+                        
+                        <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-800 bg-slate-900/50">
+                                <h2 className="text-xl font-bold text-white flex gap-2 items-center"><Users className="text-yellow-500"/> Entradas: {sorteioSelecionado.nome}</h2>
+                            </div>
+
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm text-slate-400">
-                                    <thead className="bg-slate-950 text-slate-200 uppercase font-bold text-[10px]">
-                                        <tr><th className="p-4">Status</th><th className="p-4">Usuário / Email</th><th className="p-4">ID</th><th className="p-4">Instagram</th><th className="p-4 text-center">Coins</th><th className="p-4 text-center">Ações</th></tr>
+                                    <thead className="bg-slate-950 text-slate-200 uppercase font-bold text-xs">
+                                        <tr>
+                                            <th className="p-4">Data/Email</th>
+                                            <th className="p-4">ID CSGOBIG</th>
+                                            <th className="p-4">Instagram</th>
+                                            <th className="p-4 text-center">Coins</th>
+                                            <th className="p-4 text-center">Print</th>
+                                            <th className="p-4 text-center">Status</th>
+                                            <th className="p-4 text-center">Ações</th>
+                                        </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-800">
-                                        {ticketsDoSorteio.length === 0 ? (<tr><td colSpan={6} className="p-10 text-center text-slate-500 italic">Nenhuma entrada encontrada. Tente verificar se o ID/Nome bate.</td></tr>) : (ticketsDoSorteio.map((t) => (
-                                            <tr key={t.id} className="hover:bg-slate-800/50 transition">
-                                                <td className="p-4">{renderStatus(t.status)}</td>
-                                                <td className="p-4"><div><div className="font-bold text-white">@{t.instagram}</div><div className="text-[10px] text-slate-500">{t.email}</div></div></td>
-                                                {/* CORREÇÃO VISUAL: Mostra o ID que estiver disponível */}
-                                                <td className="p-4 text-white font-mono">{t.csgobigId || t.csgobigid || "-"}</td>
-                                                <td className="p-4 text-blue-400 font-bold">{t.instagram}</td>
-                                                <td className="p-4 text-center text-yellow-500 font-black">{t.coins}</td>
-                                                <td className="p-4 flex justify-center gap-2">
-                                                    <button onClick={() => setModalEditarTicket(t)} className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition" title="Editar Participante"><Edit className="w-4 h-4" /></button>
-                                                    {t.print ? (
-                                                        <a href={t.print} target="_blank" className="p-2 bg-slate-700 hover:bg-slate-600 text-green-400 rounded-lg transition" title="Ver Comprovante"><Eye className="w-4 h-4" /></a>
-                                                    ) : (
-                                                        <button disabled className="p-2 bg-slate-800 text-slate-600 rounded-lg cursor-not-allowed" title="Sem Comprovante"><Eye className="w-4 h-4" /></button>
-                                                    )}
-                                                    <button onClick={() => validarTicket(t.id, "Aprovado")} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg shadow-md transition active:scale-90" title="Aprovar"><CheckCircle className="w-4 h-4" /></button>
-                                                    <button onClick={() => validarTicket(t.id, "Rejeitado")} className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-md transition active:scale-90" title="Rejeitar"><XCircle className="w-4 h-4" /></button>
-                                                </td>
-                                            </tr>
-                                        )))}
+                                        {ticketsDoSorteio.length === 0 ? (
+                                            <tr><td colSpan={7} className="p-8 text-center text-slate-500">Nenhuma entrada.</td></tr>
+                                        ) : (
+                                            ticketsDoSorteio.map((ticket) => (
+                                                <tr key={ticket.id} className="hover:bg-slate-800/50 transition">
+                                                    <td className="p-4">
+                                                        <div className="text-white font-bold">{ticket.data.split(",")[0]}</div>
+                                                        <div className="text-xs text-slate-500">{ticket.email}</div>
+                                                    </td>
+                                                    <td className="p-4 text-white font-mono">{ticket.csgobigId}</td>
+                                                    <td className="p-4 text-blue-400">{ticket.instagram}</td>
+                                                    <td className="p-4 text-center text-yellow-500 font-bold">{ticket.coins}</td>
+                                                    <td className="p-4 text-center">
+                                                        <a href={ticket.print} target="_blank" rel="noopener noreferrer" className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1 rounded text-xs inline-flex items-center gap-1 transition">
+                                                            <ExternalLink className="w-3 h-3"/> Abrir
+                                                        </a>
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <span className={`px-2 py-1 rounded text-xs font-bold ${ticket.status === "Aprovado" ? "bg-green-900/30 text-green-400" : ticket.status === "Rejeitado" ? "bg-red-900/30 text-red-400" : "bg-yellow-900/30 text-yellow-500"}`}>{ticket.status}</span>
+                                                    </td>
+                                                    <td className="p-4 flex justify-center gap-2">
+                                                        <button onClick={() => setTicketEmEdicao(ticket)} className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded shadow-lg transition" title="Editar"><Pencil className="w-4 h-4" /></button>
+                                                        <button onClick={() => validarTicket(ticket.id, "Aprovado")} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded shadow-lg" title="Aprovar"><CheckCircle className="w-4 h-4" /></button>
+                                                        <button onClick={() => validarTicket(ticket.id, "Rejeitado")} className="p-2 bg-red-600 hover:bg-red-500 text-white rounded shadow-lg" title="Rejeitar"><XCircle className="w-4 h-4" /></button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -301,77 +322,94 @@ export default function AdminDashboard() {
             </div>
         )}
 
-        {/* MODAL ROLETA VENCEDOR */}
-        {modalSorteioAberto && (
-            <div className="fixed inset-0 bg-slate-950 z-[999] flex flex-col items-center justify-center p-4 md:p-10 backdrop-blur-sm">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.08),transparent)] animate-pulse"></div>
-                {!ganhadorRevelado && (<button onClick={() => setModalSorteioAberto(false)} className="absolute top-8 right-8 text-slate-600 hover:text-white transition z-50"><X className="w-8 h-8"/></button>)}
-                <div className="w-full max-w-2xl text-center relative z-10">
-                    {sorteando ? (
-                        <div className="space-y-12 animate-in zoom-in-90 duration-300">
-                            <h2 className="text-xl md:text-3xl font-black text-white uppercase tracking-[0.4em]">Sorteando...</h2>
-                            <div className="w-56 h-56 md:w-72 md:h-72 mx-auto rounded-full border-[8px] border-slate-900 shadow-2xl bg-slate-900 relative overflow-hidden">
-                                <img src={participanteFake?.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} alt="" className="w-full h-full rounded-full object-cover blur-[1px] opacity-70" />
-                            </div>
-                            <div className="mt-8 py-4 bg-slate-900/50 rounded-2xl border border-slate-800"><p className="text-3xl md:text-5xl font-black text-white font-mono">@{participanteFake?.instagram || "BUSCANDO"}</p></div>
-                        </div>
-                    ) : ganhadorRevelado ? (
-                        <div className="space-y-8 animate-in fade-in zoom-in-50 duration-1000 ease-out flex flex-col items-center">
-                            <div className="relative z-10">
-                                <Trophy className="w-24 h-24 text-yellow-500 mx-auto absolute -top-16 -left-16 -rotate-12 animate-bounce" />
-                                <div className="w-64 h-64 md:w-80 md:h-80 mx-auto rounded-full border-[10px] border-green-500 p-2 shadow-[0_0_100px_rgba(34,197,94,0.5)] bg-slate-900"><img src={ganhadorRevelado.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} alt="" className="w-full h-full rounded-full object-cover" /></div>
-                            </div>
-                            <h2 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter drop-shadow-2xl">@{ganhadorRevelado.instagram}</h2>
-                            <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800"><p className="text-slate-400 uppercase text-xs font-bold mb-1 tracking-widest text-center">ID do Ganhador</p><p className="text-2xl font-mono text-yellow-500 text-center">{ganhadorRevelado.csgobigId || ganhadorRevelado.csgobigid}</p></div>
-                            <button onClick={() => setModalSorteioAberto(false)} className="mt-10 px-16 py-5 bg-white text-black rounded-full font-black text-2xl hover:scale-105 transition-all shadow-2xl">FINALIZAR SESSÃO</button>
-                        </div>
-                    ) : null}
-                </div>
-            </div>
-        )}
-
-        {/* MODAL CRIAR */}
+        {/* --- MODAL CRIAR SORTEIO --- */}
         {modalCriarAberto && (
-            <div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95">
-                <div className="bg-slate-900 w-full max-w-md rounded-3xl border border-slate-800 p-8 shadow-2xl relative">
-                    <button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button>
-                    <h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3>
-                    <form onSubmit={handleCriarSorteio} className="space-y-5">
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome da Skin</label><input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor de Mercado</label><input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem da Skin</label><div className="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-slate-950/50 transition-all group"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImgFile ? (<div className="text-white"><p className="text-xs font-bold">{formImgFile.name}</p></div>) : (<div className="text-slate-500 flex flex-col items-center gap-2"><Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/><span className="text-xs font-bold uppercase">Selecionar arquivo</span></div>)}</div></div>
-                        <button type="submit" disabled={uploading} className={`w-full ${uploading ? 'bg-slate-700' : 'bg-yellow-500 hover:bg-yellow-400'} py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg uppercase tracking-tighter`}>{uploading ? "Processando..." : "Salvar Sorteio"}</button>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-700 p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-xl text-white">Criar Novo Sorteio</h3>
+                        <button onClick={() => setModalCriarAberto(false)}><X className="text-slate-400 hover:text-white" /></button>
+                    </div>
+                    <form onSubmit={handleCriarSorteio} className="space-y-4">
+                        <div>
+                            <label className="text-xs text-slate-400 ml-1">Nome da Skin</label>
+                            <input type="text" placeholder="Ex: AWP | Asiimov" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 ml-1">Valor Estimado</label>
+                            <input type="text" placeholder="Ex: 250,00" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 ml-1">Imagem</label>
+                            <div className="border-2 border-dashed border-slate-700 rounded-xl p-4 text-center cursor-pointer relative hover:bg-slate-800 transition group">
+                                <input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                {formImg ? (
+                                    <img src={formImg} className="h-20 object-contain rounded mx-auto" />
+                                ) : (
+                                    <div className="text-slate-500"><Upload className="w-8 h-8 mx-auto mb-1"/><span className="text-xs">Enviar Foto</span></div>
+                                )}
+                            </div>
+                        </div>
+                        <button type="submit" className="w-full bg-green-600 hover:bg-green-500 py-3 rounded font-bold text-white shadow-lg">Salvar</button>
                     </form>
                 </div>
             </div>
         )}
 
-        {/* MODAL EDITAR SORTEIO */}
-        {modalEditarSorteio && (
-            <div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95">
-                <div className="bg-slate-900 w-full max-w-md rounded-3xl border border-slate-800 p-8 shadow-2xl relative">
-                    <button onClick={()=>setModalEditarSorteio(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button>
-                    <h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Editar Sorteio</h3>
-                    <form onSubmit={handleEditarSorteio} className="space-y-5">
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome da Skin</label><input type="text" required value={modalEditarSorteio.nome} onChange={e => setModalEditarSorteio({...modalEditarSorteio, nome: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor</label><input type="text" required value={modalEditarSorteio.valor} onChange={e => setModalEditarSorteio({...modalEditarSorteio, valor: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" /></div>
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black text-white text-lg transition-all shadow-lg uppercase tracking-tighter">Salvar Alterações</button>
+        {/* --- MODAL EDITAR SORTEIO (NOVO!) --- */}
+        {sorteioEmEdicao && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-blue-500/30 p-6 shadow-2xl">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-xl text-white flex gap-2 items-center"><Pencil className="w-5 h-5 text-blue-500"/> Editar Sorteio</h3>
+                        <button onClick={() => setSorteioEmEdicao(null)}><X className="text-slate-400 hover:text-white" /></button>
+                    </div>
+                    <form onSubmit={handleSalvarEdicaoSorteio} className="space-y-4">
+                        <div>
+                            <label className="text-xs text-slate-400 ml-1">Nome</label>
+                            <input type="text" value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 ml-1">Valor</label>
+                            <input type="text" value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 ml-1">Trocar Imagem (Opcional)</label>
+                            <div className="border-2 border-dashed border-slate-700 rounded-xl p-4 text-center cursor-pointer relative hover:bg-slate-800 transition group">
+                                <input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                {formImg ? <img src={formImg} className="h-20 object-contain mx-auto" /> : <Upload className="mx-auto text-slate-500"/>}
+                            </div>
+                        </div>
+                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded font-bold text-white shadow-lg">Salvar Alterações</button>
                     </form>
                 </div>
             </div>
         )}
 
-        {/* MODAL EDITAR TICKET (USUÁRIO) */}
-        {modalEditarTicket && (
-            <div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95">
-                <div className="bg-slate-900 w-full max-w-md rounded-3xl border border-slate-800 p-8 shadow-2xl relative">
-                    <button onClick={()=>setModalEditarTicket(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button>
-                    <h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight text-yellow-500">Editar Participante</h3>
-                    <form onSubmit={handleEditarTicket} className="space-y-5">
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Instagram</label><input type="text" required value={modalEditarTicket.instagram} onChange={e => setModalEditarTicket({...modalEditarTicket, instagram: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">CSGOBIG ID</label><input type="text" required value={modalEditarTicket.csgobigId || modalEditarTicket.csgobigid} onChange={e => setModalEditarTicket({...modalEditarTicket, csgobigId: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Coins</label><input type="number" required value={modalEditarTicket.coins} onChange={e => setModalEditarTicket({...modalEditarTicket, coins: Number(e.target.value)})} className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" /></div>
-                        <button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-400 py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg uppercase tracking-tighter">Confirmar Mudanças</button>
+        {/* --- MODAL EDITAR TICKET --- */}
+        {ticketEmEdicao && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-yellow-500/30 p-6 animate-in zoom-in-95 shadow-2xl">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-bold text-xl text-white flex items-center gap-2"><Pencil className="w-5 h-5 text-yellow-500"/> Editar Entrada</h3>
+                        <button onClick={() => setTicketEmEdicao(null)}><X className="text-slate-400 hover:text-white" /></button>
+                    </div>
+                    <form onSubmit={salvarEdicaoTicket} className="space-y-4">
+                        <div>
+                            <label className="text-xs text-slate-400 font-bold ml-1">ID CSGOBIG</label>
+                            <input type="text" value={ticketEmEdicao.csgobigId} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, csgobigId: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 font-bold ml-1">Coins</label>
+                            <input type="number" value={ticketEmEdicao.coins} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, coins: Number(e.target.value)})} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none font-bold text-yellow-500" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 font-bold ml-1">Instagram</label>
+                            <input type="text" value={ticketEmEdicao.instagram} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, instagram: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" />
+                        </div>
+                        <div className="pt-2">
+                             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded font-bold text-white flex items-center justify-center gap-2 shadow-lg"><Save className="w-4 h-4" /> Salvar Alterações</button>
+                        </div>
                     </form>
                 </div>
             </div>
