@@ -107,8 +107,8 @@ export default function Home() {
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6 border-b border-slate-800 pb-6">
             <div>
-                <h1 className="text-3xl font-black text-white flex items-center gap-2">🔥 SORTEIOS CSGOBIG</h1>
-                <p className="text-slate-400 text-sm">Participe e ganhe skins exclusivas.</p>
+                <h1 className="text-3xl font-black text-white flex items-center gap-2">🔥 SORTEIOS DO SOARES</h1>
+            
             </div>
             
             <Link href="/meus-sorteios">
