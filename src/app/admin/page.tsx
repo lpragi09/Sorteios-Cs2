@@ -13,7 +13,7 @@ type Sorteio = {
     nome: string;
     img: string;
     valor: string;
-    status: "Ativo" | "Finalizado";
+    status: "Ativo" | "F
 };
 
 type Ticket = {
