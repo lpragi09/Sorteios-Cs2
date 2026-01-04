@@ -40,7 +40,7 @@ export default function MeusSorteiosPage() {
         const { data: sorteios, error: errS } = await supabase.from('sorteios').select('*');
         if (errS || !sorteios) throw errS;
 
-        // 2. Busca tickets do usuário (Atenção ao nome da coluna csgobig_id)
+        // 2. Busca tickets do usuário
         const { data: tickets, error: errT } = await supabase
           .from('tickets')
           .select('*')
@@ -62,7 +62,7 @@ export default function MeusSorteiosPage() {
 
           return {
             id: t.id,
-            data: new Date(t.data).toLocaleString(),
+            data: new Date(t.created_at || Date.now()).toLocaleString(),
             email: t.email,
             csgobigId: t.csgobig_id || t.csgobigId, // Suporte aos dois nomes
             coins: t.coins,
