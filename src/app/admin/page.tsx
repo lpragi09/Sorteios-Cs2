@@ -29,7 +29,6 @@ type Ticket = {
     status: string;
     email?: string; 
     userImage?: string; 
-    sorteio_nome?: string; // Adicionado para compatibilidade
 };
 
 type StatsSorteio = {
@@ -77,7 +76,6 @@ export default function AdminDashboard() {
     carregarDadosCompletos();
   }, [status, session, router]);
 
-  // CORREÇÃO 1: Estatísticas agora buscam de forma mais abrangente para bater com os números
   const carregarDadosCompletos = async () => {
     const { data: sorteios } = await supabase.from('sorteios').select('*').order('created_at', { ascending: false });
     if (!sorteios) return;
@@ -87,54 +85,34 @@ export default function AdminDashboard() {
     const statsTemp: Record<string, StatsSorteio> = {};
 
     for (const s of sorteios) {
-        // Tenta buscar tickets por ID do sorteio. Se seu banco usa "sorteio_nome", o count pode falhar aqui,
-        // mas vamos manter o padrão ID para performance.
+        // Busca simplificada para garantir contagem correta
         const { data: tickets } = await supabase.from('tickets').select('coins').eq('sorteio_id', s.id);
-        
         const totalTickets = tickets?.length || 0;
         const totalCoins = tickets?.reduce((acc, t) => acc + Number(t.coins), 0) || 0;
         statsTemp[s.id] = { entries: totalTickets, coins: totalCoins };
-        
-        if (s.status === "Ativo") { 
-            somaE += totalTickets; 
-            somaC += totalCoins; 
-            contaA++; 
-        }
+        if (s.status === "Ativo") { somaE += totalTickets; somaC += totalCoins; contaA++; }
     }
     setTotalEntradasAtivas(somaE); setTotalCoinsAtivos(somaC); setTotalSorteiosAtivos(contaA); setStatsDetalhadas(statsTemp);
   };
 
-  // CORREÇÃO 2: A função mágica que resolve o "Nenhuma entrada encontrada"
+  // --- CORREÇÃO AQUI: Busca robusta sem ordenação que pode falhar ---
   const abrirSorteio = async (sorteio: Sorteio) => {
     setSorteioSelecionado(sorteio);
     
-    // Tenta buscar primeiro pelo ID (padrão)
-    let { data: tickets, error } = await supabase
+    // Tenta buscar pelo ID exato
+    const { data: tickets } = await supabase
         .from('tickets')
         .select('*')
-        .eq('sorteio_id', sorteio.id)
-        .order('created_at', { ascending: false });
-
-    // Se não achou nada pelo ID, tenta buscar pelo NOME (backup de segurança)
-    if (!tickets || tickets.length === 0) {
-         const { data: ticketsPorNome } = await supabase
-            .from('tickets')
-            .select('*')
-            .eq('sorteio_nome', sorteio.nome) // Assume que existe essa coluna ou similar
-            .order('created_at', { ascending: false });
-         
-         if (ticketsPorNome && ticketsPorNome.length > 0) {
-             tickets = ticketsPorNome;
-         }
-    }
+        .eq('sorteio_id', sorteio.id);
     
+    // Se não achar pelo ID, é um erro de linkagem, mas vamos garantir setando vazio ou o que achou
     setTicketsDoSorteio(tickets || []);
   };
 
   const iniciarSorteio = () => {
     if (!sorteioSelecionado) return;
     const aprovados = ticketsDoSorteio.filter(t => t.status === "Aprovado");
-    if (aprovados.length === 0) return alert("Nenhum ticket aprovado para sortear!");
+    if (aprovados.length === 0) return alert("Nenhum ticket aprovado!");
     
     setModalSorteioAberto(true);
     setSorteando(true);
@@ -166,27 +144,23 @@ export default function AdminDashboard() {
 
   const handleCriarSorteio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formImgFile) return alert("Selecione uma imagem!");
+    if (!formImgFile) return alert("Por favor, selecione uma imagem!");
     setUploading(true);
     try {
       const fileExt = formImgFile.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `skins/${fileName}`;
-      
       const { error: uploadError } = await supabase.storage.from("sorteios").upload(filePath, formImgFile);
       if (uploadError) throw uploadError;
-      
       const { data: urlData } = supabase.storage.from("sorteios").getPublicUrl(filePath);
-      
       const { error: dbError } = await supabase.from('sorteios').insert([{
         nome: formNome, img: urlData.publicUrl, valor: formValor, status: "Ativo"
       }]);
-      
       if (dbError) throw dbError;
       setModalCriarAberto(false);
       setFormNome(""); setFormValor(""); setFormImgFile(null);
       carregarDadosCompletos();
-      alert("✅ Sorteio criado!");
+      alert("✅ Sorteio criado com sucesso!");
     } catch (err: any) { alert("Erro: " + err.message); } finally { setUploading(false); }
   };
 
@@ -202,7 +176,7 @@ export default function AdminDashboard() {
         if (error) throw error;
         setModalEditarSorteio(null);
         carregarDadosCompletos();
-        alert("✅ Atualizado!");
+        alert("✅ Sorteio atualizado!");
     } catch (err: any) { alert(err.message); } finally { setUploading(false); }
   };
 
@@ -219,22 +193,21 @@ export default function AdminDashboard() {
         if (error) throw error;
         setModalEditarTicket(null);
         if (sorteioSelecionado) abrirSorteio(sorteioSelecionado);
-        carregarDadosCompletos(); 
-        alert("✅ Ticket atualizado!");
+        await carregarDadosCompletos();
+        alert("✅ Dados do usuário atualizados!");
     } catch (err: any) { alert(err.message); } finally { setUploading(false); }
   };
 
-  // CORREÇÃO 3: Atualiza a lista imediatamente após mudar o status
   const handleToggleStatus = async (e: React.MouseEvent, id: string, statusAtual: string) => {
     e.stopPropagation();
     const novoStatus = statusAtual === "Ativo" ? "Finalizado" : "Ativo";
     await supabase.from('sorteios').update({ status: novoStatus }).eq('id', id);
-    await carregarDadosCompletos(); // Força recarregamento da lista
+    await carregarDadosCompletos(); // Garante atualização visual imediata
   };
 
   const handleDeletarSorteio = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm("Excluir sorteio permanentemente?")) return;
+    if (!confirm("Excluir sorteio?")) return;
     await supabase.from('sorteios').delete().eq('id', id);
     await carregarDadosCompletos();
   };
@@ -242,7 +215,7 @@ export default function AdminDashboard() {
   const validarTicket = async (id: number, status: string) => {
     await supabase.from('tickets').update({ status }).eq('id', id);
     if (sorteioSelecionado) abrirSorteio(sorteioSelecionado);
-    carregarDadosCompletos(); // Atualiza contadores gerais
+    await carregarDadosCompletos();
   };
 
   if (!isAdmin) return null;
@@ -284,7 +257,7 @@ export default function AdminDashboard() {
                         <button onClick={() => setSorteioSelecionado(null)} className="text-sm text-slate-400 hover:text-white mb-4 flex items-center gap-1 transition-colors">{"← Voltar"}</button>
                         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
                             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4"><h2 className="text-xl font-bold text-white flex gap-2 items-center"><BarChart3 className="text-yellow-500"/> Entradas: {sorteioSelecionado.nome}</h2><button onClick={iniciarSorteio} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-green-900/40 transition-all hover:scale-105 active:scale-95"><Sparkles className="w-5 h-5"/> SORTEAR AGORA</button></div>
-                            <div className="overflow-x-auto"><table className="w-full text-left text-sm text-slate-400"><thead className="bg-slate-950 text-slate-200 uppercase font-bold text-[10px]"><tr><th className="p-4">Usuário / Email</th><th className="p-4">ID</th><th className="p-4">Instagram</th><th className="p-4 text-center">Coins</th><th className="p-4 text-center">Ações</th></tr></thead><tbody className="divide-y divide-slate-800">{ticketsDoSorteio.length === 0 ? (<tr><td colSpan={5} className="p-10 text-center text-slate-500 italic">Nenhuma entrada encontrada. Tente verificar se o ID/Nome bate.</td></tr>) : (ticketsDoSorteio.map((t) => (<tr key={t.id} className="hover:bg-slate-800/50 transition"><td className="p-4"><div><div className="font-bold text-white">@{t.instagram}</div><div className="text-[10px] text-slate-500">{t.email}</div></div></td><td className="p-4 text-white font-mono">{t.csgobigId}</td><td className="p-4 text-blue-400 font-bold">{t.instagram}</td><td className="p-4 text-center text-yellow-500 font-black">{t.coins}</td><td className="p-4 flex justify-center gap-2"><button onClick={() => setModalEditarTicket(t)} className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition" title="Editar Participante"><Edit className="w-4 h-4" /></button>{t.print && <a href={t.print} target="_blank" className="p-2 bg-slate-700 hover:bg-slate-600 text-green-400 rounded-lg transition" title="Ver Comprovante"><Eye className="w-4 h-4" /></a>}<button onClick={() => validarTicket(t.id, "Aprovado")} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg shadow-md transition active:scale-90" title="Aprovar"><CheckCircle className="w-4 h-4" /></button><button onClick={() => validarTicket(t.id, "Rejeitado")} className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-md transition active:scale-90" title="Rejeitar"><XCircle className="w-4 h-4" /></button></td></tr>)))}</tbody></table></div>
+                            <div className="overflow-x-auto"><table className="w-full text-left text-sm text-slate-400"><thead className="bg-slate-950 text-slate-200 uppercase font-bold text-[10px]"><tr><th className="p-4">Usuário / Email</th><th className="p-4">ID</th><th className="p-4">Instagram</th><th className="p-4 text-center">Coins</th><th className="p-4 text-center">Ações</th></tr></thead><tbody className="divide-y divide-slate-800">{ticketsDoSorteio.length === 0 ? (<tr><td colSpan={5} className="p-10 text-center text-slate-500 italic">Nenhuma entrada encontrada para este sorteio.</td></tr>) : (ticketsDoSorteio.map((t) => (<tr key={t.id} className="hover:bg-slate-800/50 transition"><td className="p-4"><div><div className="font-bold text-white">@{t.instagram}</div><div className="text-[10px] text-slate-500">{t.email}</div></div></td><td className="p-4 text-white font-mono">{t.csgobigId}</td><td className="p-4 text-blue-400 font-bold">{t.instagram}</td><td className="p-4 text-center text-yellow-500 font-black">{t.coins}</td><td className="p-4 flex justify-center gap-2"><button onClick={() => setModalEditarTicket(t)} className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition" title="Editar Participante"><Edit className="w-4 h-4" /></button>{t.print && <a href={t.print} target="_blank" className="p-2 bg-slate-700 hover:bg-slate-600 text-green-400 rounded-lg transition" title="Ver Comprovante"><Eye className="w-4 h-4" /></a>}<button onClick={() => validarTicket(t.id, "Aprovado")} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg shadow-md transition active:scale-90" title="Aprovar"><CheckCircle className="w-4 h-4" /></button><button onClick={() => validarTicket(t.id, "Rejeitado")} className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-md transition active:scale-90" title="Rejeitar"><XCircle className="w-4 h-4" /></button></td></tr>)))}</tbody></table></div>
                         </div>
                     </div>
                 )}
@@ -295,7 +268,9 @@ export default function AdminDashboard() {
         {modalSorteioAberto && (
             <div className="fixed inset-0 bg-slate-950 z-[999] flex flex-col items-center justify-center p-4 md:p-10 backdrop-blur-sm">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.08),transparent)] animate-pulse"></div>
-                {!ganhadorRevelado && (<button onClick={() => setModalSorteioAberto(false)} className="absolute top-8 right-8 text-slate-600 hover:text-white transition z-50"><X className="w-8 h-8"/></button>)}
+                {!ganhadorRevelado && (
+                   <button onClick={() => setModalSorteioAberto(false)} className="absolute top-8 right-8 text-slate-600 hover:text-white transition z-50"><X className="w-8 h-8"/></button>
+                )}
                 <div className="w-full max-w-2xl text-center relative z-10">
                     {sorteando ? (
                         <div className="space-y-12 animate-in zoom-in-90 duration-300">
