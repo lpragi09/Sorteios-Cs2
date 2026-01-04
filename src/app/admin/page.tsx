@@ -45,10 +45,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   // MUDANÇA AQUI: Inicialização atualizada
   const supabase = createClient(); 
-  const ADMIN_EMAILS = [
-      "lpmragi@gmail.com", 
-      "soarescscontato@gmail.com"
-  ];
+  const ADMIN_EMAIL = "lpmragi@gmail.com";
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState("dashboard");
