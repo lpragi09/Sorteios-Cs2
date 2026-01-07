@@ -45,7 +45,10 @@ export default function AdminDashboard() {
   const router = useRouter();
   // MUDANÇA AQUI: Inicialização atualizada
   const supabase = createClient(); 
-  const ADMIN_EMAIL = "soarescscontato@gmail.com";
+  const ADMIN_EMAILS = [
+    "soarescscontato@gmail.com", 
+    "lpmragi@gmail.com" // Coloque o seu email aqui
+  ];
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState("dashboard");
@@ -76,12 +79,17 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (status === "unauthenticated" || session?.user?.email !== ADMIN_EMAIL) {
+
+    const emailUsuario = session?.user?.email || "";
+
+    if (status === "unauthenticated" || !ADMIN_EMAILS.includes(emailUsuario)) {
       router.push("/");
       return;
     }
+
     setIsAdmin(true);
     carregarDadosCompletos();
+  // Se der aviso no array abaixo, pode deixar vazio [] ou adicionar session e status
   }, [status, session]);
 
   const carregarDadosCompletos = async () => {
