@@ -100,7 +100,7 @@ export default function AdminDashboard() {
     if (sorteiosError) { console.error("Erro ao carregar sorteios:", sorteiosError); return; }
     
     if (!sorteiosData || sorteiosData.length === 0) {
-        const defaultSorteio = { id: "ak47", nome: "AK-47 | Redline", img: "https://steamcommunity-a.akamaihd.net/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvN0_rTKQXw/360fx360f", valor: "150,00", status: "Ativo" };
+        const defaultSorteio = { id: "EditAqui", nome: "Edite Aqui", img: "", valor: "X", status: "Ativo" };
         await supabase.from('sorteios').insert([defaultSorteio]);
         setListaSorteios([defaultSorteio as any]);
     } else {
