@@ -9,7 +9,7 @@ export default function Navbar() {
   const { data: session } = useSession();
   const [menuAberto, setMenuAberto] = useState(false);
   
-  const ADMIN_EMAIL = "lpmragi@gmail.com"; 
+  const ADMIN_EMAIL = "soarescscontato@gmail.com"; 
 
   return (
     // NAVBAR: z-[100] para garantir que fique acima de qualquer card ou animação do site
