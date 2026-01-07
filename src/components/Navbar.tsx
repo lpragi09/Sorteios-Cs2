@@ -52,17 +52,12 @@ export default function Navbar() {
             <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
                 
                 {session?.user?.email && ADMIN_EMAILS.includes(session.user.email) && (
-  <Link 
-    href="/admin" 
-    className="flex items-center gap-3 px-2 py-1.5 text-sm font-medium text-white hover:bg-slate-800 rounded-md transition-colors w-full"
-  >
-    {/* O ícone do escudo */}
-    <Shield className="w-4 h-4 text-yellow-500" />
-    
-    {/* O texto */}
-    <span>Dashboard Admin</span>
-  </Link>
-)}
+                    <Link href="/admin" onClick={() => setMenuAberto(false)}>
+                        <div className="px-4 py-3 hover:bg-slate-800 cursor-pointer flex items-center gap-2 text-yellow-500 font-bold border-b border-slate-800">
+                            <Shield className="w-4 h-4" /> Painel Admin
+                        </div>
+                    </Link>
+                )}
 
                 <Link href="/meus-sorteios" onClick={() => setMenuAberto(false)}>
                     <div className="px-4 py-3 hover:bg-slate-800 cursor-pointer flex items-center gap-2 text-white">
