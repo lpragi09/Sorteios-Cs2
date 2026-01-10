@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar"; // Importando o menu novo
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CS2 Sorteios",
+  title: "Canal Soares",
   description: "Ganhe skins de CS2",
 };
 
