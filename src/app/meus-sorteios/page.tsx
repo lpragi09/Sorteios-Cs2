@@ -95,9 +95,10 @@ export default function MeusSorteiosPage() {
         <div className="h-32 w-full flex-shrink-0"></div>
 
         {/* CONTEÚDO PRINCIPAL 
-            - Adicionado 'mb-24' para dar um bom espaço antes do rodapé
+            - ALTERADO: 'mb-64' (256px de margem inferior)
+            - ALTERADO: 'min-h-[60vh]' para garantir altura mínima mesmo com poucos tickets
         */}
-        <main className="flex-1 text-white p-4 md:p-8 mb-24">
+        <main className="flex-1 text-white p-4 md:p-8 mb-64 min-h-[60vh]">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 border-b border-white/5 pb-6 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-4">
