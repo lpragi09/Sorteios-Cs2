@@ -3,7 +3,8 @@
 import { useSession, signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Link from "next/link"; 
-import { X, Image as ImageIcon, Lock, Gift, CheckCircle, Trophy, History, ExternalLink, Ticket, Twitch, Instagram, Youtube, Gamepad } from "lucide-react";
+// CORREÇÃO: Adicionado 'Ticket' na lista de importações abaixo
+import { X, Image as ImageIcon, Lock, Gift, CheckCircle, Trophy, Twitch, Instagram, Youtube, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 
 // Inicialização do cliente Supabase
@@ -100,14 +101,14 @@ export default function Home() {
   };
 
   return (
-    // Fundo geral alterado para #0f1014 (quase preto/cinza chumbo)
+    // Fundo geral #0f1014
     <main className="min-h-screen text-white bg-[#0f1014]">
       
       {/* ESPAÇAMENTO DO CONTEÚDO PRINCIPAL */}
       <div className="pt-12 px-4 md:px-8 pb-20">
         <div className="max-w-7xl mx-auto">
           
-          {/* HEADER DA PÁGINA: Texto original restaurado */}
+          {/* HEADER DA PÁGINA */}
           <div className="text-center mb-16 space-y-4">
              <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter flex items-center justify-center gap-3">
                 🔥 SORTEIOS DO SOARES
@@ -174,27 +175,27 @@ export default function Home() {
               )}
           </div>
 
-          {/* --- NOVA SEÇÃO: PARCEIROS (Com os designs enviados) --- */}
+          {/* --- SEÇÃO: PARCEIROS --- */}
           <section id="parceiros" className="border-t border-white/5 pt-20 pb-10">
             <div className="text-center mb-12">
-                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-blue-500">Parceiros</span></h2>
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-yellow-500">Parceiros</span></h2>
                 <p className="text-slate-500 text-sm mt-2">Utilize nossos cupons para os melhores bônus do mercado.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
-                {/* Parceiro 1: INSANE.GG (Imagem enviada) */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-blue-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="/image_2.png" alt="INSANE.GG Soares Cupom" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(59,130,246,0.2)] transition"/>
-                </div>
-
-                {/* Parceiro 2: CSGOBIG (Imagem enviada) */}
+                {/* INSANE.GG */}
                 <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="/image_3.png" alt="CSGOBIG Soares Cupom" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                    <img src="/image_2.png" alt="INSANE.GG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
                 </div>
 
-                {/* Parceiro 3: TOPSKIN (Imagem enviada) */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-orange-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="/image_4.png" alt="TOPSKIN Soares Cupom" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(249,115,22,0.2)] transition"/>
+                {/* CSGOBIG */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
+                    <img src="/image_3.png" alt="CSGOBIG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                </div>
+
+                {/* TOPSKIN */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
+                    <img src="/image_4.png" alt="TOPSKIN" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
                 </div>
             </div>
           </section>
@@ -202,15 +203,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* --- NOVO RODAPÉ (FOOTER) --- */}
-      <footer className="bg-[#1b1e24] border-t-2 border-blue-600 pt-16 pb-8 px-4 md:px-8">
+      {/* --- RODAPÉ --- */}
+      <footer className="bg-[#1b1e24] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                 
-                {/* Coluna 1: Info + Logo enviada */}
+                {/* Coluna 1: Logo */}
                 <div className="space-y-4">
-                    {/* SUBSTITUIÇÃO: Logo enviada no lugar do texto */}
-                    <img src="/image_1.png" alt="Canal do Soares Logo" className="h-32 w-auto mx-auto md:mx-0" />
+                    <img src="/image_1.png" alt="Logo Soares" className="h-24 w-auto mx-auto md:mx-0 object-contain opacity-80 hover:opacity-100 transition" />
                     
                     <p className="text-slate-400 text-sm leading-relaxed">
                         Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
@@ -218,18 +218,18 @@ export default function Home() {
                     </p>
                 </div>
 
-                {/* Coluna 2: Links Rápidos */}
+                {/* Coluna 2: Navegação */}
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
                     <ul className="space-y-3 text-sm text-slate-400">
-                        <li><a href="#" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-blue-500 rounded-full"></div> Início</a></li>
-                        <li><a href="#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-blue-500 rounded-full"></div> Parceiros</a></li>
-                        <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-blue-500 rounded-full"></div> Meus Tickets</Link></li>
-                        <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-blue-500 rounded-full"></div> Live Stream</a></li>
+                        <li><a href="#" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</a></li>
+                        <li><a href="#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</a></li>
+                        <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
+                        <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
                     </ul>
                 </div>
 
-                {/* Coluna 3: Redes Sociais */}
+                {/* Coluna 3: Redes */}
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
                     <div className="flex gap-4">
@@ -254,7 +254,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* --- MODAL DE PARTICIPAÇÃO (Lógica Mantida, Visual Ajustado) --- */}
+      {/* --- MODAL DE PARTICIPAÇÃO --- */}
       {modalAberto && sorteioSelecionado && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
             <div className="bg-[#1b1e24] w-full max-w-md rounded-2xl border border-white/10 p-6 relative animate-in zoom-in-95 overflow-y-auto max-h-[90vh] shadow-2xl">

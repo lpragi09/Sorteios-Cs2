@@ -2,17 +2,32 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // Import necessário para saber onde estamos
 import { useState } from "react";
 import { LogOut, User, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X } from "lucide-react";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const [menuAberto, setMenuAberto] = useState(false);
+  const pathname = usePathname(); // Hook para pegar a rota atual
   
   const ADMIN_EMAILS = ["soarescscontato@gmail.com", "lpmragi@gmail.com"];
 
+  // Função para Rolagem Suave
+  const handleScrollToParceiros = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    // Se estivermos na Home (/), fazemos a rolagem suave via JS
+    if (pathname === "/") {
+        e.preventDefault(); // Impede o "pulo" instantâneo padrão
+        const element = document.getElementById("parceiros");
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth" }); // O segredo da rolagem suave está aqui
+        }
+    }
+    // Se não estiver na Home, o link href="/#parceiros" funciona normalmente redirecionando
+    setMenuAberto(false);
+  };
+
   return (
-    // NAVBAR: Removido 'sticky top-0 z-[100]' para que a navbar role junto com a página
     <nav className="border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center">
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
         
@@ -37,8 +52,12 @@ export default function Navbar() {
                 Instagram
             </a>
 
-            {/* Parceiros Link */}
-            <a href="/#parceiros" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group">
+            {/* Parceiros Link com Rolagem Suave */}
+            <a 
+                href="/#parceiros" 
+                onClick={handleScrollToParceiros}
+                className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group cursor-pointer"
+            >
                 <Handshake className="w-5 h-5 group-hover:text-yellow-500 transition-all"/>
                 Parceiros
             </a>
@@ -108,7 +127,13 @@ export default function Navbar() {
                 <a href="https://instagram.com/seuinstead" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#E1306C] font-bold">
                     <Instagram className="w-5 h-5"/> Instagram
                 </a>
-                <a href="#parceiros" onClick={()=>setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold">
+                
+                {/* Link Mobile com Scroll Suave */}
+                <a 
+                    href="/#parceiros" 
+                    onClick={handleScrollToParceiros} 
+                    className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold"
+                >
                     <Handshake className="w-5 h-5"/> Parceiros
                 </a>
                 
