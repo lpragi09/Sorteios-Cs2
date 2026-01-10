@@ -25,6 +25,10 @@ export default function MeusSorteiosPage() {
   const [ticketsUsuario, setTicketsUsuario] = useState<Ticket[]>([]);
   const [carregando, setCarregando] = useState(true);
 
+  // --- LINK DA IMAGEM DE FUNDO ---
+  // TROQUE O LINK ABAIXO PELA SUA IMAGEM DA NET
+  const bgImageUrl = "sorteio-cs2\public\fundo.jpg"; 
+
   useEffect(() => {
     if (!session?.user?.email) {
       setCarregando(false);
@@ -89,26 +93,31 @@ export default function MeusSorteiosPage() {
   const totalCoins = ticketsUsuario.reduce((acc, t) => acc + Number(t.coins), 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0f1014]">
+    // --- AQUI ESTÁ A MÁGICA DO FUNDO ---
+    // Usamos 'bg-cover bg-center bg-fixed' para a imagem ficar fixa e cobrir tudo.
+    // O 'style' adiciona uma camada escura (rgba 0.85 e 0.95) por cima da imagem.
+    <div 
+        className="flex flex-col min-h-screen bg-[#0f1014] bg-cover bg-center bg-fixed"
+        style={{
+            backgroundImage: `linear-gradient(to bottom, rgba(15, 16, 20, 0.85), rgba(15, 16, 20, 0.95)), url('${bgImageUrl}')`
+        }}
+    >
         
         {/* Espaçador da Navbar Fixa */}
         <div className="h-32 w-full flex-shrink-0"></div>
 
-        {/* CONTEÚDO PRINCIPAL 
-            - ALTERADO: 'mb-64' (256px de margem inferior)
-            - ALTERADO: 'min-h-[60vh]' para garantir altura mínima mesmo com poucos tickets
-        */}
+        {/* CONTEÚDO PRINCIPAL com margem grande embaixo */}
         <main className="flex-1 text-white p-4 md:p-8 mb-64 min-h-[60vh]">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 border-b border-white/5 pb-6 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-4">
-                        <Link href="/" className="p-3 bg-[#1b1e24] rounded-lg hover:bg-white/5 border border-white/5 transition text-slate-400 hover:text-white"><ArrowLeft className="w-5 h-5"/></Link>
+                        <Link href="/" className="p-3 bg-[#1b1e24]/80 backdrop-blur-sm rounded-lg hover:bg-white/5 border border-white/5 transition text-slate-400 hover:text-white"><ArrowLeft className="w-5 h-5"/></Link>
                         <div>
-                            <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white">Meus Depósitos 🎒</h1>
+                            <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white drop-shadow-lg">Meus Depósitos 🎒</h1>
                             <p className="text-slate-400 text-sm">Histórico completo de entradas</p>
                         </div>
                     </div>
-                    <div className="bg-[#1b1e24] px-6 py-3 rounded-xl border border-white/5 shadow-lg">
+                    <div className="bg-[#1b1e24]/80 backdrop-blur-sm px-6 py-3 rounded-xl border border-white/5 shadow-lg">
                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Total Acumulado</p>
                         <p className="text-yellow-500 font-black text-2xl">{totalCoins} <span className="text-sm font-normal text-white">Chances</span></p>
                     </div>
@@ -122,12 +131,13 @@ export default function MeusSorteiosPage() {
                 ) : ticketsUsuario.length > 0 ? (
                     <div className="space-y-4">
                         {ticketsUsuario.map((ticket) => (
+                            // Adicionei backdrop-blur nos cards para um efeito de vidro legal sobre o fundo
                             <div 
                                 key={ticket.id} 
-                                className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between transition relative overflow-hidden gap-6
-                                ${ticket.resultado === "GANHOU" ? "bg-green-950/20 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.15)]" : 
-                                ticket.resultado === "PERDEU" ? "bg-[#1b1e24]/50 border-white/5 opacity-60 grayscale-[0.5]" :
-                                "bg-[#1b1e24] border-white/5 hover:border-yellow-500/30 hover:shadow-lg hover:shadow-black/20"}`}
+                                className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between transition relative overflow-hidden gap-6 backdrop-blur-sm
+                                ${ticket.resultado === "GANHOU" ? "bg-green-950/40 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.15)]" : 
+                                ticket.resultado === "PERDEU" ? "bg-[#1b1e24]/60 border-white/5 opacity-60 grayscale-[0.5]" :
+                                "bg-[#1b1e24]/80 border-white/5 hover:border-yellow-500/30 hover:shadow-lg hover:shadow-black/20"}`}
                             >
                                 {ticket.resultado === "GANHOU" && (
                                     <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
@@ -136,7 +146,7 @@ export default function MeusSorteiosPage() {
                                 )}
 
                                 <div className="flex items-center gap-5 z-10">
-                                    <div className="w-20 h-20 bg-[#0f1014] rounded-xl p-3 border border-white/5 flex items-center justify-center flex-shrink-0 shadow-inner">
+                                    <div className="w-20 h-20 bg-[#0f1014]/50 rounded-xl p-3 border border-white/5 flex items-center justify-center flex-shrink-0 shadow-inner">
                                         <img src={ticket.imgSorteio} alt="" className="max-w-full max-h-full object-contain" />
                                     </div>
                                     <div>
@@ -178,7 +188,7 @@ export default function MeusSorteiosPage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-24 bg-[#1b1e24] rounded-2xl border border-white/5 border-dashed">
+                    <div className="text-center py-24 bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border border-white/5 border-dashed">
                         <AlertCircle className="w-16 h-16 text-slate-700 mx-auto mb-4" />
                         <p className="text-slate-400 text-xl font-bold">Nenhum depósito encontrado.</p>
                         <p className="text-slate-600 text-sm mb-8">Participe de um sorteio para aparecer aqui.</p>
@@ -188,8 +198,8 @@ export default function MeusSorteiosPage() {
             </div>
         </main>
 
-        {/* RODAPÉ */}
-        <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto">
+        {/* RODAPÉ com fundo sólido para leitura */}
+        <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                     <div className="space-y-4">
