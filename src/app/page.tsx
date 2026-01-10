@@ -63,11 +63,18 @@ export default function Home() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // TRAVA DE SEGURANÇA: 5MB
+      // Se a imagem for maior que 5MB, avisa o usuário.
+      if (file.size > 5 * 1024 * 1024) {
+          alert("Imagem muito pesada! Por favor, envie um print menor que 5MB.");
+          return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => setArquivoPrint(reader.result as string);
       reader.readAsDataURL(file);
     }
-  };
+};
 
   const confirmarParticipacao = async (e: React.FormEvent) => {
     e.preventDefault();
