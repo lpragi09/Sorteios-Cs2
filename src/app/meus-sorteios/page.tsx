@@ -25,9 +25,9 @@ export default function MeusSorteiosPage() {
   const [ticketsUsuario, setTicketsUsuario] = useState<Ticket[]>([]);
   const [carregando, setCarregando] = useState(true);
 
-  // --- LINK DA IMAGEM DE FUNDO ---
-  // TROQUE O LINK ABAIXO PELA SUA IMAGEM DA NET
-  const bgImageUrl = "sorteio-cs2\public\fundo.jpg"; 
+  // --- ALTERADO: Agora aponta para o arquivo local na pasta public ---
+  // Certifique-se de que o nome do arquivo na pasta public seja exatamente 'background.png'
+  const bgImageUrl = "/background.png"; 
 
   useEffect(() => {
     if (!session?.user?.email) {
@@ -93,9 +93,7 @@ export default function MeusSorteiosPage() {
   const totalCoins = ticketsUsuario.reduce((acc, t) => acc + Number(t.coins), 0);
 
   return (
-    // --- AQUI ESTÁ A MÁGICA DO FUNDO ---
-    // Usamos 'bg-cover bg-center bg-fixed' para a imagem ficar fixa e cobrir tudo.
-    // O 'style' adiciona uma camada escura (rgba 0.85 e 0.95) por cima da imagem.
+    // Fundo configurado para ler a imagem local
     <div 
         className="flex flex-col min-h-screen bg-[#0f1014] bg-cover bg-center bg-fixed"
         style={{
@@ -106,7 +104,7 @@ export default function MeusSorteiosPage() {
         {/* Espaçador da Navbar Fixa */}
         <div className="h-32 w-full flex-shrink-0"></div>
 
-        {/* CONTEÚDO PRINCIPAL com margem grande embaixo */}
+        {/* CONTEÚDO PRINCIPAL */}
         <main className="flex-1 text-white p-4 md:p-8 mb-64 min-h-[60vh]">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 border-b border-white/5 pb-6 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -131,7 +129,6 @@ export default function MeusSorteiosPage() {
                 ) : ticketsUsuario.length > 0 ? (
                     <div className="space-y-4">
                         {ticketsUsuario.map((ticket) => (
-                            // Adicionei backdrop-blur nos cards para um efeito de vidro legal sobre o fundo
                             <div 
                                 key={ticket.id} 
                                 className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between transition relative overflow-hidden gap-6 backdrop-blur-sm
@@ -198,7 +195,7 @@ export default function MeusSorteiosPage() {
             </div>
         </main>
 
-        {/* RODAPÉ com fundo sólido para leitura */}
+        {/* RODAPÉ */}
         <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
