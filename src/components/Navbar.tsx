@@ -4,7 +4,8 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LogOut, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X } from "lucide-react";
+// ADICIONADO: 'Home' na importação dos ícones
+import { LogOut, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X, Home } from "lucide-react";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -35,8 +36,7 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 w-full z-[100] border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center shadow-lg shadow-black/40">
       
-      {/* --- CAMADA INVISÍVEL (O segredo para fechar ao clicar fora) --- */}
-      {/* Ela só existe quando o menu está aberto, cobre a tela toda e fecha o menu ao clicar */}
+      {/* CAMADA INVISÍVEL (Fecha menu ao clicar fora) */}
       {menuAberto && (
         <div 
             className="fixed inset-0 z-[90] bg-transparent cursor-default" 
@@ -55,6 +55,12 @@ export default function Navbar() {
         {/* --- LINKS DESKTOP --- */}
         <div className="hidden md:flex items-center gap-6">
             
+            {/* NOVO BOTÃO HOME */}
+            <Link href="/" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group">
+                <Home className="w-5 h-5 group-hover:text-yellow-500 transition-all"/>
+                HOME
+            </Link>
+
             <a href="https://twitch.tv/canaldosoares" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#9146ff] transition-colors group">
                 <Twitch className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#9146ff] transition-all"/>
                 Twitch
@@ -129,6 +135,12 @@ export default function Navbar() {
         {/* MOBILE OVERLAY MENU */}
         {menuAberto && (
              <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5 h-screen z-[100]">
+                
+                {/* NOVO BOTÃO HOME MOBILE */}
+                <Link href="/" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold hover:text-yellow-500">
+                    <Home className="w-5 h-5"/> HOME
+                </Link>
+
                 <a href="https://twitch.tv/canaldosoares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
                     <Twitch className="w-5 h-5"/> Twitch
                 </a>

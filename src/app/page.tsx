@@ -6,6 +6,7 @@ import Link from "next/link";
 import { X, Image as ImageIcon, Lock, Gift, CheckCircle, Trophy, Twitch, Instagram, Youtube, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 
+// Inicialização do cliente Supabase
 const supabase = createClient();
 
 type Sorteio = {
@@ -18,11 +19,14 @@ type Sorteio = {
 
 export default function Home() {
   const { data: session } = useSession();
+  
+  // Estados
   const [listaSorteios, setListaSorteios] = useState<Sorteio[]>([]);
   const [sorteioSelecionado, setSorteioSelecionado] = useState<Sorteio | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   
+  // Formulário
   const [csgobigId, setCsgobigId] = useState("");
   const [qtdCoins, setQtdCoins] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -37,7 +41,10 @@ export default function Home() {
       .from('sorteios')
       .select('*')
       .order('id', { ascending: false });
-    if (!error && data) setListaSorteios(data);
+
+    if (!error && data) {
+        setListaSorteios(data);
+    }
   };
 
   const abrirModal = (sorteio: Sorteio) => {
@@ -80,24 +87,33 @@ export default function Home() {
         alert("Erro ao enviar: " + error.message);
     } else {
         setModalAberto(false);
-        if (confirm("✅ Sucesso! Deseja ver seus tickets agora?")) window.location.href = "/meus-sorteios";
+        if (confirm("✅ Sucesso! Deseja ver seus tickets agora?")) {
+            window.location.href = "/meus-sorteios";
+        }
     }
   };
 
   return (
-    <main className="min-h-screen text-white bg-[#0f1014]">
+    <main className="text-white bg-[#0f1014]">
       
-      {/* ESPAÇAMENTO DO CONTEÚDO PRINCIPAL */}
-      <div className="pt-12 px-4 md:px-8 pb-20">
-        <div className="max-w-7xl mx-auto">
+      {/* SEÇÃO 1: SORTEIOS 
+          - min-h-screen: Garante que essa seção ocupe pelo menos 100% da altura da tela
+          - pt-32: Empurra o conteúdo para baixo para não ficar atrás da Navbar Fixa
+          - mb-20: Dá uma margem extra no final antes da próxima seção
+      */}
+      <div className="min-h-screen flex flex-col pt-32 px-4 md:px-8 pb-20">
+        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
           
+          {/* HEADER DA PÁGINA */}
           <div className="text-center mb-16 space-y-4">
              <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter flex items-center justify-center gap-3">
                 🔥 SORTEIOS DO SOARES
              </h1>
+             <p className="text-slate-400">Escolha um sorteio abaixo e participe com seus coins.</p>
           </div>
 
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 mb-24">
+          {/* LISTA DE SORTEIOS */}
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
               {listaSorteios.length === 0 ? (
                   <div className="text-center py-20 bg-[#1b1e24] rounded-2xl border border-white/5 border-dashed">
                     <Trophy className="w-16 h-16 text-slate-600 mx-auto mb-4"/>
@@ -108,6 +124,7 @@ export default function Home() {
                   <div className={listaSorteios.length === 1 ? "flex justify-center" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"}>
                       {listaSorteios.map((sorteio) => (
                           <div key={sorteio.id} className={`bg-[#1b1e24] rounded-2xl border overflow-hidden flex flex-col transition relative group ${listaSorteios.length === 1 ? "w-full max-w-4xl" : "w-full"} ${sorteio.status === "Finalizado" ? "border-red-900/50 opacity-90" : "border-white/5 hover:border-yellow-500/50 hover:shadow-2xl hover:shadow-yellow-500/10"}`}>
+                              
                               <div className="absolute top-4 right-4 z-10">
                                   {sorteio.status === "Ativo" ? (
                                       <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded border border-green-500/30">
@@ -151,43 +168,46 @@ export default function Home() {
                   </div>
               )}
           </div>
-
-          <section id="parceiros" className="border-t border-white/5 pt-20 pb-10">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-yellow-500">Parceiros</span></h2>
-                <p className="text-slate-500 text-sm mt-2">Utilize nossos cupons para os melhores bônus do mercado.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
-                
-                {/* INSANE.GG */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
-                    <img src="/image_2.png" alt="INSANE.GG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
-                </div>
-
-                {/* CSGOBIG */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
-                    <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
-                </div>
-
-                {/* TOPSKIN */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
-                    <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
-                </div>
-            </div>
-          </section>
-
         </div>
       </div>
 
+      {/* SEÇÃO 2: PARCEIROS
+          - min-h-screen: Força essa seção a ter o tamanho de uma tela inteira, empurrando o footer
+          - flex justify-center items-center: Centraliza o conteúdo no meio da tela
+      */}
+      <section id="parceiros" className="min-h-screen flex flex-col justify-center items-center border-t border-white/5 bg-[#0f1014] py-20 px-4">
+            <div className="max-w-7xl mx-auto w-full">
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-yellow-500">Parceiros</span></h2>
+                    <p className="text-slate-500 text-lg mt-4 max-w-2xl mx-auto">Utilize nossos cupons exclusivos para garantir os melhores bônus de depósito do mercado.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 justify-center">
+                    {/* INSANE.GG */}
+                    <div className="bg-[#1b1e24] p-6 rounded-3xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-2 flex justify-center items-center shadow-xl hover:shadow-yellow-500/10">
+                        <img src="/image_2.png" alt="INSANE.GG" className="max-w-full h-auto rounded-2xl drop-shadow-lg transition group-hover:scale-105"/>
+                    </div>
+
+                    {/* CSGOBIG */}
+                    <div className="bg-[#1b1e24] p-6 rounded-3xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-2 flex justify-center items-center shadow-xl hover:shadow-yellow-500/10">
+                        <img src="/image_3.png" alt="CSGOBIG" className="max-w-full h-auto rounded-2xl drop-shadow-lg transition group-hover:scale-105"/>
+                    </div>
+
+                    {/* TOPSKIN */}
+                    <div className="bg-[#1b1e24] p-6 rounded-3xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-2 flex justify-center items-center shadow-xl hover:shadow-yellow-500/10">
+                        <img src="/image_4.png" alt="TOPSKIN" className="max-w-full h-auto rounded-2xl drop-shadow-lg transition group-hover:scale-105"/>
+                    </div>
+                </div>
+            </div>
+      </section>
+
+      {/* RODAPÉ */}
       <footer className="bg-[#1b1e24] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                 
                 <div className="space-y-4">
-                    {/* Logo Soares */}
                     <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
-                    
                     <p className="text-slate-400 text-sm leading-relaxed">
                         Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
                         Participe, jogue limpo e boa sorte!
@@ -228,11 +248,11 @@ export default function Home() {
         </div>
       </footer>
 
+      {/* MODAL (Código inalterado) */}
       {modalAberto && sorteioSelecionado && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
             <div className="bg-[#1b1e24] w-full max-w-md rounded-2xl border border-white/10 p-6 relative animate-in zoom-in-95 overflow-y-auto max-h-[90vh] shadow-2xl">
                 <button onClick={() => setModalAberto(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition"><X /></button>
-                
                 <h3 className="font-bold text-lg mb-1 flex gap-2 items-center text-white uppercase italic">
                     <Gift className="text-yellow-500"/> Confirmar Entrada
                 </h3>
@@ -249,12 +269,10 @@ export default function Home() {
                             <input type="number" placeholder="Ex: 50" required value={qtdCoins} onChange={e=>setQtdCoins(e.target.value)} className="w-full bg-[#0f1014] border border-yellow-500/30 rounded-lg p-3 text-yellow-500 outline-none focus:border-yellow-500 font-black transition placeholder:text-yellow-500/20"/>
                         </div>
                     </div>
-                    
                     <div>
                         <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Instagram (Para contato)</label>
                         <input type="text" placeholder="@seu.usuario" required value={instagram} onChange={e=>setInstagram(e.target.value)} className="w-full bg-[#0f1014] border border-white/10 rounded-lg p-3 text-white outline-none focus:border-blue-500 transition placeholder:text-slate-700"/>
                     </div>
-                    
                     <div>
                         <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Comprovante de Envio</label>
                         <div className="border-2 border-dashed border-white/10 rounded-xl p-4 text-center cursor-pointer relative hover:bg-white/5 hover:border-white/20 transition group bg-[#0f1014]">
@@ -275,7 +293,6 @@ export default function Home() {
                             )}
                         </div>
                     </div>
-
                     <button type="submit" disabled={enviando || !arquivoPrint} className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-white transition shadow-lg shadow-green-900/20 text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2 active:scale-95 uppercase italic tracking-wide">
                         {enviando ? "ENVIANDO DADOS..." : "CONFIRMAR PARTICIPAÇÃO"}
                     </button>
