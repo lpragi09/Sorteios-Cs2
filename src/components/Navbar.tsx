@@ -19,8 +19,7 @@ export default function Navbar() {
         e.preventDefault();
         const element = document.getElementById("parceiros");
         if (element) {
-            // O offset -80 compensa a altura da navbar fixa para não cobrir o título
-            const headerOffset = 80;
+            const headerOffset = 100;
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
       
@@ -34,9 +33,18 @@ export default function Navbar() {
   };
 
   return (
-    // FIXADO: Adicionado 'sticky top-0 z-[100]' para a barra acompanhar a rolagem
-    <nav className="sticky top-0 z-[100] border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center shadow-lg shadow-black/20">
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
+    <nav className="fixed top-0 left-0 w-full z-[100] border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center shadow-lg shadow-black/40">
+      
+      {/* --- CAMADA INVISÍVEL (O segredo para fechar ao clicar fora) --- */}
+      {/* Ela só existe quando o menu está aberto, cobre a tela toda e fecha o menu ao clicar */}
+      {menuAberto && (
+        <div 
+            className="fixed inset-0 z-[90] bg-transparent cursor-default" 
+            onClick={() => setMenuAberto(false)}
+        />
+      )}
+
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center relative z-[100]">
         
         {/* LOGO */}
         <Link href="/" className="text-2xl font-black italic tracking-tighter text-white uppercase flex items-center gap-1 group">
@@ -87,26 +95,23 @@ export default function Navbar() {
                     </button>
 
                     {menuAberto && (
-                        <>
-                            <div className="fixed inset-0 z-[98]" onClick={() => setMenuAberto(false)} />
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-[#1b1e24] border border-white/10 rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 z-[99]">
-                                {session?.user?.email && ADMIN_EMAILS.includes(session.user.email) && (
-                                    <Link href="/admin" onClick={() => setMenuAberto(false)}>
-                                        <div className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-yellow-500 font-bold border-b border-white/5">
-                                            <Shield className="w-4 h-4" /> Painel Admin
-                                        </div>
-                                    </Link>
-                                )}
-                                <Link href="/meus-sorteios" onClick={() => setMenuAberto(false)}>
-                                    <div className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-white">
-                                        <Ticket className="w-4 h-4" /> Meus Tickets
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-[#1b1e24] border border-white/10 rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 z-[101]">
+                            {session?.user?.email && ADMIN_EMAILS.includes(session.user.email) && (
+                                <Link href="/admin" onClick={() => setMenuAberto(false)}>
+                                    <div className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-yellow-500 font-bold border-b border-white/5">
+                                        <Shield className="w-4 h-4" /> Painel Admin
                                     </div>
                                 </Link>
-                                <button onClick={() => signOut()} className="w-full text-left px-4 py-3 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition flex items-center gap-3 border-t border-white/5">
-                                    <LogOut className="w-4 h-4" /> Sair
-                                </button>
-                            </div>
-                        </>
+                            )}
+                            <Link href="/meus-sorteios" onClick={() => setMenuAberto(false)}>
+                                <div className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-white">
+                                    <Ticket className="w-4 h-4" /> Meus Tickets
+                                </div>
+                            </Link>
+                            <button onClick={() => signOut()} className="w-full text-left px-4 py-3 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition flex items-center gap-3 border-t border-white/5">
+                                <LogOut className="w-4 h-4" /> Sair
+                            </button>
+                        </div>
                     )}
                 </div>
             ) : (
@@ -117,13 +122,13 @@ export default function Navbar() {
         </div>
 
         {/* MOBILE MENU BUTTON */}
-        <button className="md:hidden text-white p-2" onClick={() => setMenuAberto(!menuAberto)}>
+        <button className="md:hidden text-white p-2 relative z-[101]" onClick={() => setMenuAberto(!menuAberto)}>
             {menuAberto ? <X /> : <Menu />}
         </button>
 
         {/* MOBILE OVERLAY MENU */}
         {menuAberto && (
-             <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5 h-screen">
+             <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5 h-screen z-[100]">
                 <a href="https://twitch.tv/canaldosoares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
                     <Twitch className="w-5 h-5"/> Twitch
                 </a>
@@ -136,11 +141,11 @@ export default function Navbar() {
                 
                 {session ? (
                     <>
-                        <Link href="/meus-sorteios" className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold">
+                        <Link href="/meus-sorteios" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold">
                             <Ticket className="w-5 h-5"/> Meus Tickets
                         </Link>
                          {session?.user?.email && ADMIN_EMAILS.includes(session.user.email) && (
-                            <Link href="/admin" className="flex items-center gap-3 p-3 rounded bg-yellow-500/10 text-yellow-500 font-bold">
+                            <Link href="/admin" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-yellow-500/10 text-yellow-500 font-bold">
                                 <Shield className="w-5 h-5"/> Admin
                             </Link>
                          )}
