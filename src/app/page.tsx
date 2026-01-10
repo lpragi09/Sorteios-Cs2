@@ -185,17 +185,17 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
                 {/* INSANE.GG */}
                 <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="/image_2.png" alt="INSANE.GG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                    <img src="public\image_2.png" alt="INSANE.GG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
                 </div>
 
                 {/* CSGOBIG */}
                 <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="/image_3.png" alt="CSGOBIG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                    <img src="public\image_3.png" alt="CSGOBIG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
                 </div>
 
                 {/* TOPSKIN */}
                 <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="/image_4.png" alt="TOPSKIN" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                    <img src="public\image_4.png" alt="TOPSKIN" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
                 </div>
             </div>
           </section>
@@ -210,7 +210,7 @@ export default function Home() {
                 
                 {/* Coluna 1: Logo */}
                 <div className="space-y-4">
-                    <img src="/image_1.png" alt="Logo Soares" className="h-24 w-auto mx-auto md:mx-0 object-contain opacity-80 hover:opacity-100 transition" />
+                    <img src="public\image_1.png" alt="Logo Soares" className="h-24 w-auto mx-auto md:mx-0 object-contain opacity-80 hover:opacity-100 transition" />
                     
                     <p className="text-slate-400 text-sm leading-relaxed">
                         Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
