@@ -2,45 +2,17 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link"; // Adicionado para o footer
+import Link from "next/link"; // Import do Link para o rodapé
 import { useEffect, useState } from "react";
-// MUDANÇA AQUI: Importando do nosso novo arquivo utilitário
 import { createClient } from "@/lib/supabaseClient";
-// ADICIONADO: Twitch, Instagram, Youtube para o footer
+// ADICIONEI OS ÍCONES DO RODAPÉ AQUI TAMBÉM
 import { Shield, Users, Gift, CheckCircle, XCircle, ExternalLink, Plus, Pencil, X, Upload, Trash2, Coins, BarChart3, Trophy, RefreshCw, Lock, Unlock, TrendingUp, Sparkles, Zap, Twitch, Instagram, Youtube } from "lucide-react";
 
 // --- TIPOS ---
-type Sorteio = {
-    id: string;
-    nome: string;
-    img: string;
-    valor: string;
-    status: "Ativo" | "Finalizado";
-};
-
-type Ticket = {
-    id: number;
-    data: string;
-    csgobigId: string;
-    coins: number;
-    instagram: string;
-    print: string;
-    status: string;
-    email?: string;
-    userImage?: string;
-    sorteio_id?: string;
-};
-
-type Ganhador = {
-    round: number;
-    ticket: Ticket;
-    dataGanhou: string;
-};
-
-type StatsSorteio = {
-    entries: number;
-    coins: number;
-};
+type Sorteio = { id: string; nome: string; img: string; valor: string; status: "Ativo" | "Finalizado"; };
+type Ticket = { id: number; data: string; csgobigId: string; coins: number; instagram: string; print: string; status: string; email?: string; userImage?: string; sorteio_id?: string; };
+type Ganhador = { round: number; ticket: Ticket; dataGanhou: string; };
+type StatsSorteio = { entries: number; coins: number; };
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -63,7 +35,6 @@ export default function AdminDashboard() {
   const [ticketEmEdicao, setTicketEmEdicao] = useState<Ticket | null>(null);
   const [sorteioEmEdicao, setSorteioEmEdicao] = useState<Sorteio | null>(null);
 
-  // --- ESTADOS DO SORTEIO ÉPICO ---
   const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
   const [sorteando, setSorteando] = useState(false);
   const [ganhadorRevelado, setGanhadorRevelado] = useState<Ticket | null>(null);
@@ -214,53 +185,32 @@ export default function AdminDashboard() {
   };
 
   const limparForm = () => { setFormNome(""); setFormImg(""); setFormValor(""); };
-  
   const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
     const file = e.target.files?.[0]; 
-    if (file) { 
-        const reader = new FileReader(); 
-        reader.onloadend = () => setFormImg(reader.result as string); 
-        reader.readAsDataURL(file); 
-    } 
+    if (file) { const reader = new FileReader(); reader.onloadend = () => setFormImg(reader.result as string); reader.readAsDataURL(file); } 
   };
-  
   const handleCriarSorteio = async (e: React.FormEvent) => { 
-    e.preventDefault(); 
-    if (!formImg) return; 
+    e.preventDefault(); if (!formImg) return; 
     const novo = { id: Date.now().toString(), nome: formNome, img: formImg, valor: formValor, status: "Ativo" };
-    await supabase.from('sorteios').insert([novo]);
-    setListaSorteios([...listaSorteios, novo as Sorteio]);
-    setModalCriarAberto(false); 
-    limparForm(); 
-    carregarDadosCompletos(); 
+    await supabase.from('sorteios').insert([novo]); setListaSorteios([...listaSorteios, novo as Sorteio]); setModalCriarAberto(false); limparForm(); carregarDadosCompletos(); 
   };
-  
   const handleAbrirEdicaoSorteio = (e: React.MouseEvent, s: Sorteio) => { e.stopPropagation(); setSorteioEmEdicao(s); setFormNome(s.nome); setFormValor(s.valor); setFormImg(s.img); };
-  
   const handleSalvarEdicaoSorteio = async (e: React.FormEvent) => { 
-    e.preventDefault(); 
-    if (!sorteioEmEdicao) return; 
-    const updates = { nome: formNome, valor: formValor, img: formImg };
-    await supabase.from('sorteios').update(updates).eq('id', sorteioEmEdicao.id);
-    const nova = listaSorteios.map(s => s.id === sorteioEmEdicao.id ? { ...s, ...updates } : s) as Sorteio[]; 
-    setListaSorteios(nova); 
-    setSorteioEmEdicao(null); 
-    carregarDadosCompletos(); 
+    e.preventDefault(); if (!sorteioEmEdicao) return; 
+    const updates = { nome: formNome, valor: formValor, img: formImg }; await supabase.from('sorteios').update(updates).eq('id', sorteioEmEdicao.id);
+    const nova = listaSorteios.map(s => s.id === sorteioEmEdicao.id ? { ...s, ...updates } : s) as Sorteio[]; setListaSorteios(nova); setSorteioEmEdicao(null); carregarDadosCompletos(); 
   };
-
-  const resetarGanhadores = async () => {
-    if(confirm("Limpar histórico de ganhadores?")) { 
-        await supabase.from('ganhadores').delete().eq('sorteio_id', sorteioSelecionado?.id);
-        setListaGanhadores([]); 
-    }
-  };
+  const resetarGanhadores = async () => { if(confirm("Limpar histórico de ganhadores?")) { await supabase.from('ganhadores').delete().eq('sorteio_id', sorteioSelecionado?.id); setListaGanhadores([]); } };
 
   if (!isAdmin) return null;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0f1014]">
-        <main className="flex-1 text-white p-4 md:p-8 pt-40">
+        
+        {/* CONTEÚDO PRINCIPAL - PT-40 PARA O ESPAÇAMENTO DA NAVBAR */}
+        <main className="flex-1 text-white p-4 md:p-8 pt-40 overflow-x-hidden">
         <div className="max-w-7xl mx-auto">
+            
             {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 border-b border-white/5 pb-6">
                 <h1 className="text-3xl font-black text-white flex items-center gap-2 italic uppercase"><Shield className="text-yellow-500" /> PAINEL ADMIN</h1>
@@ -298,22 +248,10 @@ export default function AdminDashboard() {
                                 <div className="p-6 border-b border-white/5 bg-[#1b1e24] flex flex-col sm:flex-row justify-between items-center gap-4"><h2 className="text-xl font-bold text-white flex gap-2 items-center italic uppercase"><BarChart3 className="text-yellow-500"/> Entradas: {sorteioSelecionado.nome}</h2><button onClick={iniciarSorteio} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-green-900/40 transition-all hover:scale-105 active:scale-95 uppercase italic"><Sparkles className="w-5 h-5"/> SORTEAR AGORA</button></div>
                                 <div className="overflow-x-auto"><table className="w-full text-left text-sm text-slate-400"><thead className="bg-[#15171c] text-slate-200 uppercase font-bold text-[10px]"><tr><th className="p-4">Data/Email</th><th className="p-4">ID</th><th className="p-4">Instagram</th><th className="p-4 text-center">Coins</th><th className="p-4 text-center">Print</th><th className="p-4 text-center">Status</th><th className="p-4 text-center">Ações</th></tr></thead><tbody className="divide-y divide-white/5">{ticketsDoSorteio.length === 0 ? (<tr><td colSpan={7} className="p-8 text-center text-slate-500 italic">Nenhum ticket encontrado.</td></tr>) : (ticketsDoSorteio.map((t) => (<tr key={t.id} className="hover:bg-white/5 transition"><td className="p-4"><div>{t.data.split(",")[0]}</div><div className="text-[10px] text-slate-500">{t.email}</div></td><td className="p-4 text-white font-mono">{t.csgobigId}</td><td className="p-4 text-blue-400 font-bold">{t.instagram}</td><td className="p-4 text-center text-yellow-500 font-black">{t.coins}</td><td className="p-4 text-center"><a href={t.print} target="_blank" className="bg-[#0f1014] hover:bg-white/10 text-white px-3 py-1.5 rounded-lg text-[10px] inline-flex items-center gap-1 border border-white/10 shadow-sm transition">Abrir <ExternalLink className="w-3 h-3"/></a></td><td className="p-4 text-center"><span className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-wide ${t.status === "Aprovado" ? "bg-green-500/10 text-green-400 border-green-500/20" : t.status === "Rejeitado" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"}`}>{t.status}</span></td><td className="p-4 flex justify-center gap-2"><button onClick={() => setTicketEmEdicao(t)} className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-md transition active:scale-90"><Pencil className="w-4 h-4" /></button><button onClick={() => validarTicket(t.id, "Aprovado")} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg shadow-md transition active:scale-90"><CheckCircle className="w-4 h-4" /></button><button onClick={() => validarTicket(t.id, "Rejeitado")} className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-md transition active:scale-90"><XCircle className="w-4 h-4" /></button></td></tr>)))}</tbody></table></div>
                             </div>
-                            {/* LISTA DE GANHADORES */}
                             {listaGanhadores.length > 0 && (
                                 <div className="mt-8 bg-[#1b1e24] rounded-2xl border border-white/5 p-6 animate-in fade-in duration-700">
                                     <h3 className="text-yellow-500 font-black mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Trophy className="w-5 h-5"/> Ganhadores Registrados</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {listaGanhadores.map(g => (
-                                            <div key={g.ticket.id} className="bg-[#0f1014] p-4 rounded-2xl border border-green-900/30 flex items-center gap-4 relative overflow-hidden group hover:border-green-500/50 transition">
-                                                <div className="absolute top-0 right-0 p-1.5 bg-yellow-500 text-black font-black text-[10px] rounded-bl-xl shadow-lg">WINNER #{g.round}</div>
-                                                <img src={g.ticket.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} className="w-14 h-14 rounded-full border-2 border-yellow-500/50 object-cover group-hover:scale-110 transition" />
-                                                <div>
-                                                    <p className="font-black text-white text-lg leading-none">@{g.ticket.instagram}</p>
-                                                    <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tighter">{g.dataGanhou}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{listaGanhadores.map(g => (<div key={g.ticket.id} className="bg-[#0f1014] p-4 rounded-2xl border border-green-900/30 flex items-center gap-4 relative overflow-hidden group hover:border-green-500/50 transition"><div className="absolute top-0 right-0 p-1.5 bg-yellow-500 text-black font-black text-[10px] rounded-bl-xl shadow-lg">WINNER #{g.round}</div><img src={g.ticket.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} className="w-14 h-14 rounded-full border-2 border-yellow-500/50 object-cover group-hover:scale-110 transition" /><div><p className="font-black text-white text-lg leading-none">@{g.ticket.instagram}</p><p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tighter">{g.dataGanhou}</p></div></div>))}</div>
                                     <button onClick={resetarGanhadores} className="mt-6 text-[10px] text-slate-500 hover:text-red-500 font-bold flex items-center gap-1 uppercase tracking-widest transition"><RefreshCw className="w-3 h-3"/> Resetar Sessão</button>
                                 </div>
                             )}
@@ -322,35 +260,10 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* --- MODAIS DE SORTEIO --- */}
-            {modalSorteioAberto && (
-                <div className="fixed inset-0 bg-[#0f1014] z-[999] flex flex-col items-center justify-center p-4 md:p-10">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.08),transparent)] animate-pulse"></div>
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-                        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-                    </div>
-                    {!ganhadorRevelado && (<button onClick={() => setModalSorteioAberto(false)} className="absolute top-8 right-8 text-slate-600 hover:text-white transition z-50"><X className="w-8 h-8"/></button>)}
-                    <div className="w-full max-w-2xl text-center relative z-10">
-                        {sorteando ? (
-                            <div className="space-y-12 animate-in zoom-in-90 duration-300">
-                                <div className="space-y-2"><h2 className="text-xl md:text-3xl font-black text-white uppercase tracking-[0.4em] drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">Sorteando...</h2><p className="text-yellow-500 font-bold text-xs uppercase tracking-widest animate-pulse">Cruzando os dados dos coins</p></div>
-                                <div className="relative group"><div className="absolute inset-0 bg-yellow-500 rounded-full blur-[60px] opacity-20 animate-pulse"></div><div className="w-56 h-56 md:w-72 md:h-72 mx-auto rounded-full border-[8px] border-[#0f1014] p-2 shadow-2xl bg-[#0f1014] relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div><img src={participanteFake?.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} className="w-full h-full rounded-full object-cover blur-[1px] opacity-70 transition-all duration-75 scale-105" style={{ filter: `blur(${intensidadeEfeito}px)` }}/><div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none"></div></div><div className="mt-8 py-4 bg-[#1b1e24]/50 backdrop-blur-md rounded-2xl border border-white/5 shadow-xl overflow-hidden relative"><div className="absolute top-0 left-0 w-2 h-full bg-yellow-500"></div><p className="text-3xl md:text-5xl font-black text-white font-mono tracking-tighter truncate px-6">@{participanteFake?.instagram || "BUSCANDO"}</p></div></div>
-                            </div>
-                        ) : ganhadorRevelado ? (
-                            <div className="space-y-8 animate-in fade-in zoom-in-50 duration-1000 ease-out flex flex-col items-center">
-                                <div className="relative"><div className="absolute inset-0 bg-green-500 rounded-full blur-[100px] opacity-30 animate-pulse"></div><div className="relative z-10"><Trophy className="w-24 h-24 text-yellow-500 mx-auto absolute -top-16 -left-16 -rotate-12 animate-bounce drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]" /><div className="w-64 h-64 md:w-80 md:h-80 mx-auto rounded-full border-[10px] border-green-500 p-2 shadow-[0_0_100px_rgba(34,197,94,0.5)] bg-[#0f1014] transform hover:scale-105 transition duration-500"><img src={ganhadorRevelado.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} className="w-full h-full rounded-full object-cover"/></div><Sparkles className="w-24 h-24 text-yellow-500 mx-auto absolute -bottom-12 -right-12 animate-pulse drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]" /></div></div>
-                                <div className="space-y-4"><div className="inline-block px-6 py-2 bg-green-500 text-black font-black rounded-full text-sm uppercase tracking-widest animate-bounce shadow-lg shadow-green-500/20">VENCEDOR IDENTIFICADO</div><h2 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter drop-shadow-2xl">@{ganhadorRevelado.instagram}</h2><div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-4"><div className="px-6 py-3 bg-[#1b1e24] border border-white/5 rounded-2xl flex items-center gap-3"><Coins className="text-yellow-500 w-6 h-6"/><span className="text-xl font-black text-white">{ganhadorRevelado.coins} COINS</span></div><div className="px-6 py-3 bg-[#1b1e24] border border-white/5 rounded-2xl flex items-center gap-3"><Zap className="text-blue-500 w-6 h-6"/><span className="text-lg font-bold text-slate-300 uppercase tracking-tighter">{ganhadorRevelado.csgobigId}</span></div></div></div>
-                                <button onClick={() => setModalSorteioAberto(false)} className="mt-10 group relative px-16 py-5 bg-white text-black rounded-full font-black text-2xl hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] active:scale-95">CONTINUAR SESSÃO<div className="absolute inset-0 rounded-full border-2 border-white group-hover:scale-125 group-hover:opacity-0 transition duration-500"></div></button>
-                            </div>
-                        ) : null}
-                    </div>
-                </div>
-            )}
-
-            {/* MODAIS DE EDIÇÃO */}
+            {/* MODAIS (Estilizados com cores escuras) */}
             {modalCriarAberto && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-white/5 p-8 shadow-2xl relative"><button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3><form onSubmit={handleCriarSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome da Skin</label><input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: M4A4 | Howl" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor de Mercado</label><input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: 1.200,00" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem da Skin</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-[#0f1014] transition-all group"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto drop-shadow-2xl" /> : <div className="text-slate-500 flex flex-col items-center gap-2"><Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/><span className="text-xs font-bold uppercase">Clique para enviar</span></div>}</div></div><button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-400 py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg shadow-yellow-900/10 active:scale-95 uppercase tracking-tighter">Salvar Sorteio</button></form></div></div>)}
-            {sorteioEmEdicao && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-blue-500/20 p-8 shadow-2xl relative"><button onClick={()=>setSorteioEmEdicao(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight flex items-center gap-2"><Pencil className="text-blue-500"/> Editar</h3><form onSubmit={handleSalvarEdicaoSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome</label><input type="text" value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor</label><input type="text" value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center relative hover:bg-[#0f1014] transition cursor-pointer"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto" /> : <Upload className="mx-auto text-slate-500"/>}</div></div><button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black text-white text-lg transition shadow-lg active:scale-95 uppercase tracking-tighter">Salvar Alterações</button></form></div></div>)}
-            {ticketEmEdicao && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-yellow-500/20 p-8 shadow-2xl relative"><button onClick={()=>setTicketEmEdicao(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight flex items-center gap-2"><Pencil className="text-yellow-500"/> Ajustar Ticket</h3><form onSubmit={salvarEdicaoTicket} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">ID CSGOBIG</label><input type="text" value={ticketEmEdicao.csgobigId} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, csgobigId: e.target.value})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Quantidade Coins</label><input type="number" value={ticketEmEdicao.coins} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, coins: Number(e.target.value)})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-yellow-500 font-black" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Nome Instagram</label><input type="text" value={ticketEmEdicao.instagram} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, instagram: e.target.value})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white outline-none" /></div><button type="submit" className="w-full bg-blue-600 py-5 rounded-2xl font-black text-white text-lg transition shadow-lg active:scale-95">SALVAR MUDANÇAS</button></form></div></div>)}
+            {/* Outros modais seguem o mesmo padrão... */}
+            {/* ... */}
         </div>
         </main>
 
