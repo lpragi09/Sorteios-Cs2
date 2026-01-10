@@ -4,7 +4,6 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-// ADICIONADO: 'Home' na importação dos ícones
 import { LogOut, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X, Home } from "lucide-react";
 
 export default function Navbar() {
@@ -14,52 +13,68 @@ export default function Navbar() {
   
   const ADMIN_EMAILS = ["soarescscontato@gmail.com", "lpmragi@gmail.com"];
 
-  // Função para Rolagem Suave
-  const handleScrollToParceiros = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+  // FUNÇÃO GENÉRICA PARA ROLAGEM SUAVE
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, targetId: string) => {
+    // Se estiver na Home, faz a rolagem suave
     if (pathname === "/") {
         e.preventDefault();
-        const element = document.getElementById("parceiros");
-        if (element) {
-            const headerOffset = 100;
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      
+        
+        // Se o alvo for "top", rola para o início da página (Sorteios)
+        if (targetId === "top") {
             window.scrollTo({
-              top: offsetPosition,
-              behavior: "smooth"
+                top: 0,
+                behavior: "smooth"
             });
+        } else {
+            // Se for outro ID (ex: parceiros), calcula a posição
+            const element = document.getElementById(targetId);
+            if (element) {
+                const headerOffset = 100; // Compensação da altura da navbar fixa
+                const elementPosition = element.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: "smooth"
+                });
+            }
         }
     }
+    // Fecha o menu mobile se estiver aberto
     setMenuAberto(false);
   };
 
   return (
     <nav className="fixed top-0 left-0 w-full z-[100] border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center shadow-lg shadow-black/40">
       
-      {/* CAMADA INVISÍVEL (Fecha menu ao clicar fora) */}
+      {/* Camada Invisível para fechar menu */}
       {menuAberto && (
         <div 
-            className="fixed inset-0 z-[90] bg-transparent cursor-default" 
+            className="fixed inset-0 z-[101] bg-black/20 backdrop-blur-[1px]" 
             onClick={() => setMenuAberto(false)}
         />
       )}
 
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center relative z-[100]">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center relative z-[102]">
         
-        {/* LOGO */}
-        <Link href="/" className="text-2xl font-black italic tracking-tighter text-white uppercase flex items-center gap-1 group">
+        {/* LOGO (Também leva para o topo suavemente) */}
+        <a href="/" onClick={(e) => handleSmoothScroll(e, "top")} className="text-2xl font-black italic tracking-tighter text-white uppercase flex items-center gap-1 group cursor-pointer">
           <span className="text-yellow-500 group-hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] transition-all">CS2</span>
           SOARES
-        </Link>
+        </a>
 
         {/* --- LINKS DESKTOP --- */}
         <div className="hidden md:flex items-center gap-6">
             
-            {/* NOVO BOTÃO HOME */}
-            <Link href="/" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group">
+            {/* BOTÃO HOME COM SCROLL SUAVE */}
+            <a 
+                href="/" 
+                onClick={(e) => handleSmoothScroll(e, "top")}
+                className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group cursor-pointer"
+            >
                 <Home className="w-5 h-5 group-hover:text-yellow-500 transition-all"/>
                 HOME
-            </Link>
+            </a>
 
             <a href="https://twitch.tv/canaldosoares" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#9146ff] transition-colors group">
                 <Twitch className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#9146ff] transition-all"/>
@@ -71,9 +86,10 @@ export default function Navbar() {
                 Instagram
             </a>
 
+            {/* BOTÃO PARCEIROS COM SCROLL SUAVE */}
             <a 
                 href="/#parceiros" 
-                onClick={handleScrollToParceiros}
+                onClick={(e) => handleSmoothScroll(e, "parceiros")}
                 className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group cursor-pointer"
             >
                 <Handshake className="w-5 h-5 group-hover:text-yellow-500 transition-all"/>
@@ -101,7 +117,7 @@ export default function Navbar() {
                     </button>
 
                     {menuAberto && (
-                        <div className="absolute right-0 top-full mt-2 w-56 bg-[#1b1e24] border border-white/10 rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 z-[101]">
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-[#1b1e24] border border-white/10 rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
                             {session?.user?.email && ADMIN_EMAILS.includes(session.user.email) && (
                                 <Link href="/admin" onClick={() => setMenuAberto(false)}>
                                     <div className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-yellow-500 font-bold border-b border-white/5">
@@ -128,18 +144,17 @@ export default function Navbar() {
         </div>
 
         {/* MOBILE MENU BUTTON */}
-        <button className="md:hidden text-white p-2 relative z-[101]" onClick={() => setMenuAberto(!menuAberto)}>
+        <button className="md:hidden text-white p-2 relative z-[102]" onClick={() => setMenuAberto(!menuAberto)}>
             {menuAberto ? <X /> : <Menu />}
         </button>
 
         {/* MOBILE OVERLAY MENU */}
         {menuAberto && (
-             <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5 h-screen z-[100]">
+             <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5 h-screen z-[102]">
                 
-                {/* NOVO BOTÃO HOME MOBILE */}
-                <Link href="/" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold hover:text-yellow-500">
+                <a href="/" onClick={(e) => handleSmoothScroll(e, "top")} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold hover:text-yellow-500">
                     <Home className="w-5 h-5"/> HOME
-                </Link>
+                </a>
 
                 <a href="https://twitch.tv/canaldosoares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
                     <Twitch className="w-5 h-5"/> Twitch
@@ -147,7 +162,7 @@ export default function Navbar() {
                 <a href="https://instagram.com/seuinstead" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#E1306C] font-bold">
                     <Instagram className="w-5 h-5"/> Instagram
                 </a>
-                <a href="#parceiros" onClick={handleScrollToParceiros} className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold">
+                <a href="#parceiros" onClick={(e) => handleSmoothScroll(e, "parceiros")} className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold">
                     <Handshake className="w-5 h-5"/> Parceiros
                 </a>
                 

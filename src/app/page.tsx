@@ -6,7 +6,6 @@ import Link from "next/link";
 import { X, Image as ImageIcon, Lock, Gift, CheckCircle, Trophy, Twitch, Instagram, Youtube, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 
-// Inicialização do cliente Supabase
 const supabase = createClient();
 
 type Sorteio = {
@@ -19,14 +18,11 @@ type Sorteio = {
 
 export default function Home() {
   const { data: session } = useSession();
-  
-  // Estados
   const [listaSorteios, setListaSorteios] = useState<Sorteio[]>([]);
   const [sorteioSelecionado, setSorteioSelecionado] = useState<Sorteio | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   
-  // Formulário
   const [csgobigId, setCsgobigId] = useState("");
   const [qtdCoins, setQtdCoins] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -41,10 +37,7 @@ export default function Home() {
       .from('sorteios')
       .select('*')
       .order('id', { ascending: false });
-
-    if (!error && data) {
-        setListaSorteios(data);
-    }
+    if (!error && data) setListaSorteios(data);
   };
 
   const abrirModal = (sorteio: Sorteio) => {
@@ -87,24 +80,17 @@ export default function Home() {
         alert("Erro ao enviar: " + error.message);
     } else {
         setModalAberto(false);
-        if (confirm("✅ Sucesso! Deseja ver seus tickets agora?")) {
-            window.location.href = "/meus-sorteios";
-        }
+        if (confirm("✅ Sucesso! Deseja ver seus tickets agora?")) window.location.href = "/meus-sorteios";
     }
   };
 
   return (
     <main className="text-white bg-[#0f1014]">
       
-      {/* SEÇÃO 1: SORTEIOS 
-          - min-h-screen: Garante que essa seção ocupe pelo menos 100% da altura da tela
-          - pt-32: Empurra o conteúdo para baixo para não ficar atrás da Navbar Fixa
-          - mb-20: Dá uma margem extra no final antes da próxima seção
-      */}
+      {/* SEÇÃO 1: SORTEIOS */}
       <div className="min-h-screen flex flex-col pt-32 px-4 md:px-8 pb-20">
         <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
           
-          {/* HEADER DA PÁGINA */}
           <div className="text-center mb-16 space-y-4">
              <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter flex items-center justify-center gap-3">
                 🔥 SORTEIOS DO SOARES
@@ -112,7 +98,6 @@ export default function Home() {
              <p className="text-slate-400">Escolha um sorteio abaixo e participe com seus coins.</p>
           </div>
 
-          {/* LISTA DE SORTEIOS */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
               {listaSorteios.length === 0 ? (
                   <div className="text-center py-20 bg-[#1b1e24] rounded-2xl border border-white/5 border-dashed">
@@ -124,7 +109,6 @@ export default function Home() {
                   <div className={listaSorteios.length === 1 ? "flex justify-center" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"}>
                       {listaSorteios.map((sorteio) => (
                           <div key={sorteio.id} className={`bg-[#1b1e24] rounded-2xl border overflow-hidden flex flex-col transition relative group ${listaSorteios.length === 1 ? "w-full max-w-4xl" : "w-full"} ${sorteio.status === "Finalizado" ? "border-red-900/50 opacity-90" : "border-white/5 hover:border-yellow-500/50 hover:shadow-2xl hover:shadow-yellow-500/10"}`}>
-                              
                               <div className="absolute top-4 right-4 z-10">
                                   {sorteio.status === "Ativo" ? (
                                       <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded border border-green-500/30">
@@ -138,12 +122,10 @@ export default function Home() {
                                       </div>
                                   )}
                               </div>
-
                               <div className="bg-[#15171c] p-8 flex items-center justify-center relative h-64 overflow-hidden group-hover:bg-[#181a20] transition">
                                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent)]"></div>
                                   <img src={sorteio.img} alt="Skin" className={`max-h-full drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-3" : "grayscale opacity-50"}`} />
                               </div>
-
                               <div className="p-6 flex flex-col flex-1 border-t border-white/5">
                                   <div className="mb-6">
                                       <h2 className="text-2xl font-black text-white uppercase italic truncate">{sorteio.nome}</h2>
@@ -171,10 +153,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* SEÇÃO 2: PARCEIROS
-          - min-h-screen: Força essa seção a ter o tamanho de uma tela inteira, empurrando o footer
-          - flex justify-center items-center: Centraliza o conteúdo no meio da tela
-      */}
+      {/* SEÇÃO 2: PARCEIROS */}
       <section id="parceiros" className="min-h-screen flex flex-col justify-center items-center border-t border-white/5 bg-[#0f1014] py-20 px-4">
             <div className="max-w-7xl mx-auto w-full">
                 <div className="text-center mb-16">
@@ -183,17 +162,12 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 justify-center">
-                    {/* INSANE.GG */}
                     <div className="bg-[#1b1e24] p-6 rounded-3xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-2 flex justify-center items-center shadow-xl hover:shadow-yellow-500/10">
                         <img src="/image_2.png" alt="INSANE.GG" className="max-w-full h-auto rounded-2xl drop-shadow-lg transition group-hover:scale-105"/>
                     </div>
-
-                    {/* CSGOBIG */}
                     <div className="bg-[#1b1e24] p-6 rounded-3xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-2 flex justify-center items-center shadow-xl hover:shadow-yellow-500/10">
                         <img src="/image_3.png" alt="CSGOBIG" className="max-w-full h-auto rounded-2xl drop-shadow-lg transition group-hover:scale-105"/>
                     </div>
-
-                    {/* TOPSKIN */}
                     <div className="bg-[#1b1e24] p-6 rounded-3xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-2 flex justify-center items-center shadow-xl hover:shadow-yellow-500/10">
                         <img src="/image_4.png" alt="TOPSKIN" className="max-w-full h-auto rounded-2xl drop-shadow-lg transition group-hover:scale-105"/>
                     </div>
@@ -201,11 +175,10 @@ export default function Home() {
             </div>
       </section>
 
-      {/* RODAPÉ */}
-      <footer className="bg-[#1b1e24] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8">
+      {/* RODAPÉ: Cor alterada para #0f1014 (mesma do fundo) */}
+      <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                
                 <div className="space-y-4">
                     <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
                     <p className="text-slate-400 text-sm leading-relaxed">
@@ -213,7 +186,6 @@ export default function Home() {
                         Participe, jogue limpo e boa sorte!
                     </p>
                 </div>
-
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
                     <ul className="space-y-3 text-sm text-slate-400">
@@ -223,7 +195,6 @@ export default function Home() {
                         <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
                     </ul>
                 </div>
-
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
                     <div className="flex gap-4">
@@ -239,7 +210,6 @@ export default function Home() {
                     </div>
                 </div>
             </div>
-
             <div className="border-t border-white/5 pt-8 text-center">
                 <p className="text-slate-600 text-xs">
                     © 2026 Canal do Soares. Todos os direitos reservados.
@@ -248,7 +218,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAL (Código inalterado) */}
       {modalAberto && sorteioSelecionado && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
             <div className="bg-[#1b1e24] w-full max-w-md rounded-2xl border border-white/10 p-6 relative animate-in zoom-in-95 overflow-y-auto max-h-[90vh] shadow-2xl">
