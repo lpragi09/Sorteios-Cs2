@@ -3,8 +3,8 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CheckCircle, Clock, Coins, AlertCircle, Trophy, XCircle, Ban, ArrowLeft } from "lucide-react";
-// CORREÇÃO AQUI: Usando caminho relativo para garantir que encontre o arquivo
+// ADICIONADO: Twitch, Instagram, Youtube para o rodapé
+import { CheckCircle, Clock, Coins, AlertCircle, Trophy, XCircle, Ban, ArrowLeft, Twitch, Instagram, Youtube } from "lucide-react";
 import { createClient } from "../../lib/supabaseClient";
 
 const supabase = createClient();
@@ -27,7 +27,6 @@ export default function MeusSorteiosPage() {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    // Se não tiver email, não faz nada
     if (!session?.user?.email) {
       setCarregando(false);
       return;
@@ -36,17 +35,12 @@ export default function MeusSorteiosPage() {
     const buscarDadosGlobais = async () => {
       try {
         setCarregando(true);
-        
-        // CORREÇÃO AQUI: O uso do ?. (interrogação) evita o erro do TypeScript
         const emailUsuario = session?.user?.email || "";
 
         const { data: tickets, error: errT } = await supabase
           .from('tickets')
-          .select(`
-            *,
-            sorteio:sorteios ( id, nome, img, status )
-          `)
-          .eq('email', emailUsuario) // Usando a variável segura criada acima
+          .select(`*, sorteio:sorteios ( id, nome, img, status )`)
+          .eq('email', emailUsuario)
           .order('id', { ascending: false });
 
         if (errT) throw errT;
@@ -55,15 +49,11 @@ export default function MeusSorteiosPage() {
 
         const meusTicketsFormatados = (tickets || []).map((t: any) => {
           let resultadoFinal: "GANHOU" | "PERDEU" | "AGUARDANDO" = "AGUARDANDO";
-
           const souGanhador = ganhadores?.find((g: any) => g.ticket_id === t.id);
           const sorteioJaTeveGanhador = ganhadores?.some((g: any) => g.sorteio_id === t.sorteio_id);
 
-          if (souGanhador) {
-            resultadoFinal = "GANHOU";
-          } else if (sorteioJaTeveGanhador) {
-            resultadoFinal = "PERDEU";
-          }
+          if (souGanhador) resultadoFinal = "GANHOU";
+          else if (sorteioJaTeveGanhador) resultadoFinal = "PERDEU";
 
           return {
             id: t.id,
@@ -90,104 +80,150 @@ export default function MeusSorteiosPage() {
   }, [session]);
 
   if (!session) return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-4">
-        <h2 className="text-xl font-bold mb-4">Acesso Restrito</h2>
+    <div className="min-h-screen bg-[#0f1014] flex flex-col items-center justify-center text-white p-4 pt-32">
+        <h2 className="text-2xl font-black italic uppercase mb-4">Acesso Restrito</h2>
         <p className="text-slate-400 mb-6">Faça login para ver seus depósitos.</p>
-        <Link href="/" className="bg-yellow-500 text-black px-6 py-2 rounded-full font-bold">Voltar para Home</Link>
+        <Link href="/" className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded font-black uppercase tracking-wide transition">Voltar para Home</Link>
     </div>
   );
 
   const totalCoins = ticketsUsuario.reduce((acc, t) => acc + Number(t.coins), 0);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
-            <div className="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <Link href="/" className="p-2 bg-slate-900 rounded-full hover:bg-slate-800 transition"><ArrowLeft className="w-5 h-5"/></Link>
-                    <div>
-                        <h1 className="text-3xl font-bold">Meus Depósitos 🎒</h1>
-                        <p className="text-slate-400 text-sm">Histórico completo de entradas</p>
+    <div className="flex flex-col min-h-screen bg-[#0f1014]">
+        {/* CONTEÚDO PRINCIPAL (COM PADDING TOP PT-32 PARA NÃO FUNDIR) */}
+        <main className="flex-1 text-white p-4 md:p-8 pt-32">
+            <div className="max-w-4xl mx-auto">
+                <div className="mb-8 border-b border-white/5 pb-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                        <Link href="/" className="p-3 bg-[#1b1e24] rounded-lg hover:bg-white/5 border border-white/5 transition text-slate-400 hover:text-white"><ArrowLeft className="w-5 h-5"/></Link>
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white">Meus Depósitos 🎒</h1>
+                            <p className="text-slate-400 text-sm">Histórico completo de entradas</p>
+                        </div>
+                    </div>
+                    <div className="bg-[#1b1e24] px-6 py-3 rounded-xl border border-white/5 shadow-lg">
+                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Total Acumulado</p>
+                        <p className="text-yellow-500 font-black text-2xl">{totalCoins} <span className="text-sm font-normal text-white">Chances</span></p>
                     </div>
                 </div>
-                <div className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
-                    <p className="text-xs text-slate-400 uppercase font-bold">Total Acumulado</p>
-                    <p className="text-yellow-500 font-black text-xl">{totalCoins} <span className="text-sm font-normal text-white">Chances</span></p>
+
+                {carregando ? (
+                    <div className="text-center py-24">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+                        <p className="text-slate-500 italic uppercase text-sm tracking-widest">Buscando seus tickets...</p>
+                    </div>
+                ) : ticketsUsuario.length > 0 ? (
+                    <div className="space-y-4">
+                        {ticketsUsuario.map((ticket) => (
+                            <div 
+                                key={ticket.id} 
+                                className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between transition relative overflow-hidden gap-6
+                                ${ticket.resultado === "GANHOU" ? "bg-green-950/20 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.15)]" : 
+                                ticket.resultado === "PERDEU" ? "bg-[#1b1e24]/50 border-white/5 opacity-60 grayscale-[0.5]" :
+                                "bg-[#1b1e24] border-white/5 hover:border-yellow-500/30 hover:shadow-lg hover:shadow-black/20"}`}
+                            >
+                                {ticket.resultado === "GANHOU" && (
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                        <Trophy className="w-40 h-40 text-green-500" />
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-5 z-10">
+                                    <div className="w-20 h-20 bg-[#0f1014] rounded-xl p-3 border border-white/5 flex items-center justify-center flex-shrink-0 shadow-inner">
+                                        <img src={ticket.imgSorteio} alt="" className="max-w-full max-h-full object-contain" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black italic text-white text-xl uppercase tracking-tight">{ticket.nomeSorteio}</h4>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 font-mono">
+                                            <span className="bg-black/30 px-2 py-1 rounded">ID: {ticket.csgobigId}</span>
+                                            <span className="self-center">•</span>
+                                            <span>{ticket.data}</span>
+                                        </div>
+                                        
+                                        <div className="mt-3 inline-flex">
+                                            {ticket.status === "Pendente" && <span className="px-3 py-1 rounded bg-yellow-500/10 text-yellow-500 text-[10px] font-bold border border-yellow-500/20 flex items-center gap-1.5 uppercase tracking-wide"><Clock className="w-3 h-3"/> Analisando</span>}
+                                            {ticket.status === "Rejeitado" && <span className="px-3 py-1 rounded bg-red-500/10 text-red-500 text-[10px] font-bold border border-red-500/20 flex items-center gap-1.5 uppercase tracking-wide"><XCircle className="w-3 h-3"/> Rejeitado</span>}
+                                            {ticket.status === "Aprovado" && <span className="px-3 py-1 rounded bg-green-500/10 text-green-500 text-[10px] font-bold border border-green-500/20 flex items-center gap-1.5 uppercase tracking-wide"><CheckCircle className="w-3 h-3"/> Confirmado</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="text-left md:text-right z-10 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center border-t border-white/5 md:border-0 pt-4 md:pt-0">
+                                    <span className="flex items-center gap-1 text-yellow-500 font-black bg-yellow-500/10 px-4 py-1.5 rounded text-sm mb-0 md:mb-2 border border-yellow-500/20">
+                                        <Coins className="w-4 h-4" /> {ticket.coins}
+                                    </span>
+                                    
+                                    {ticket.resultado === "GANHOU" && (
+                                        <div className="flex items-center gap-2 text-green-400 font-black bg-green-500/10 px-4 py-1.5 rounded border border-green-500/20 animate-pulse text-sm uppercase italic">
+                                            <Trophy className="w-4 h-4" /> VOCÊ GANHOU!
+                                        </div>
+                                    )}
+                                    {ticket.resultado === "PERDEU" && (
+                                        <div className="flex items-center gap-2 text-slate-500 font-bold bg-black/40 px-3 py-1 rounded border border-white/5 text-xs uppercase">
+                                            <Ban className="w-3 h-3" /> Encerrado
+                                        </div>
+                                    )}
+                                    {ticket.resultado === "AGUARDANDO" && ticket.status === "Aprovado" && (
+                                        <div className="text-xs text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded border border-blue-500/20 uppercase tracking-wide">Aguardando Sorteio...</div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-24 bg-[#1b1e24] rounded-2xl border border-white/5 border-dashed">
+                        <AlertCircle className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+                        <p className="text-slate-400 text-xl font-bold">Nenhum depósito encontrado.</p>
+                        <p className="text-slate-600 text-sm mb-8">Participe de um sorteio para aparecer aqui.</p>
+                        <Link href="/"><button className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded font-black uppercase tracking-wide transition shadow-lg shadow-yellow-500/10">Ir para Sorteios</button></Link>
+                    </div>
+                )}
+            </div>
+        </main>
+
+        {/* RODAPÉ (Igual ao da Home) */}
+        <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto">
+            <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+                    <div className="space-y-4">
+                        <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
+                        <p className="text-slate-400 text-sm leading-relaxed">
+                            Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
+                            Participe, jogue limpo e boa sorte!
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
+                        <ul className="space-y-3 text-sm text-slate-400">
+                            <li><Link href="/" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</Link></li>
+                            <li><Link href="/#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</Link></li>
+                            <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
+                            <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
+                        <div className="flex gap-4">
+                            <a href="https://twitch.tv/canaldosoares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
+                                <Twitch className="w-5 h-5"/>
+                            </a>
+                            <a href="https://instagram.com/seuinstead" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
+                                <Instagram className="w-5 h-5"/>
+                            </a>
+                            <a href="#" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition">
+                                <Youtube className="w-5 h-5"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div className="border-t border-white/5 pt-8 text-center">
+                    <p className="text-slate-600 text-xs">
+                        © 2026 Canal do Soares. Todos os direitos reservados.
+                    </p>
                 </div>
             </div>
-
-            {carregando ? (
-                <div className="text-center py-20">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-                    <p className="text-slate-400 italic">Buscando seus tickets...</p>
-                </div>
-            ) : ticketsUsuario.length > 0 ? (
-                <div className="space-y-4">
-                    {ticketsUsuario.map((ticket) => (
-                        <div 
-                            key={ticket.id} 
-                            className={`p-5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between transition relative overflow-hidden gap-4
-                            ${ticket.resultado === "GANHOU" ? "bg-green-900/20 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]" : 
-                              ticket.resultado === "PERDEU" ? "bg-slate-900/50 border-slate-800 opacity-60 grayscale-[0.5]" :
-                              "bg-slate-900 border-slate-800 hover:border-slate-700"}`}
-                        >
-                            {ticket.resultado === "GANHOU" && (
-                                <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                                    <Trophy className="w-32 h-32 text-green-500" />
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-4 z-10">
-                                <div className="w-16 h-16 bg-slate-950 rounded-xl p-2 border border-slate-800 flex items-center justify-center flex-shrink-0">
-                                    <img src={ticket.imgSorteio} alt="" className="max-w-full max-h-full object-contain" />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-white text-lg leading-tight">{ticket.nomeSorteio}</h4>
-                                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-slate-500 font-mono">
-                                        <span>ID: {ticket.csgobigId}</span>
-                                        <span>•</span>
-                                        <span>{ticket.data}</span>
-                                    </div>
-                                    
-                                    <div className="mt-2 inline-flex">
-                                        {ticket.status === "Pendente" && <span className="px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-500 text-xs font-bold border border-yellow-500/20 flex items-center gap-1"><Clock className="w-3 h-3"/> Analisando</span>}
-                                        {ticket.status === "Rejeitado" && <span className="px-2 py-0.5 rounded bg-red-500/10 text-red-500 text-xs font-bold border border-red-500/20 flex items-center gap-1"><XCircle className="w-3 h-3"/> Rejeitado</span>}
-                                        {ticket.status === "Aprovado" && <span className="px-2 py-0.5 rounded bg-green-500/10 text-green-500 text-xs font-bold border border-green-500/20 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Confirmado</span>}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="text-left md:text-right z-10 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center border-t border-slate-800 md:border-0 pt-4 md:pt-0">
-                                <span className="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-950/20 px-3 py-1 rounded text-sm mb-0 md:mb-2 border border-yellow-500/10">
-                                    <Coins className="w-4 h-4" /> {ticket.coins}
-                                </span>
-                                
-                                {ticket.resultado === "GANHOU" && (
-                                    <div className="flex items-center gap-2 text-green-400 font-black bg-green-950/50 px-4 py-1.5 rounded border border-green-500/50 animate-pulse text-sm">
-                                        <Trophy className="w-4 h-4" /> VOCÊ GANHOU!
-                                    </div>
-                                )}
-                                {ticket.resultado === "PERDEU" && (
-                                    <div className="flex items-center gap-2 text-slate-500 font-bold bg-slate-950 px-3 py-1 rounded border border-slate-800 text-xs">
-                                        <Ban className="w-3 h-3" /> Encerrado
-                                    </div>
-                                )}
-                                {ticket.resultado === "AGUARDANDO" && ticket.status === "Aprovado" && (
-                                    <div className="text-xs text-blue-400 font-bold bg-blue-900/10 px-2 py-1 rounded border border-blue-500/20">Aguardando Sorteio...</div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center py-20 bg-slate-900/50 rounded-xl border border-slate-800 border-dashed">
-                    <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-400 text-lg">Nenhum depósito encontrado.</p>
-                    <p className="text-slate-600 text-sm mb-6">Participe de um sorteio para aparecer aqui.</p>
-                    <Link href="/"><button className="bg-yellow-500 text-black px-6 py-2 rounded-lg font-bold hover:bg-yellow-400 transition">Ir para Sorteios</button></Link>
-                </div>
-            )}
-        </div>
-    </main>
+        </footer>
+    </div>
   );
 }
