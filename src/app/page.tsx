@@ -3,7 +3,7 @@
 import { useSession, signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Link from "next/link"; 
-// CORREÇÃO: Adicionado 'Ticket' na lista de importações abaixo
+// CORREÇÃO: 'Ticket' foi adicionado na importação abaixo para corrigir o erro do seu print
 import { X, Image as ImageIcon, Lock, Gift, CheckCircle, Trophy, Twitch, Instagram, Youtube, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 
@@ -175,7 +175,7 @@ export default function Home() {
               )}
           </div>
 
-          {/* --- SEÇÃO: PARCEIROS --- */}
+          {/* --- SEÇÃO: PARCEIROS (Estilo Branco e Dourado) --- */}
           <section id="parceiros" className="border-t border-white/5 pt-20 pb-10">
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-yellow-500">Parceiros</span></h2>
@@ -183,19 +183,21 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
-                {/* INSANE.GG */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="public\image_2.png" alt="INSANE.GG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                
+                {/* Parceiro 1: INSANE.GG */}
+                {/* Ajustado para tema dourado no hover */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
+                    <img src="/image_2.png" alt="INSANE.GG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
 
-                {/* CSGOBIG */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="public\image_3.png" alt="CSGOBIG" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                {/* Parceiro 2: CSGOBIG */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
+                    <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
 
-                {/* TOPSKIN */}
-                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
-                    <img src="public\image_4.png" alt="TOPSKIN" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                {/* Parceiro 3: TOPSKIN */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
+                    <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
             </div>
           </section>
@@ -208,9 +210,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                 
-                {/* Coluna 1: Logo */}
+                {/* Coluna 1: Logo (image_1.png) */}
                 <div className="space-y-4">
-                    <img src="public\image_1.png" alt="Logo Soares" className="h-24 w-auto mx-auto md:mx-0 object-contain opacity-80 hover:opacity-100 transition" />
+                    <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
                     
                     <p className="text-slate-400 text-sm leading-relaxed">
                         Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
@@ -229,7 +231,7 @@ export default function Home() {
                     </ul>
                 </div>
 
-                {/* Coluna 3: Redes */}
+                {/* Coluna 3: Redes Sociais */}
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
                     <div className="flex gap-4">
