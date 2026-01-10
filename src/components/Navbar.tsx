@@ -12,8 +12,8 @@ export default function Navbar() {
   const ADMIN_EMAILS = ["soarescscontato@gmail.com", "lpmragi@gmail.com"];
 
   return (
-    // NAVBAR: Fundo mais escuro (#0f1014) e borda sutil para estilo CS2
-    <nav className="border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md sticky top-0 z-[100] h-20 flex items-center">
+    // NAVBAR: Removido 'sticky top-0 z-[100]' para que a navbar role junto com a página
+    <nav className="border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center">
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
         
         {/* LOGO */}

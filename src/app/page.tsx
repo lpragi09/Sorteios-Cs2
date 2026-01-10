@@ -107,13 +107,11 @@ export default function Home() {
       <div className="pt-12 px-4 md:px-8 pb-20">
         <div className="max-w-7xl mx-auto">
           
-          {/* HEADER DA PÁGINA */}
+          {/* HEADER DA PÁGINA: Texto original restaurado */}
           <div className="text-center mb-16 space-y-4">
-             <span className="text-yellow-500 font-bold tracking-[0.3em] text-xs uppercase bg-yellow-500/10 px-4 py-1 rounded-full border border-yellow-500/20">Official Giveaways</span>
-             <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter">
-                Sorteios <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-200">Ativos</span>
+             <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter flex items-center justify-center gap-3">
+                🔥 SORTEIOS DO SOARES
              </h1>
-             <p className="text-slate-400 max-w-xl mx-auto">Participe dos sorteios exclusivos do canal utilizando seus coins. Skins de alto nível esperando por você.</p>
           </div>
 
           {/* LISTA DE SORTEIOS */}
@@ -176,48 +174,27 @@ export default function Home() {
               )}
           </div>
 
-          {/* --- NOVA SEÇÃO: PARCEIROS --- */}
+          {/* --- NOVA SEÇÃO: PARCEIROS (Com os designs enviados) --- */}
           <section id="parceiros" className="border-t border-white/5 pt-20 pb-10">
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-blue-500">Parceiros</span></h2>
-                <p className="text-slate-500 text-sm mt-2">Use nossos cupons para ganhar bônus exclusivos.</p>
+                <p className="text-slate-500 text-sm mt-2">Utilize nossos cupons para os melhores bônus do mercado.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Parceiro 1 - Exemplo */}
-                <div className="bg-[#1b1e24] p-8 rounded-xl border border-white/5 hover:border-blue-500/50 transition group hover:-translate-y-1">
-                    <div className="w-16 h-16 bg-[#252830] rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10 group-hover:border-blue-500/50 transition">
-                        <Gamepad className="w-8 h-8 text-white group-hover:text-blue-500 transition"/>
-                    </div>
-                    <h3 className="text-xl font-bold text-white text-center mb-2">CSGOBIG</h3>
-                    <p className="text-slate-400 text-sm text-center mb-6">O melhor site para apostar suas skins e multiplicar seu inventário.</p>
-                    
-                    <div className="bg-black/30 border border-dashed border-yellow-500/50 rounded p-3 text-center mb-4 cursor-pointer hover:bg-yellow-500/10 transition">
-                        <span className="text-xs text-slate-500 uppercase block mb-1">Cupom de Depósito</span>
-                        <span className="text-yellow-500 font-black text-lg tracking-widest">SOARES</span>
-                    </div>
-                    
-                    <button className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded uppercase text-sm transition shadow-lg shadow-blue-900/20">
-                        Visitar Site
-                    </button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
+                {/* Parceiro 1: INSANE.GG (Imagem enviada) */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-blue-500/50 transition group hover:-translate-y-1 flex justify-center">
+                    <img src="/image_2.png" alt="INSANE.GG Soares Cupom" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(59,130,246,0.2)] transition"/>
                 </div>
 
-                {/* Parceiro 2 - Exemplo */}
-                <div className="bg-[#1b1e24] p-8 rounded-xl border border-white/5 hover:border-purple-500/50 transition group hover:-translate-y-1">
-                    <div className="w-16 h-16 bg-[#252830] rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10 group-hover:border-purple-500/50 transition">
-                        <Gift className="w-8 h-8 text-white group-hover:text-purple-500 transition"/>
-                    </div>
-                    <h3 className="text-xl font-bold text-white text-center mb-2">KEYDROP</h3>
-                    <p className="text-slate-400 text-sm text-center mb-6">Abra caixas com as melhores odds do mercado e ganhe na hora.</p>
-                    
-                    <div className="bg-black/30 border border-dashed border-yellow-500/50 rounded p-3 text-center mb-4 cursor-pointer hover:bg-yellow-500/10 transition">
-                        <span className="text-xs text-slate-500 uppercase block mb-1">Cupom de Bônus</span>
-                        <span className="text-yellow-500 font-black text-lg tracking-widest">SOARESCS</span>
-                    </div>
-                    
-                    <button className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded uppercase text-sm transition shadow-lg shadow-purple-900/20">
-                        Visitar Site
-                    </button>
+                {/* Parceiro 2: CSGOBIG (Imagem enviada) */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition group hover:-translate-y-1 flex justify-center">
+                    <img src="/image_3.png" alt="CSGOBIG Soares Cupom" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(234,179,8,0.2)] transition"/>
+                </div>
+
+                {/* Parceiro 3: TOPSKIN (Imagem enviada) */}
+                <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-orange-500/50 transition group hover:-translate-y-1 flex justify-center">
+                    <img src="/image_4.png" alt="TOPSKIN Soares Cupom" className="max-w-full h-auto rounded-xl drop-shadow-lg group-hover:drop-shadow-[0_0_20px_rgba(249,115,22,0.2)] transition"/>
                 </div>
             </div>
           </section>
@@ -230,9 +207,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                 
-                {/* Coluna 1: Info */}
+                {/* Coluna 1: Info + Logo enviada */}
                 <div className="space-y-4">
-                    <h3 className="text-2xl font-black text-white italic uppercase">Canal do Soares</h3>
+                    {/* SUBSTITUIÇÃO: Logo enviada no lugar do texto */}
+                    <img src="/image_1.png" alt="Canal do Soares Logo" className="h-32 w-auto mx-auto md:mx-0" />
+                    
                     <p className="text-slate-400 text-sm leading-relaxed">
                         Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
                         Participe, jogue limpo e boa sorte!
