@@ -2,33 +2,40 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // Import necessário para saber onde estamos
+import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LogOut, User, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X } from "lucide-react";
+import { LogOut, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X } from "lucide-react";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const [menuAberto, setMenuAberto] = useState(false);
-  const pathname = usePathname(); // Hook para pegar a rota atual
+  const pathname = usePathname();
   
   const ADMIN_EMAILS = ["soarescscontato@gmail.com", "lpmragi@gmail.com"];
 
   // Função para Rolagem Suave
   const handleScrollToParceiros = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    // Se estivermos na Home (/), fazemos a rolagem suave via JS
     if (pathname === "/") {
-        e.preventDefault(); // Impede o "pulo" instantâneo padrão
+        e.preventDefault();
         const element = document.getElementById("parceiros");
         if (element) {
-            element.scrollIntoView({ behavior: "smooth" }); // O segredo da rolagem suave está aqui
+            // O offset -80 compensa a altura da navbar fixa para não cobrir o título
+            const headerOffset = 80;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth"
+            });
         }
     }
-    // Se não estiver na Home, o link href="/#parceiros" funciona normalmente redirecionando
     setMenuAberto(false);
   };
 
   return (
-    <nav className="border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center">
+    // FIXADO: Adicionado 'sticky top-0 z-[100]' para a barra acompanhar a rolagem
+    <nav className="sticky top-0 z-[100] border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center shadow-lg shadow-black/20">
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
         
         {/* LOGO */}
@@ -37,22 +44,19 @@ export default function Navbar() {
           SOARES
         </Link>
 
-        {/* --- LINKS DESKTOP (Centralizados/Direita) --- */}
+        {/* --- LINKS DESKTOP --- */}
         <div className="hidden md:flex items-center gap-6">
             
-            {/* Twitch Link */}
             <a href="https://twitch.tv/canaldosoares" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#9146ff] transition-colors group">
                 <Twitch className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#9146ff] transition-all"/>
                 Twitch
             </a>
 
-            {/* Instagram Link */}
             <a href="https://instagram.com/seuinstead" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#E1306C] transition-colors group">
                 <Instagram className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#E1306C] transition-all"/>
                 Instagram
             </a>
 
-            {/* Parceiros Link com Rolagem Suave */}
             <a 
                 href="/#parceiros" 
                 onClick={handleScrollToParceiros}
@@ -82,7 +86,6 @@ export default function Navbar() {
                         </div>
                     </button>
 
-                    {/* Dropdown Menu */}
                     {menuAberto && (
                         <>
                             <div className="fixed inset-0 z-[98]" onClick={() => setMenuAberto(false)} />
@@ -120,20 +123,14 @@ export default function Navbar() {
 
         {/* MOBILE OVERLAY MENU */}
         {menuAberto && (
-             <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5">
+             <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5 h-screen">
                 <a href="https://twitch.tv/canaldosoares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
                     <Twitch className="w-5 h-5"/> Twitch
                 </a>
                 <a href="https://instagram.com/seuinstead" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#E1306C] font-bold">
                     <Instagram className="w-5 h-5"/> Instagram
                 </a>
-                
-                {/* Link Mobile com Scroll Suave */}
-                <a 
-                    href="/#parceiros" 
-                    onClick={handleScrollToParceiros} 
-                    className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold"
-                >
+                <a href="#parceiros" onClick={handleScrollToParceiros} className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold">
                     <Handshake className="w-5 h-5"/> Parceiros
                 </a>
                 

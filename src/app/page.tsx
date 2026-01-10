@@ -3,11 +3,9 @@
 import { useSession, signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Link from "next/link"; 
-// CORREÇÃO: 'Ticket' foi adicionado na importação abaixo para corrigir o erro do seu print
 import { X, Image as ImageIcon, Lock, Gift, CheckCircle, Trophy, Twitch, Instagram, Youtube, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 
-// Inicialização do cliente Supabase
 const supabase = createClient();
 
 type Sorteio = {
@@ -20,16 +18,11 @@ type Sorteio = {
 
 export default function Home() {
   const { data: session } = useSession();
-  
-  // Estados de Dados
   const [listaSorteios, setListaSorteios] = useState<Sorteio[]>([]);
-  
-  // Estados de UI
   const [sorteioSelecionado, setSorteioSelecionado] = useState<Sorteio | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   
-  // Formulário
   const [csgobigId, setCsgobigId] = useState("");
   const [qtdCoins, setQtdCoins] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -44,10 +37,7 @@ export default function Home() {
       .from('sorteios')
       .select('*')
       .order('id', { ascending: false });
-
-    if (!error && data) {
-        setListaSorteios(data);
-    }
+    if (!error && data) setListaSorteios(data);
   };
 
   const abrirModal = (sorteio: Sorteio) => {
@@ -73,9 +63,7 @@ export default function Home() {
       alert("Preencha todos os dados!");
       return;
     }
-
     setEnviando(true);
-
     const { error } = await supabase.from('tickets').insert([{
         sorteio_id: sorteioSelecionado.id,
         email: session?.user?.email,
@@ -87,35 +75,28 @@ export default function Home() {
         status: "Pendente",
         data: new Date().toLocaleString()
     }]);
-
     setEnviando(false);
-
     if (error) {
         alert("Erro ao enviar: " + error.message);
     } else {
         setModalAberto(false);
-        if (confirm("✅ Sucesso! Deseja ver seus tickets agora?")) {
-            window.location.href = "/meus-sorteios";
-        }
+        if (confirm("✅ Sucesso! Deseja ver seus tickets agora?")) window.location.href = "/meus-sorteios";
     }
   };
 
   return (
-    // Fundo geral #0f1014
     <main className="min-h-screen text-white bg-[#0f1014]">
       
       {/* ESPAÇAMENTO DO CONTEÚDO PRINCIPAL */}
       <div className="pt-12 px-4 md:px-8 pb-20">
         <div className="max-w-7xl mx-auto">
           
-          {/* HEADER DA PÁGINA */}
           <div className="text-center mb-16 space-y-4">
              <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter flex items-center justify-center gap-3">
                 🔥 SORTEIOS DO SOARES
              </h1>
           </div>
 
-          {/* LISTA DE SORTEIOS */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 mb-24">
               {listaSorteios.length === 0 ? (
                   <div className="text-center py-20 bg-[#1b1e24] rounded-2xl border border-white/5 border-dashed">
@@ -127,8 +108,6 @@ export default function Home() {
                   <div className={listaSorteios.length === 1 ? "flex justify-center" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"}>
                       {listaSorteios.map((sorteio) => (
                           <div key={sorteio.id} className={`bg-[#1b1e24] rounded-2xl border overflow-hidden flex flex-col transition relative group ${listaSorteios.length === 1 ? "w-full max-w-4xl" : "w-full"} ${sorteio.status === "Finalizado" ? "border-red-900/50 opacity-90" : "border-white/5 hover:border-yellow-500/50 hover:shadow-2xl hover:shadow-yellow-500/10"}`}>
-                              
-                              {/* Badge de Status */}
                               <div className="absolute top-4 right-4 z-10">
                                   {sorteio.status === "Ativo" ? (
                                       <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded border border-green-500/30">
@@ -143,13 +122,11 @@ export default function Home() {
                                   )}
                               </div>
 
-                              {/* Imagem com Efeito */}
                               <div className="bg-[#15171c] p-8 flex items-center justify-center relative h-64 overflow-hidden group-hover:bg-[#181a20] transition">
                                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent)]"></div>
                                   <img src={sorteio.img} alt="Skin" className={`max-h-full drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-3" : "grayscale opacity-50"}`} />
                               </div>
 
-                              {/* Conteúdo */}
                               <div className="p-6 flex flex-col flex-1 border-t border-white/5">
                                   <div className="mb-6">
                                       <h2 className="text-2xl font-black text-white uppercase italic truncate">{sorteio.nome}</h2>
@@ -175,7 +152,6 @@ export default function Home() {
               )}
           </div>
 
-          {/* --- SEÇÃO: PARCEIROS (Estilo Branco e Dourado) --- */}
           <section id="parceiros" className="border-t border-white/5 pt-20 pb-10">
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-yellow-500">Parceiros</span></h2>
@@ -184,18 +160,17 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
                 
-                {/* Parceiro 1: INSANE.GG */}
-                {/* Ajustado para tema dourado no hover */}
+                {/* INSANE.GG */}
                 <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
                     <img src="/image_2.png" alt="INSANE.GG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
 
-                {/* Parceiro 2: CSGOBIG */}
+                {/* CSGOBIG */}
                 <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
                     <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
 
-                {/* Parceiro 3: TOPSKIN */}
+                {/* TOPSKIN */}
                 <div className="bg-[#1b1e24] p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
                     <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
@@ -205,13 +180,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* --- RODAPÉ --- */}
       <footer className="bg-[#1b1e24] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                 
-                {/* Coluna 1: Logo (image_1.png) */}
                 <div className="space-y-4">
+                    {/* Logo Soares */}
                     <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
                     
                     <p className="text-slate-400 text-sm leading-relaxed">
@@ -220,7 +194,6 @@ export default function Home() {
                     </p>
                 </div>
 
-                {/* Coluna 2: Navegação */}
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
                     <ul className="space-y-3 text-sm text-slate-400">
@@ -231,7 +204,6 @@ export default function Home() {
                     </ul>
                 </div>
 
-                {/* Coluna 3: Redes Sociais */}
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
                     <div className="flex gap-4">
@@ -256,7 +228,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* --- MODAL DE PARTICIPAÇÃO --- */}
       {modalAberto && sorteioSelecionado && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
             <div className="bg-[#1b1e24] w-full max-w-md rounded-2xl border border-white/10 p-6 relative animate-in zoom-in-95 overflow-y-auto max-h-[90vh] shadow-2xl">
