@@ -95,47 +95,101 @@ export default function AdminDashboard() {
     setListaGanhadores(ganhadoresFormatados);
   };
 
-  const iniciarSorteio = () => {
+const iniciarSorteio = () => {
     if (!sorteioSelecionado) return;
+    
+    // Filtra apenas os tickets aprovados
     const ticketsAprovados = ticketsDoSorteio.filter((t: Ticket) => t.status === "Aprovado");
+    
+    // Pega emails de quem já ganhou para não ganhar duas vezes (opcional, depende da sua regra)
     const emailsGanhadores = listaGanhadores.map(g => g.ticket.email);
+    
+    // Cria lista de candidatos (excluindo quem já ganhou, se for a regra)
     const candidatos = ticketsAprovados.filter(t => !emailsGanhadores.includes(t.email));
+
     if (candidatos.length === 0) { alert("Nenhum participante disponível!"); return; }
+
     setModalSorteioAberto(true);
     setSorteando(true);
     setGanhadorRevelado(null);
     setIntensidadeEfeito(1);
-    const totalCoins = candidatos.reduce((acc, t) => acc + Number(t.coins), 0);
-    let randomPoint = Math.floor(Math.random() * totalCoins);
+
+    // --- LÓGICA DO SORTEIO (ROLETÃO) ---
+    // 1. Calcula o total de coins na mesa
+    const totalCoinsMesa = candidatos.reduce((acc, t) => acc + Number(t.coins), 0);
+    
+    // 2. Escolhe um "ponto" aleatório entre 0 e o total de coins
+    let randomPoint = Math.floor(Math.random() * totalCoinsMesa);
+    
+    // 3. Percorre os tickets para ver quem é o dono desse ponto (quem ganha)
     let vencedorReal = candidatos[0];
     for (const t of candidatos) {
         randomPoint -= t.coins;
-        if (randomPoint < 0) { vencedorReal = t; break; }
+        if (randomPoint < 0) { 
+            vencedorReal = t; 
+            break; 
+        }
     }
-    let interacoes = 0; const maxInteracoes = 50; 
+
+    // --- A CORREÇÃO MÁGICA AQUI ---
+    // Agora que sabemos quem ganhou (vencedorReal), vamos somar TUDO que ele colocou neste sorteio.
+    // Usamos o email para identificar que é a mesma pessoa.
+    const totalCoinsDoVencedor = ticketsAprovados
+        .filter(t => t.email === vencedorReal.email) // Pega todos os tickets desse cara
+        .reduce((acc, t) => acc + Number(t.coins), 0); // Soma as coins de todos eles
+
+    // Criamos um objeto visual para exibir com o TOTAL de coins, e não só o do ticket sorteado
+    const vencedorParaExibir = {
+        ...vencedorReal,
+        coins: totalCoinsDoVencedor // Aqui substituímos pelo TOTAL
+    };
+
+    let interacoes = 0;
+    const maxInteracoes = 50; 
+
     const loopSorteio = async () => {
+        // Efeito visual de trocar nomes aleatórios
         setParticipanteFake(candidatos[Math.floor(Math.random() * candidatos.length)]);
         interacoes++;
+
         let delay = 50; 
         if (interacoes > 30) delay = 100;
         if (interacoes > 40) delay = 250;
         if (interacoes > 45) delay = 500;
+
         if (interacoes < maxInteracoes) {
             setTimeout(loopSorteio, delay);
         } else {
             setSorteando(false);
-            setGanhadorRevelado(vencedorReal);
+            
+            // AQUI: Usamos o objeto com o valor SOMADO para exibir na tela
+            setGanhadorRevelado(vencedorParaExibir);
+            
             const novoRound = listaGanhadores.length + 1;
             const dataGanhou = new Date().toLocaleString();
-            const { error } = await supabase.from('ganhadores').insert([{ sorteio_id: sorteioSelecionado.id, ticket_id: vencedorReal.id, round: novoRound, data_ganhou: dataGanhou }]);
+
+            // No banco de dados, salvamos o ticket original que foi sorteado (para auditoria)
+            const { error } = await supabase.from('ganhadores').insert([{
+                sorteio_id: sorteioSelecionado.id,
+                ticket_id: vencedorReal.id, // ID do ticket específico que ganhou na matemática
+                round: novoRound,
+                data_ganhou: dataGanhou
+            }]);
+
             if (!error) {
-                const novoG: Ganhador = { round: novoRound, ticket: vencedorReal, dataGanhou };
+                // Na lista de baixo, também mostramos o total
+                const novoG: Ganhador = { 
+                    round: novoRound, 
+                    ticket: vencedorParaExibir, // Mostra o total na lista de ganhadores tbm
+                    dataGanhou: dataGanhou 
+                };
                 setListaGanhadores([...listaGanhadores, novoG]);
             } else {
                 alert("Erro ao salvar ganhador no banco.");
             }
         }
     };
+
     loopSorteio();
   };
 
