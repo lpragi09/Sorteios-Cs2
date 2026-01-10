@@ -32,6 +32,23 @@ export default function Home() {
     carregarSorteios();
   }, []);
 
+  // --- FUNÇÃO PARA ROLAGEM SUAVE (NOVO) ---
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, id: string) => {
+    e.preventDefault(); // Impede o "pulo" instantâneo
+    
+    if (id === "top") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+        const element = document.getElementById(id);
+        if (element) {
+            const headerOffset = 100; // Compensação da Navbar fixa
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+        }
+    }
+  };
+
   const carregarSorteios = async () => {
     const { data, error } = await supabase
       .from('sorteios')
@@ -175,7 +192,7 @@ export default function Home() {
             </div>
       </section>
 
-      {/* RODAPÉ: Cor alterada para #0f1014 (mesma do fundo) */}
+      {/* RODAPÉ */}
       <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
@@ -189,8 +206,21 @@ export default function Home() {
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
                     <ul className="space-y-3 text-sm text-slate-400">
-                        <li><a href="#" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</a></li>
-                        <li><a href="#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</a></li>
+                        
+                        {/* LINK INÍCIO COM ROLAGEM SUAVE */}
+                        <li>
+                            <a href="/" onClick={(e) => handleScroll(e, "top")} className="hover:text-yellow-500 transition flex items-center gap-2 cursor-pointer">
+                                <div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início
+                            </a>
+                        </li>
+                        
+                        {/* LINK PARCEIROS COM ROLAGEM SUAVE */}
+                        <li>
+                            <a href="#parceiros" onClick={(e) => handleScroll(e, "parceiros")} className="hover:text-yellow-500 transition flex items-center gap-2 cursor-pointer">
+                                <div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros
+                            </a>
+                        </li>
+
                         <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
                         <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
                     </ul>
