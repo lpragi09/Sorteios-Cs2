@@ -218,15 +218,13 @@ export default function MeusSorteiosPage() {
                     <div>
                         <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
                         <div className="flex gap-4">
-                            <a href="https://twitch.tv/canaldosoares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
+                            <a href="https://www.twitch.tv/soares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
                                 <Twitch className="w-5 h-5"/>
                             </a>
-                            <a href="https://instagram.com/seuinstead" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
+                            <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                                 <Instagram className="w-5 h-5"/>
                             </a>
-                            <a href="#" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition">
-                                <Youtube className="w-5 h-5"/>
-                            </a>
+                            
                         </div>
                     </div>
                 </div>

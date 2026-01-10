@@ -65,12 +65,12 @@ export default function Navbar() {
                   HOME
               </a>
 
-              <a href="https://twitch.tv/canaldosoares" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#9146ff] transition-colors group">
+              <a href="https://www.twitch.tv/soares" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#9146ff] transition-colors group">
                   <Twitch className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#9146ff] transition-all"/>
                   Twitch
               </a>
 
-              <a href="https://instagram.com/seuinstead" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#E1306C] transition-colors group">
+              <a href="https://www.instagram.com/soarexcs/" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#E1306C] transition-colors group">
                   <Instagram className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#E1306C] transition-all"/>
                   Instagram
               </a>
@@ -145,10 +145,10 @@ export default function Navbar() {
                       <Home className="w-5 h-5"/> HOME
                   </a>
 
-                  <a href="https://twitch.tv/canaldosoares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
+                  <a href="https://www.twitch.tv/soares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
                       <Twitch className="w-5 h-5"/> Twitch
                   </a>
-                  <a href="https://instagram.com/seuinstead" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#E1306C] font-bold">
+                  <a href="https://www.instagram.com/soarexcs/" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#E1306C] font-bold">
                       <Instagram className="w-5 h-5"/> Instagram
                   </a>
                   <a href="#parceiros" onClick={(e) => handleSmoothScroll(e, "parceiros")} className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold">
