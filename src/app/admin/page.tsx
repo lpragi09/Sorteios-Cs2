@@ -259,7 +259,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0f1014]">
-        <main className="flex-1 text-white p-4 md:p-8 pt-32 overflow-x-hidden">
+        <main className="flex-1 text-white p-4 md:p-8 pt-40">
         <div className="max-w-7xl mx-auto">
             {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 border-b border-white/5 pb-6">
