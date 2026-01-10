@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+// Importando ícones extras para o Rodapé e UI
 import { CheckCircle, Clock, Coins, AlertCircle, Trophy, XCircle, Ban, ArrowLeft, Twitch, Instagram, Youtube } from "lucide-react";
 import { createClient } from "../../lib/supabaseClient";
 
@@ -79,7 +80,7 @@ export default function MeusSorteiosPage() {
   }, [session]);
 
   if (!session) return (
-    <div className="min-h-screen bg-[#0f1014] flex flex-col items-center justify-center text-white p-4 pt-40">
+    <div className="min-h-screen bg-[#0f1014] flex flex-col items-center justify-center text-white p-4">
         <h2 className="text-2xl font-black italic uppercase mb-4">Acesso Restrito</h2>
         <p className="text-slate-400 mb-6">Faça login para ver seus depósitos.</p>
         <Link href="/" className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded font-black uppercase tracking-wide transition">Voltar para Home</Link>
@@ -90,8 +91,12 @@ export default function MeusSorteiosPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0f1014]">
-        {/* ESPAÇAMENTO AUMENTADO: pt-40 (160px) para garantir que saia de baixo da navbar */}
-        <main className="flex-1 text-white p-4 md:p-8 pt-40">
+        
+        {/* --- SOLUÇÃO DO ESPAÇAMENTO --- */}
+        {/* Esta div vazia empurra o conteúdo para baixo da navbar fixa */}
+        <div className="h-32 w-full flex-shrink-0"></div>
+
+        <main className="flex-1 text-white p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 border-b border-white/5 pb-6 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-4">
@@ -181,7 +186,7 @@ export default function MeusSorteiosPage() {
             </div>
         </main>
 
-        {/* RODAPÉ */}
+        {/* RODAPÉ INTEGRADO */}
         <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
