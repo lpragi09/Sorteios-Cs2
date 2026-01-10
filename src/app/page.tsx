@@ -34,7 +34,7 @@ export default function Home() {
   const [instagram, setInstagram] = useState("");
   const [arquivoPrint, setArquivoPrint] = useState<string | null>(null);
 
-  // --- LINK DA IMAGEM DE FUNDO ---
+  // LINK DA IMAGEM DE FUNDO
   const bgImageUrl = "/background.png"; 
 
   useEffect(() => {
@@ -103,7 +103,6 @@ export default function Home() {
   };
 
   return (
-    // Fundo Geral com Imagem Local e Overlay Escuro
     <div 
         className="flex flex-col min-h-screen bg-[#0f1014] bg-cover bg-center bg-fixed"
         style={{
@@ -111,7 +110,7 @@ export default function Home() {
         }}
     >
       
-      {/* ESPAÇADOR RÍGIDO (Empurra o conteúdo para baixo da navbar fixa) */}
+      {/* ESPAÇADOR RÍGIDO */}
       <div className="h-32 w-full flex-shrink-0"></div>
 
       {/* CONTEÚDO PRINCIPAL */}
@@ -163,8 +162,11 @@ export default function Home() {
                               {/* Conteúdo */}
                               <div className="p-6 flex flex-col flex-1 border-t border-white/5">
                                   <div className="mb-6">
-                                      <h2 className="text-2xl font-black text-white uppercase italic truncate">{sorteio.nome}</h2>
-                                      <p className="text-slate-400 font-medium text-sm mt-1 flex items-center gap-2">
+                                      {/* CORREÇÃO AQUI: Removi 'truncate' e adicionei 'leading-tight' */}
+                                      <h2 className="text-2xl font-black text-white uppercase italic leading-tight break-words">
+                                          {sorteio.nome}
+                                      </h2>
+                                      <p className="text-slate-400 font-medium text-sm mt-2 flex items-center gap-2">
                                           Valor Estimado: <span className="text-green-400 font-bold">R$ {sorteio.valor}</span>
                                       </p>
                                   </div>
@@ -186,7 +188,7 @@ export default function Home() {
               )}
           </div>
 
-          {/* --- SEÇÃO: PARCEIROS (Com fundo escuro e bordas) --- */}
+          {/* --- SEÇÃO: PARCEIROS --- */}
           <section id="parceiros" className="border-t border-white/5 pt-20 pb-10">
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Nossos <span className="text-yellow-500">Parceiros</span></h2>
@@ -194,18 +196,12 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
-                
-                {/* Parceiro 1: INSANE.GG */}
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
                     <img src="/image_2.png" alt="INSANE.GG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
-
-                {/* Parceiro 2: CSGOBIG */}
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
                     <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
-
-                {/* Parceiro 3: TOPSKIN */}
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
                     <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
                 </div>
@@ -219,43 +215,37 @@ export default function Home() {
       <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
         <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                
-                {/* Coluna 1: Logo */}
                 <div className="space-y-4">
                     <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
-                    
                     <p className="text-slate-400 text-sm leading-relaxed">
                         Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
                         Participe, jogue limpo e boa sorte!
                     </p>
                 </div>
-
-                {/* Coluna 2: Navegação */}
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
                     <ul className="space-y-3 text-sm text-slate-400">
                         <li><Link href="/" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</Link></li>
                         <li><a href="#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</a></li>
                         <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
-                        <li><a href="https://www.twitch.tv/soares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
+                        <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
                     </ul>
                 </div>
-
-                {/* Coluna 3: Redes Sociais */}
                 <div>
                     <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
                     <div className="flex gap-4">
-                        <a href="https://www.twitch.tv/soares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
+                        <a href="https://twitch.tv/canaldosoares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
                             <Twitch className="w-5 h-5"/>
                         </a>
-                        <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
+                        <a href="https://instagram.com/seuinstead" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                             <Instagram className="w-5 h-5"/>
                         </a>
-                        
+                        <a href="#" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition">
+                            <Youtube className="w-5 h-5"/>
+                        </a>
                     </div>
                 </div>
             </div>
-
             <div className="border-t border-white/5 pt-8 text-center">
                 <p className="text-slate-600 text-xs">
                     © 2026 Canal do Soares. Todos os direitos reservados.
@@ -269,7 +259,6 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
             <div className="bg-[#1b1e24] w-full max-w-md rounded-2xl border border-white/10 p-6 relative animate-in zoom-in-95 overflow-y-auto max-h-[90vh] shadow-2xl">
                 <button onClick={() => setModalAberto(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition"><X /></button>
-                
                 <h3 className="font-bold text-lg mb-1 flex gap-2 items-center text-white uppercase italic">
                     <Gift className="text-yellow-500"/> Confirmar Entrada
                 </h3>
@@ -286,12 +275,10 @@ export default function Home() {
                             <input type="number" placeholder="Ex: 50" required value={qtdCoins} onChange={e=>setQtdCoins(e.target.value)} className="w-full bg-[#0f1014] border border-yellow-500/30 rounded-lg p-3 text-yellow-500 outline-none focus:border-yellow-500 font-black transition placeholder:text-yellow-500/20"/>
                         </div>
                     </div>
-                    
                     <div>
                         <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Instagram (Para contato)</label>
                         <input type="text" placeholder="@seu.usuario" required value={instagram} onChange={e=>setInstagram(e.target.value)} className="w-full bg-[#0f1014] border border-white/10 rounded-lg p-3 text-white outline-none focus:border-blue-500 transition placeholder:text-slate-700"/>
                     </div>
-                    
                     <div>
                         <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Comprovante de Envio</label>
                         <div className="border-2 border-dashed border-white/10 rounded-xl p-4 text-center cursor-pointer relative hover:bg-white/5 hover:border-white/20 transition group bg-[#0f1014]">
@@ -312,7 +299,6 @@ export default function Home() {
                             )}
                         </div>
                     </div>
-
                     <button type="submit" disabled={enviando || !arquivoPrint} className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-white transition shadow-lg shadow-green-900/20 text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2 active:scale-95 uppercase italic tracking-wide">
                         {enviando ? "ENVIANDO DADOS..." : "CONFIRMAR PARTICIPAÇÃO"}
                     </button>
