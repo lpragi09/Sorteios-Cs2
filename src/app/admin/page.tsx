@@ -268,48 +268,7 @@ export default function AdminDashboard() {
         </div>
         </main>
 
-        {/* RODAPÉ INTEGRADO */}
-        <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto">
-            <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                    <div className="space-y-4">
-                        <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
-                        <p className="text-slate-400 text-sm leading-relaxed">
-                            Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
-                            Participe, jogue limpo e boa sorte!
-                        </p>
-                    </div>
-                    <div>
-                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
-                        <ul className="space-y-3 text-sm text-slate-400">
-                            <li><Link href="/" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</Link></li>
-                            <li><Link href="/#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</Link></li>
-                            <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
-                            <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
-                        <div className="flex gap-4">
-                            <a href="https://twitch.tv/canaldosoares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
-                                <Twitch className="w-5 h-5"/>
-                            </a>
-                            <a href="https://instagram.com/seuinstead" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
-                                <Instagram className="w-5 h-5"/>
-                            </a>
-                            <a href="#" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition">
-                                <Youtube className="w-5 h-5"/>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div className="border-t border-white/5 pt-8 text-center">
-                    <p className="text-slate-600 text-xs">
-                        © 2026 Canal do Soares. Todos os direitos reservados.
-                    </p>
-                </div>
-            </div>
-        </footer>
+        
     </div>
   );
 }
