@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef } from "react";
-import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube } from "lucide-react";
+import { useState } from "react";
+import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube, Gamepad2 } from "lucide-react";
 
 // Definição do tipo para o jogador
 type Player = {
@@ -32,11 +32,12 @@ export default function MixPage() {
     
     // Pega nomes já sorteados
     const nomesJaEmCampo = [...teamCT, ...teamTR].map(p => p.name);
+    const totalSorteados = nomesJaEmCampo.length;
     
     // Filtra para não repetir
     const disponiveis = nomes.filter(n => !nomesJaEmCampo.includes(n));
 
-    if (nomesJaEmCampo.length >= 10) {
+    if (totalSorteados >= 10) {
         setStatusMsg("DRAFT FINALIZADO!");
         return;
     }
@@ -48,17 +49,32 @@ export default function MixPage() {
 
     setIsSorting(true);
 
-    // Easter egg do 'Luiz'
+    // --- LÓGICA DO EASTER EGG (LUIZ/LUIS) ---
     const _0x7a = atob('bHVpeg=='); // luiz
     const _0x8b = atob('bHVpcw=='); // luis
+    
+    // Verifica se tem algum Luiz/Luis sobrando na lista
     const lzDisp = disponiveis.filter(n => n.toLowerCase().includes(_0x7a) || n.toLowerCase().includes(_0x8b));
     
     let escolhidoNome: string;
+    const vagasRestantes = 10 - totalSorteados;
+
+    // AQUI ESTÁ A MUDANÇA:
+    // 1. Se for o PRIMEIRO sorteio (totalSorteados == 0), NUNCA prioriza o Luiz.
+    // 2. Se as vagas estiverem acabando (vagasRestantes <= 2) e ele ainda não saiu, FORÇA sair agora.
+    // 3. Nos outros casos (meio do sorteio), mantém uma chance aleatória alta.
     
-    // Prioridade Luiz
-    if (lzDisp.length > 0 && Math.random() > 0.3) {
+    const deveForcarLuiz = lzDisp.length > 0 && (
+        (totalSorteados > 0 && Math.random() > 0.4) || // Chance de 60% do 2º ao 8º pick
+        (vagasRestantes <= 2) // Emergência: Se faltar pouco, poe ele pra dentro
+    );
+
+    // Aplica a lógica: Só escolhe o Luiz forçado se NÃO for o primeiro pick
+    if (deveForcarLuiz && totalSorteados > 0) {
          escolhidoNome = lzDisp[Math.floor(Math.random() * lzDisp.length)];
     } else {
+         // Sorteio justo (Aqui o Luiz pode sair na sorte, mas sem ajuda do sistema)
+         // No primeiro pick, sempre cai aqui.
          escolhidoNome = disponiveis[Math.floor(Math.random() * disponiveis.length)];
     }
 
@@ -73,12 +89,13 @@ export default function MixPage() {
         name: escolhidoNome
     };
 
-    // Lógica de distribuição
+    // Lógica de distribuição para manter times equilibrados (5x5)
     if (teamCT.length < 5 && (teamCT.length <= teamTR.length)) {
         setTeamCT(prev => [...prev, novoPlayer]);
     } else if (teamTR.length < 5) {
         setTeamTR(prev => [...prev, novoPlayer]);
     } else {
+        // Caso de overflow (raro), joga onde tem vaga
         if (teamCT.length < 5) {
              setTeamCT(prev => [...prev, novoPlayer]);
         }
@@ -279,7 +296,7 @@ export default function MixPage() {
             </div>
         </main>
 
-        {/* RODAPÉ PERSONALIZADO */}
+        {/* RODAPÉ DO SITE */}
         <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
@@ -294,9 +311,10 @@ export default function MixPage() {
                         <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
                         <ul className="space-y-3 text-sm text-slate-400">
                             <li><Link href="/" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</Link></li>
+                            <li><Link href="/mix" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Mix Maker</Link></li>
                             <li><Link href="/#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</Link></li>
                             <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
-                            <li><a href="https://www.twitch.tv/soares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
+                            <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
                         </ul>
                     </div>
                     <div>
