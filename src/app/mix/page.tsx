@@ -170,11 +170,15 @@ export default function MixPage() {
                 </div>
 
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-2xl mb-10">
+                    {/* MUDANÇA AQUI: 
+                        - Adicionei 'resize-y' (permite puxar pra baixo)
+                        - Aumentei 'h-32' para 'h-48' (mais alto por padrão)
+                    */}
                     <textarea 
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         placeholder="Cole a lista de nicks aqui (um por linha)..."
-                        className="w-full h-32 bg-[#0f1014] border border-white/10 rounded-xl p-4 text-white placeholder:text-slate-600 focus:border-yellow-500 outline-none transition font-mono text-sm resize-none mb-6"
+                        className="w-full h-48 bg-[#0f1014] border border-white/10 rounded-xl p-4 text-white placeholder:text-slate-600 focus:border-yellow-500 outline-none transition font-mono text-sm resize-y mb-6"
                     ></textarea>
 
                     <div className="flex flex-wrap justify-center gap-4 mb-6">
@@ -283,7 +287,7 @@ export default function MixPage() {
                             <li><Link href="/mix" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Mix Maker</Link></li>
                             <li><Link href="/#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</Link></li>
                             <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
-                            <li><a href="https://twitch.tv/canaldosoares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
+                            <li><a href="https://www.twitch.tv/soares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
                         </ul>
                     </div>
                     <div>
@@ -295,7 +299,7 @@ export default function MixPage() {
                             <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                                 <Instagram className="w-5 h-5"/>
                             </a>
-                           
+                            
                         </div>
                     </div>
                 </div>
