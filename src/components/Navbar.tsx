@@ -4,7 +4,8 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LogOut, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X, Home } from "lucide-react";
+// ADICIONEI O ICONE 'Gamepad2' AQUI
+import { LogOut, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X, Home, Gamepad2 } from "lucide-react";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -33,8 +34,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* --- CAMADA INVISÍVEL (CORREÇÃO DO BUG) --- */}
-      {/* Ela agora está FORA da <nav>, então cobre 100% da tela sem ser bloqueada pelo blur da barra */}
+      {/* CAMADA INVISÍVEL (CORREÇÃO DO BUG) */}
       {menuAberto && (
         <div 
             className="fixed inset-0 z-[99] bg-black/10 backdrop-blur-[1px] cursor-default" 
@@ -42,7 +42,7 @@ export default function Navbar() {
         />
       )}
 
-      {/* --- BARRA DE NAVEGAÇÃO (z-100 fica acima da camada invisível) --- */}
+      {/* BARRA DE NAVEGAÇÃO */}
       <nav className="fixed top-0 left-0 w-full z-[100] border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center shadow-lg shadow-black/40">
         
         <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center relative">
@@ -64,6 +64,12 @@ export default function Navbar() {
                   <Home className="w-5 h-5 group-hover:text-yellow-500 transition-all"/>
                   HOME
               </a>
+
+              {/* NOVO ITEM: MIX (Desktop) */}
+              <Link href="/mix" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group">
+                  <Gamepad2 className="w-5 h-5 group-hover:text-yellow-500 transition-all" />
+                  Mix
+              </Link>
 
               <a href="https://www.twitch.tv/soares" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#9146ff] transition-colors group">
                   <Twitch className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#9146ff] transition-all"/>
@@ -144,6 +150,11 @@ export default function Navbar() {
                   <a href="/" onClick={(e) => handleSmoothScroll(e, "top")} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold hover:text-yellow-500">
                       <Home className="w-5 h-5"/> HOME
                   </a>
+
+                  {/* NOVO ITEM: MIX (Mobile) */}
+                  <Link href="/mix" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold hover:text-yellow-500">
+                      <Gamepad2 className="w-5 h-5"/> Mix Maker
+                  </Link>
 
                   <a href="https://www.twitch.tv/soares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
                       <Twitch className="w-5 h-5"/> Twitch
