@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useRef } from "react";
-import { Users, Shuffle, UserPlus, Trash2 } from "lucide-react";
+import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube } from "lucide-react";
 
 // Definição do tipo para o jogador
 type Player = {
@@ -19,7 +20,7 @@ export default function MixPage() {
   // Controle de Drag & Drop
   const [draggedItem, setDraggedItem] = useState<{ list: 'CT' | 'TR', index: number } | null>(null);
 
-  // Link da imagem de fundo (a mesma do site)
+  // Link da imagem de fundo
   const bgImageUrl = "/background.png";
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -47,14 +48,14 @@ export default function MixPage() {
 
     setIsSorting(true);
 
-    // Easter egg do 'Luiz' (Lógica original mantida)
+    // Easter egg do 'Luiz'
     const _0x7a = atob('bHVpeg=='); // luiz
     const _0x8b = atob('bHVpcw=='); // luis
     const lzDisp = disponiveis.filter(n => n.toLowerCase().includes(_0x7a) || n.toLowerCase().includes(_0x8b));
     
     let escolhidoNome: string;
     
-    // Se tiver Luiz e vagas, dá prioridade (aleatória)
+    // Prioridade Luiz
     if (lzDisp.length > 0 && Math.random() > 0.3) {
          escolhidoNome = lzDisp[Math.floor(Math.random() * lzDisp.length)];
     } else {
@@ -64,7 +65,7 @@ export default function MixPage() {
     // Contagem Regressiva Visual
     for (let i = 5; i > 0; i--) {
         setStatusMsg(`SORTEANDO EM: ${i}`);
-        await sleep(600); // Um pouco mais rápido que 1s pra ficar dinâmico
+        await sleep(600); 
     }
 
     const novoPlayer: Player = {
@@ -72,19 +73,14 @@ export default function MixPage() {
         name: escolhidoNome
     };
 
-    // Lógica de distribuição (Equilíbrio)
-    let timeDestino = "";
+    // Lógica de distribuição
     if (teamCT.length < 5 && (teamCT.length <= teamTR.length)) {
         setTeamCT(prev => [...prev, novoPlayer]);
-        timeDestino = "TIME CT (Azul)";
     } else if (teamTR.length < 5) {
         setTeamTR(prev => [...prev, novoPlayer]);
-        timeDestino = "TIME TR (Amarelo)";
     } else {
-        // Caso raro de overflow, joga pro CT se tiver vaga
         if (teamCT.length < 5) {
              setTeamCT(prev => [...prev, novoPlayer]);
-             timeDestino = "TIME CT";
         }
     }
 
@@ -102,7 +98,6 @@ export default function MixPage() {
 
     const soaresPlayer: Player = { id: "soares-id", name: "Soares" };
 
-    // Tenta colocar no CT primeiro se tiver vaga e sorte
     if (teamCT.length < 5 && (Math.random() > 0.5 || teamTR.length >= 5)) {
         setTeamCT(prev => [...prev, soaresPlayer]);
         setStatusMsg("SOARES -> TIME CT");
@@ -122,46 +117,34 @@ export default function MixPage() {
       }
   }
 
-  // --- Lógica de Drag and Drop (Troca) ---
+  // --- Lógica de Drag and Drop ---
   const handleDragStart = (list: 'CT' | 'TR', index: number) => {
     setDraggedItem({ list, index });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessário para permitir o Drop
+    e.preventDefault(); 
   };
 
   const handleDrop = (targetList: 'CT' | 'TR', targetIndex: number) => {
     if (!draggedItem) return;
-
-    // Se soltar no mesmo lugar, não faz nada
     if (draggedItem.list === targetList && draggedItem.index === targetIndex) return;
 
     const newTeamCT = [...teamCT];
     const newTeamTR = [...teamTR];
 
-    // Pega o item que estava sendo arrastado
     let itemArrastado: Player;
-    if (draggedItem.list === 'CT') {
-        itemArrastado = newTeamCT[draggedItem.index];
-    } else {
-        itemArrastado = newTeamTR[draggedItem.index];
-    }
+    if (draggedItem.list === 'CT') itemArrastado = newTeamCT[draggedItem.index];
+    else itemArrastado = newTeamTR[draggedItem.index];
 
-    // Pega o item alvo (onde soltou)
     let itemAlvo: Player;
-    if (targetList === 'CT') {
-        itemAlvo = newTeamCT[targetIndex];
-    } else {
-        itemAlvo = newTeamTR[targetIndex];
-    }
+    if (targetList === 'CT') itemAlvo = newTeamCT[targetIndex];
+    else itemAlvo = newTeamTR[targetIndex];
 
-    // REALIZA A TROCA (SWAP)
-    // 1. Remove o arrastado da origem e coloca o alvo
+    // Realiza a troca
     if (draggedItem.list === 'CT') newTeamCT[draggedItem.index] = itemAlvo;
     else newTeamTR[draggedItem.index] = itemAlvo;
 
-    // 2. Remove o alvo do destino e coloca o arrastado
     if (targetList === 'CT') newTeamCT[targetIndex] = itemArrastado;
     else newTeamTR[targetIndex] = itemArrastado;
 
@@ -236,10 +219,10 @@ export default function MixPage() {
                     </div>
                 </div>
 
-                {/* Área dos Times (CT e TR) */}
+                {/* Área dos Times */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     
-                    {/* TIME CT (AZUL) */}
+                    {/* TIME CT */}
                     <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#5d79ae] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
                         <div className="bg-[#5d79ae]/10 p-4 border-b border-[#5d79ae]/20 text-center">
                             <h2 className="text-2xl font-black text-[#5d79ae] uppercase tracking-tighter">Contra-Terroristas</h2>
@@ -265,7 +248,7 @@ export default function MixPage() {
                         </div>
                     </div>
 
-                    {/* TIME TR (AMARELO/LARANJA) */}
+                    {/* TIME TR */}
                     <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#de9b35] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
                         <div className="bg-[#de9b35]/10 p-4 border-b border-[#de9b35]/20 text-center">
                             <h2 className="text-2xl font-black text-[#de9b35] uppercase tracking-tighter">Terroristas</h2>
@@ -296,9 +279,48 @@ export default function MixPage() {
             </div>
         </main>
 
-        {/* Rodapé Padrão */}
-        <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-8 pb-8 text-center z-10">
-            <p className="text-slate-600 text-xs uppercase tracking-widest">© 2026 Canal do Soares. Todos os direitos reservados.</p>
+        {/* RODAPÉ PERSONALIZADO */}
+        <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
+            <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+                    <div className="space-y-4">
+                        <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
+                        <p className="text-slate-400 text-sm leading-relaxed">
+                            Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
+                            Participe, jogue limpo e boa sorte!
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
+                        <ul className="space-y-3 text-sm text-slate-400">
+                            <li><Link href="/" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</Link></li>
+                            <li><Link href="/#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</Link></li>
+                            <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
+                            <li><a href="https://www.twitch.tv/soares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
+                        <div className="flex gap-4">
+                            <a href="https://www.twitch.tv/soares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
+                                <Twitch className="w-5 h-5"/>
+                            </a>
+                            <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
+                                <Instagram className="w-5 h-5"/>
+                            </a>
+                            {/* Ajustado para não ter link vazio */}
+                            <div className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition cursor-pointer">
+                                <Youtube className="w-5 h-5"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="border-t border-white/5 pt-8 text-center">
+                    <p className="text-slate-600 text-xs">
+                        © 2026 Canal do Soares. Todos os direitos reservados.
+                    </p>
+                </div>
+            </div>
         </footer>
     </div>
   );
