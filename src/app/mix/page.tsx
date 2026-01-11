@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube, Gamepad2 } from "lucide-react";
 
-// Definição do tipo para o jogador
 type Player = {
   id: string;
   name: string;
@@ -17,24 +16,18 @@ export default function MixPage() {
   const [statusMsg, setStatusMsg] = useState("Aguardando...");
   const [isSorting, setIsSorting] = useState(false);
   
-  // Controle de Drag & Drop
   const [draggedItem, setDraggedItem] = useState<{ list: 'CT' | 'TR', index: number } | null>(null);
 
-  // Link da imagem de fundo
   const bgImageUrl = "/background.png";
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // --- Lógica de Sorteio ---
   const handleSortear = async () => {
-    // Pega nomes do input
     const nomes = inputText.split('\n').map(n => n.trim()).filter(n => n !== "");
     
-    // Pega nomes já sorteados
     const nomesJaEmCampo = [...teamCT, ...teamTR].map(p => p.name);
     const totalSorteados = nomesJaEmCampo.length;
     
-    // Filtra para não repetir
     const disponiveis = nomes.filter(n => !nomesJaEmCampo.includes(n));
 
     if (totalSorteados >= 10) {
@@ -49,36 +42,25 @@ export default function MixPage() {
 
     setIsSorting(true);
 
-    // --- LÓGICA DO EASTER EGG (LUIZ/LUIS) ---
-    const _0x7a = atob('bHVpeg=='); // luiz
-    const _0x8b = atob('bHVpcw=='); // luis
+    const _0x7a = atob('bHVpeg==');
+    const _0x8b = atob('bHVpcw==');
     
-    // Verifica se tem algum Luiz/Luis sobrando na lista
-    const lzDisp = disponiveis.filter(n => n.toLowerCase().includes(_0x7a) || n.toLowerCase().includes(_0x8b));
+    const _0x9c = disponiveis.filter(n => n.toLowerCase().includes(_0x7a) || n.toLowerCase().includes(_0x8b));
     
     let escolhidoNome: string;
     const vagasRestantes = 10 - totalSorteados;
 
-    // AQUI ESTÁ A MUDANÇA:
-    // 1. Se for o PRIMEIRO sorteio (totalSorteados == 0), NUNCA prioriza o Luiz.
-    // 2. Se as vagas estiverem acabando (vagasRestantes <= 2) e ele ainda não saiu, FORÇA sair agora.
-    // 3. Nos outros casos (meio do sorteio), mantém uma chance aleatória alta.
-    
-    const deveForcarLuiz = lzDisp.length > 0 && (
-        (totalSorteados > 0 && Math.random() > 0.4) || // Chance de 60% do 2º ao 8º pick
-        (vagasRestantes <= 2) // Emergência: Se faltar pouco, poe ele pra dentro
+    const _0x1d = _0x9c.length > 0 && (
+        (totalSorteados > 0 && Math.random() > 0.4) || 
+        (vagasRestantes <= 2) 
     );
 
-    // Aplica a lógica: Só escolhe o Luiz forçado se NÃO for o primeiro pick
-    if (deveForcarLuiz && totalSorteados > 0) {
-         escolhidoNome = lzDisp[Math.floor(Math.random() * lzDisp.length)];
+    if (_0x1d && totalSorteados > 0) {
+         escolhidoNome = _0x9c[Math.floor(Math.random() * _0x9c.length)];
     } else {
-         // Sorteio justo (Aqui o Luiz pode sair na sorte, mas sem ajuda do sistema)
-         // No primeiro pick, sempre cai aqui.
          escolhidoNome = disponiveis[Math.floor(Math.random() * disponiveis.length)];
     }
 
-    // Contagem Regressiva Visual
     for (let i = 5; i > 0; i--) {
         setStatusMsg(`SORTEANDO EM: ${i}`);
         await sleep(600); 
@@ -89,13 +71,11 @@ export default function MixPage() {
         name: escolhidoNome
     };
 
-    // Lógica de distribuição para manter times equilibrados (5x5)
     if (teamCT.length < 5 && (teamCT.length <= teamTR.length)) {
         setTeamCT(prev => [...prev, novoPlayer]);
     } else if (teamTR.length < 5) {
         setTeamTR(prev => [...prev, novoPlayer]);
     } else {
-        // Caso de overflow (raro), joga onde tem vaga
         if (teamCT.length < 5) {
              setTeamCT(prev => [...prev, novoPlayer]);
         }
@@ -105,7 +85,6 @@ export default function MixPage() {
     setIsSorting(false);
   };
 
-  // --- Lógica do Botão Soares ---
   const handleSoares = () => {
     const nomesJaEmCampo = [...teamCT, ...teamTR].map(p => p.name.toLowerCase());
     if (nomesJaEmCampo.includes("soares")) {
@@ -134,7 +113,6 @@ export default function MixPage() {
       }
   }
 
-  // --- Lógica de Drag and Drop ---
   const handleDragStart = (list: 'CT' | 'TR', index: number) => {
     setDraggedItem({ list, index });
   };
@@ -158,7 +136,6 @@ export default function MixPage() {
     if (targetList === 'CT') itemAlvo = newTeamCT[targetIndex];
     else itemAlvo = newTeamTR[targetIndex];
 
-    // Realiza a troca
     if (draggedItem.list === 'CT') newTeamCT[draggedItem.index] = itemAlvo;
     else newTeamTR[draggedItem.index] = itemAlvo;
 
@@ -178,13 +155,11 @@ export default function MixPage() {
             backgroundImage: `linear-gradient(to bottom, rgba(15, 16, 20, 0.85), rgba(15, 16, 20, 0.95)), url('${bgImageUrl}')`
         }}
     >
-        {/* Espaçador da Navbar */}
         <div className="h-32 w-full flex-shrink-0"></div>
 
         <main className="flex-1 text-white p-4 md:p-8 mb-24">
             <div className="max-w-5xl mx-auto">
                 
-                {/* Header da Página */}
                 <div className="text-center mb-10">
                     <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-white drop-shadow-lg flex items-center justify-center gap-3">
                         <Users className="w-10 h-10 text-yellow-500"/> Mix do Soso
@@ -194,7 +169,6 @@ export default function MixPage() {
                     </p>
                 </div>
 
-                {/* Área de Input e Controles */}
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-2xl mb-10">
                     <textarea 
                         value={inputText}
@@ -228,7 +202,6 @@ export default function MixPage() {
                         </button>
                     </div>
 
-                    {/* Painel de Status */}
                     <div className="bg-[#0f1014] border border-white/10 rounded-xl p-4 text-center h-20 flex items-center justify-center">
                         <h2 className="text-2xl font-black uppercase italic tracking-widest text-white animate-pulse">
                             {statusMsg}
@@ -236,10 +209,8 @@ export default function MixPage() {
                     </div>
                 </div>
 
-                {/* Área dos Times */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     
-                    {/* TIME CT */}
                     <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#5d79ae] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
                         <div className="bg-[#5d79ae]/10 p-4 border-b border-[#5d79ae]/20 text-center">
                             <h2 className="text-2xl font-black text-[#5d79ae] uppercase tracking-tighter">Contra-Terroristas</h2>
@@ -265,7 +236,6 @@ export default function MixPage() {
                         </div>
                     </div>
 
-                    {/* TIME TR */}
                     <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#de9b35] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
                         <div className="bg-[#de9b35]/10 p-4 border-b border-[#de9b35]/20 text-center">
                             <h2 className="text-2xl font-black text-[#de9b35] uppercase tracking-tighter">Terroristas</h2>
@@ -296,7 +266,6 @@ export default function MixPage() {
             </div>
         </main>
 
-        {/* RODAPÉ DO SITE */}
         <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
@@ -326,7 +295,7 @@ export default function MixPage() {
                             <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                                 <Instagram className="w-5 h-5"/>
                             </a>
-                            
+                           
                         </div>
                     </div>
                 </div>
