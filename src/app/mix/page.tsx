@@ -308,10 +308,7 @@ export default function MixPage() {
                             <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                                 <Instagram className="w-5 h-5"/>
                             </a>
-                            {/* Ajustado para não ter link vazio */}
-                            <div className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition cursor-pointer">
-                                <Youtube className="w-5 h-5"/>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
