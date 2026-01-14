@@ -144,23 +144,37 @@ const iniciarSorteio = () => {
         coins: totalCoinsDoVencedor // Aqui substituímos pelo TOTAL
     };
 
+    // --- CONFIGURAÇÃO DO SUSPENSE ---
+    // Aumentei de 50 para 100 interações. Isso faz o sorteio durar o dobro do tempo.
     let interacoes = 0;
-    const maxInteracoes = 50; 
+    const maxInteracoes = 100; 
 
     const loopSorteio = async () => {
         // Efeito visual de trocar nomes aleatórios
         setParticipanteFake(candidatos[Math.floor(Math.random() * candidatos.length)]);
         interacoes++;
 
-        let delay = 50; 
-        if (interacoes > 30) delay = 100;
-        if (interacoes > 40) delay = 250;
-        if (interacoes > 45) delay = 500;
+        // --- AQUI ESTÁ O CONTROLE DE VELOCIDADE ---
+        let delay = 30; // Começa MUITO rápido (30ms) - vira um borrão
+
+        // Quando chega em 60% do tempo, começa a desacelerar
+        if (interacoes > 60) delay = 100; 
+        
+        // Entrando na reta final (suspense)
+        if (interacoes > 80) delay = 300; 
+        
+        // Os últimos 5 nomes (quase parando...)
+        if (interacoes > 90) delay = 800; 
+
+        // O último pulo antes de mostrar o vencedor (1.5 segundos de tensão)
+        if (interacoes > 98) delay = 1500;
 
         if (interacoes < maxInteracoes) {
             setTimeout(loopSorteio, delay);
         } else {
             setSorteando(false);
+            
+            // ... (resto do código que salva o ganhador e exibe o modal) ...
             
             // AQUI: Usamos o objeto com o valor SOMADO para exibir na tela
             setGanhadorRevelado(vencedorParaExibir);
@@ -168,19 +182,17 @@ const iniciarSorteio = () => {
             const novoRound = listaGanhadores.length + 1;
             const dataGanhou = new Date().toLocaleString();
 
-            // No banco de dados, salvamos o ticket original que foi sorteado (para auditoria)
             const { error } = await supabase.from('ganhadores').insert([{
                 sorteio_id: sorteioSelecionado.id,
-                ticket_id: vencedorReal.id, // ID do ticket específico que ganhou na matemática
+                ticket_id: vencedorReal.id,
                 round: novoRound,
                 data_ganhou: dataGanhou
             }]);
 
             if (!error) {
-                // Na lista de baixo, também mostramos o total
                 const novoG: Ganhador = { 
                     round: novoRound, 
-                    ticket: vencedorParaExibir, // Mostra o total na lista de ganhadores tbm
+                    ticket: vencedorParaExibir,
                     dataGanhou: dataGanhou 
                 };
                 setListaGanhadores([...listaGanhadores, novoG]);
