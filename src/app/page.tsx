@@ -33,9 +33,9 @@ export default function Home() {
   const [qtdCoins, setQtdCoins] = useState("");
   const [instagram, setInstagram] = useState("");
   
-  // ESTADOS DE ARQUIVO (ATUALIZADO)
-  const [arquivoPrint, setArquivoPrint] = useState<string | null>(null); // Apenas para o Preview na tela (Leve)
-  const [arquivoParaUpload, setArquivoParaUpload] = useState<File | null>(null); // O Arquivo Real (Para enviar depois)
+  // ESTADOS DE ARQUIVO
+  const [arquivoPrint, setArquivoPrint] = useState<string | null>(null); // Preview na tela (Leve)
+  const [arquivoParaUpload, setArquivoParaUpload] = useState<File | null>(null); // Arquivo Real (Para o Storage)
 
   // LINK DA IMAGEM DE FUNDO
   const bgImageUrl = "/background.png"; 
@@ -66,12 +66,11 @@ export default function Home() {
     setQtdCoins(""); 
     setInstagram(""); 
     setArquivoPrint(null);
-    setArquivoParaUpload(null); // Limpa o arquivo real também
+    setArquivoParaUpload(null); 
     
     setModalAberto(true);
   };
 
-  // --- NOVA FUNÇÃO OTIMIZADA (LEVE) ---
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     
@@ -82,7 +81,7 @@ export default function Home() {
           return;
       }
 
-      // 1. Guarda o arquivo ORIGINAL (para upload futuro)
+      // 1. Guarda o arquivo ORIGINAL (para upload no bucket 'prints')
       setArquivoParaUpload(file);
 
       // 2. Cria um link temporário SUPER LEVE só para mostrar na tela
@@ -91,10 +90,11 @@ export default function Home() {
     }
   };
 
+  // --- FUNÇÃO FINAL COM UPLOAD PRO BUCKET 'prints' ---
   const confirmarParticipacao = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Verifica se tem arquivoParaUpload em vez de arquivoPrint string
+    // Validação
     if (!csgobigId || !qtdCoins || !instagram || !arquivoParaUpload || !sorteioSelecionado) {
       alert("Preencha todos os dados e envie o comprovante!");
       return;
@@ -102,31 +102,56 @@ export default function Home() {
 
     setEnviando(true);
 
-    // --- INSERT SEGURO (SEM BASE64) ---
-    const { error } = await supabase.from('tickets').insert([{
-        sorteio_id: sorteioSelecionado.id,
-        email: session?.user?.email,
-        user_image: session?.user?.image,
-        csgobig_id: csgobigId,
-        coins: Number(qtdCoins),
-        instagram: instagram,
+    try {
+        // --- 1. UPLOAD DA IMAGEM PRO STORAGE (BUCKET: prints) ---
+        // Gera um nome único: timestamp_nomedoarquivo.png
+        const nomeArquivo = `${Date.now()}_${arquivoParaUpload.name.replace(/\s/g, '')}`;
         
-        // ENVIA TEXTO CURTO AGORA (FUTURAMENTE ENVIAREMOS O LINK DO STORAGE AQUI)
-        print: "imagem_temporaria_teste", 
-        
-        status: "Pendente",
-        data: new Date().toLocaleString()
-    }]);
+        const { error: uploadError } = await supabase
+            .storage
+            .from('prints') // <--- SEU BUCKET AQUI
+            .upload(nomeArquivo, arquivoParaUpload);
 
-    setEnviando(false);
+        if (uploadError) {
+            throw new Error("Erro ao subir imagem: " + uploadError.message);
+        }
 
-    if (error) {
-        alert("Erro ao enviar: " + error.message);
-    } else {
+        // --- 2. PEGAR O LINK PÚBLICO ---
+        const { data: publicUrlData } = supabase
+            .storage
+            .from('prints') // <--- SEU BUCKET AQUI TAMBÉM
+            .getPublicUrl(nomeArquivo);
+
+        const linkDaImagem = publicUrlData.publicUrl;
+
+        // --- 3. SALVAR NO BANCO (AGORA COM O LINK!) ---
+        const { error: dbError } = await supabase.from('tickets').insert([{
+            sorteio_id: sorteioSelecionado.id,
+            email: session?.user?.email,
+            user_image: session?.user?.image,
+            csgobig_id: csgobigId,
+            coins: Number(qtdCoins),
+            instagram: instagram,
+            
+            print: linkDaImagem, // <--- SALVA O LINK GERADO, NÃO O ARQUIVO
+            
+            status: "Pendente",
+            data: new Date().toLocaleString()
+        }]);
+
+        if (dbError) throw dbError;
+
+        // Sucesso!
         setModalAberto(false);
-        if (confirm("✅ Sucesso! Deseja ver seus tickets agora?")) {
+        if (confirm("✅ Sucesso! Ticket enviado. Deseja ver seus tickets agora?")) {
             window.location.href = "/meus-sorteios";
         }
+
+    } catch (error: any) {
+        console.error("Erro no processo:", error);
+        alert("Ops! " + error.message);
+    } finally {
+        setEnviando(false);
     }
   };
 
