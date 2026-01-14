@@ -92,7 +92,7 @@ export default function Home() {
     csgobig_id: csgobigId,
     coins: Number(qtdCoins),
     instagram: instagram,
-    print: "comprovante_pendente_storage", 
+    print: "imagem_temporaria_teste",
     status: "Pendente",
     data: new Date().toLocaleString()
 }]);
