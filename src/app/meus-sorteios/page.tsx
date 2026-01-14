@@ -60,8 +60,11 @@ export default function MeusSorteios() {
         .order('id', { ascending: false });
 
       if (error) {
-        console.error("Erro ao buscar tickets:", error);
+        // SE TIVER ERRO, VAI APARECER AQUI NO CONSOLE (F12)
+        console.error("ERRO CRÍTICO AO BUSCAR TICKETS:", error);
+        alert("Erro ao buscar tickets. Abra o console (F12) para ver detalhes.");
       } else {
+        console.log("Tickets encontrados:", data); // Para debug
         setTickets(data as any);
       }
     } catch (error) {
@@ -95,7 +98,6 @@ export default function MeusSorteios() {
     }
   };
 
-  // Se não estiver logado
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen bg-[#0f1014] flex flex-col items-center justify-center p-4 text-center">
@@ -116,12 +118,10 @@ export default function MeusSorteios() {
             backgroundImage: `linear-gradient(to bottom, rgba(15, 16, 20, 0.95), rgba(15, 16, 20, 0.98)), url('${bgImageUrl}')`
         }}
     >
-      {/* ESPAÇADOR DA NAVBAR */}
       <div className="h-32 w-full flex-shrink-0"></div>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-40 min-h-screen">
         
-        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
             <div>
                 <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
@@ -135,33 +135,28 @@ export default function MeusSorteios() {
             </Link>
         </div>
 
-        {/* LOADING */}
         {loading ? (
             <div className="text-center py-20">
                 <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                 <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">Carregando seus dados...</p>
             </div>
         ) : tickets.length === 0 ? (
-            /* EMPTY STATE */
             <div className="bg-[#1b1e24]/50 border border-white/5 rounded-2xl p-12 text-center mt-10">
                 <Search className="w-16 h-16 text-slate-700 mx-auto mb-4"/>
                 <h3 className="text-xl font-bold text-white mb-2">Nenhum ticket encontrado</h3>
                 <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                    Você ainda não participou de nenhum sorteio. Escolha uma skin irada na home e participe agora mesmo!
+                    Pode ter ocorrido um erro ao carregar ou você ainda não participou. Verifique o console (F12) se achar que é um erro.
                 </p>
                 <Link href="/" className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-black uppercase transition">
                     Ver Sorteios Ativos
                 </Link>
             </div>
         ) : (
-            /* LISTA DE TICKETS */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tickets.map((ticket) => (
                     <div key={ticket.id} className="bg-[#1b1e24] border border-white/5 rounded-xl overflow-hidden hover:border-yellow-500/30 transition group shadow-lg flex flex-col h-full">
                         
-                        {/* Imagem do Sorteio */}
                         <div className="h-40 bg-[#15171c] relative overflow-hidden flex items-center justify-center p-4">
-                             {/* Overlay Gradiente */}
                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent)]"></div>
                              
                              {ticket.sorteios ? (
@@ -174,7 +169,6 @@ export default function MeusSorteios() {
                                 <span className="text-slate-600 text-xs">Imagem indisponível</span>
                              )}
 
-                             {/* Status do Sorteio (Label) */}
                              {ticket.sorteios?.status === 'Finalizado' && (
                                  <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] text-red-500 font-bold uppercase border border-red-500/20">
                                      Sorteio Finalizado
@@ -182,13 +176,12 @@ export default function MeusSorteios() {
                              )}
                         </div>
 
-                        {/* Corpo do Card */}
                         <div className="p-5 flex flex-col flex-1">
                             <div className="mb-4">
-                                {/* DATA REMOVIDA AQUI */}
                                 <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
                                     {ticket.sorteios?.nome || "Sorteio Removido"}
                                 </h3>
+                                {/* DATA REMOVIDA AQUI, CONFORME SOLICITADO */}
                             </div>
 
                             <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
@@ -209,7 +202,6 @@ export default function MeusSorteios() {
 
       </main>
 
-      {/* RODAPÉ COMPLETO */}
       <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10 relative">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
@@ -239,7 +231,6 @@ export default function MeusSorteios() {
                             <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                                 <Instagram className="w-5 h-5"/>
                             </a>
-                            
                         </div>
                     </div>
                 </div>
