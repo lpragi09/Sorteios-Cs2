@@ -4,7 +4,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
-import { Ticket, Clock, CheckCircle, XCircle, Search, Home, Twitch, Instagram } from "lucide-react";
+import { Ticket, Clock, CheckCircle, XCircle, Search, Home, Twitch, Instagram, Youtube } from "lucide-react";
 
 // Definição dos Tipos
 type Sorteio = {
@@ -18,12 +18,11 @@ type TicketData = {
   id: number;
   created_at: string;
   sorteio_id: number;
-  status: string; // Pendente, Aprovado, Rejeitado
+  status: string;
   coins: number;
-  sorteios: Sorteio; // Relacionamento com a tabela sorteios
+  sorteios: Sorteio;
 };
 
-// Inicializa Supabase
 const supabase = createClient();
 
 export default function MeusSorteios() {
@@ -31,7 +30,6 @@ export default function MeusSorteios() {
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Link da imagem de fundo
   const bgImageUrl = "/background.png";
 
   useEffect(() => {
@@ -44,11 +42,17 @@ export default function MeusSorteios() {
 
   const carregarMeusTickets = async () => {
     try {
-      // Busca tickets e faz o JOIN com a tabela de sorteios
+      // --- CORREÇÃO DE PERFORMANCE ---
+      // Antes estava: .select('*', ...) -> Trazia o 'print' (imagem pesada) de todos.
+      // Agora: Selecionamos APENAS os campos leves. O banco agradece!
       const { data, error } = await supabase
         .from('tickets')
         .select(`
-          *,
+          id,
+          created_at,
+          status,
+          coins,
+          sorteio_id,
           sorteios (
             nome,
             img,
@@ -60,11 +64,8 @@ export default function MeusSorteios() {
         .order('id', { ascending: false });
 
       if (error) {
-        // SE TIVER ERRO, VAI APARECER AQUI NO CONSOLE (F12)
-        console.error("ERRO CRÍTICO AO BUSCAR TICKETS:", error);
-        alert("Erro ao buscar tickets. Abra o console (F12) para ver detalhes.");
+        console.error("Erro ao buscar tickets:", error);
       } else {
-        console.log("Tickets encontrados:", data); // Para debug
         setTickets(data as any);
       }
     } catch (error) {
@@ -74,7 +75,6 @@ export default function MeusSorteios() {
     }
   };
 
-  // Função para renderizar o badge de status
   const renderStatus = (status: string) => {
     switch (status) {
       case "Aprovado":
@@ -89,7 +89,7 @@ export default function MeusSorteios() {
             <XCircle className="w-3.5 h-3.5" /> Recusado
           </div>
         );
-      default: // Pendente
+      default:
         return (
           <div className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded border border-yellow-500/20 text-xs font-bold uppercase tracking-wide animate-pulse">
             <Clock className="w-3.5 h-3.5" /> Analisando
@@ -145,7 +145,7 @@ export default function MeusSorteios() {
                 <Search className="w-16 h-16 text-slate-700 mx-auto mb-4"/>
                 <h3 className="text-xl font-bold text-white mb-2">Nenhum ticket encontrado</h3>
                 <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                    Pode ter ocorrido um erro ao carregar ou você ainda não participou. Verifique o console (F12) se achar que é um erro.
+                    Seus tickets não puderam ser carregados ou você ainda não tem participações.
                 </p>
                 <Link href="/" className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-black uppercase transition">
                     Ver Sorteios Ativos
@@ -181,7 +181,6 @@ export default function MeusSorteios() {
                                 <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
                                     {ticket.sorteios?.nome || "Sorteio Removido"}
                                 </h3>
-                                {/* DATA REMOVIDA AQUI, CONFORME SOLICITADO */}
                             </div>
 
                             <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
@@ -230,6 +229,9 @@ export default function MeusSorteios() {
                             </a>
                             <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                                 <Instagram className="w-5 h-5"/>
+                            </a>
+                            <a href="#" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition">
+                                <Youtube className="w-5 h-5"/>
                             </a>
                         </div>
                     </div>
