@@ -1,280 +1,218 @@
 "use client";
 
+import { useSession, signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
-import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube, Gamepad2 } from "lucide-react";
+import { createClient } from "@/lib/supabaseClient";
+import { Ticket, Clock, CheckCircle, XCircle, Search, Home, Twitch, Instagram } from "lucide-react";
 
-type Player = {
-  id: string;
-  name: string;
+// Definição dos Tipos
+type Sorteio = {
+  nome: string;
+  img: string;
+  status: string;
+  valor: string;
 };
 
-export default function MixPage() {
-  const [inputText, setInputText] = useState("");
-  const [teamCT, setTeamCT] = useState<Player[]>([]);
-  const [teamTR, setTeamTR] = useState<Player[]>([]);
-  const [statusMsg, setStatusMsg] = useState("Aguardando...");
-  const [isSorting, setIsSorting] = useState(false);
-  
-  const [draggedItem, setDraggedItem] = useState<{ list: 'CT' | 'TR', index: number } | null>(null);
+type TicketData = {
+  id: number;
+  created_at: string;
+  sorteio_id: number;
+  status: string; // Pendente, Aprovado, Rejeitado
+  coins: number;
+  sorteios: Sorteio; // Relacionamento com a tabela sorteios
+};
 
+// Inicializa Supabase
+const supabase = createClient();
+
+export default function MeusSorteios() {
+  const { data: session, status } = useSession();
+  const [tickets, setTickets] = useState<TicketData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Link da imagem de fundo
   const bgImageUrl = "/background.png";
 
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  const handleSortear = async () => {
-    const nomes = inputText.split('\n').map(n => n.trim()).filter(n => n !== "");
-    
-    const nomesJaEmCampo = [...teamCT, ...teamTR].map(p => p.name);
-    const totalSorteados = nomesJaEmCampo.length;
-    
-    const disponiveis = nomes.filter(n => !nomesJaEmCampo.includes(n));
-
-    if (totalSorteados >= 10) {
-        setStatusMsg("DRAFT FINALIZADO!");
-        return;
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.email) {
+      carregarMeusTickets();
+    } else if (status === "unauthenticated") {
+      setLoading(false);
     }
+  }, [status, session]);
 
-    if (disponiveis.length === 0) {
-        alert("Não há novos nomes na lista ou todos já foram sorteados!");
-        return;
-    }
+  const carregarMeusTickets = async () => {
+    try {
+      // Busca tickets e faz o JOIN com a tabela de sorteios
+      const { data, error } = await supabase
+        .from('tickets')
+        .select(`
+          *,
+          sorteios (
+            nome,
+            img,
+            status,
+            valor
+          )
+        `)
+        .eq('email', session?.user?.email)
+        .order('id', { ascending: false });
 
-    setIsSorting(true);
-
-   
-    const _0x7a = atob('bHVpeg=='); 
-    const _0x8b = atob('bHVpcw=='); 
-    const _0x9d = atob('bG9peg=='); 
-    
-   
-    const _0x9c = disponiveis.filter(n => 
-        n.toLowerCase().includes(_0x7a) || 
-        n.toLowerCase().includes(_0x8b) || 
-        n.toLowerCase().includes(_0x9d)
-    );
-    
-    let escolhidoNome: string;
-    const vagasRestantes = 10 - totalSorteados;
-
-    const _0x1d = _0x9c.length > 0 && (
-        (totalSorteados > 0 && Math.random() > 0.4) || 
-        (vagasRestantes <= 2) 
-    );
-
-    if (_0x1d && totalSorteados > 0) {
-         escolhidoNome = _0x9c[Math.floor(Math.random() * _0x9c.length)];
-    } else {
-         escolhidoNome = disponiveis[Math.floor(Math.random() * disponiveis.length)];
-    }
-
-    for (let i = 5; i > 0; i--) {
-        setStatusMsg(`SORTEANDO EM: ${i}`);
-        await sleep(600); 
-    }
-
-    const novoPlayer: Player = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: escolhidoNome
-    };
-
-    if (teamCT.length < 5 && (teamCT.length <= teamTR.length)) {
-        setTeamCT(prev => [...prev, novoPlayer]);
-    } else if (teamTR.length < 5) {
-        setTeamTR(prev => [...prev, novoPlayer]);
-    } else {
-        if (teamCT.length < 5) {
-             setTeamCT(prev => [...prev, novoPlayer]);
-        }
-    }
-
-    setStatusMsg(`SORTEADO: ${escolhidoNome.toUpperCase()}`);
-    setIsSorting(false);
-  };
-
-  const handleSoares = () => {
-    const nomesJaEmCampo = [...teamCT, ...teamTR].map(p => p.name.toLowerCase());
-    if (nomesJaEmCampo.includes("soares")) {
-        alert("Soares já está em campo!");
-        return;
-    }
-
-    const soaresPlayer: Player = { id: "soares-id", name: "Soares" };
-
-    if (teamCT.length < 5 && (Math.random() > 0.5 || teamTR.length >= 5)) {
-        setTeamCT(prev => [...prev, soaresPlayer]);
-        setStatusMsg("SOARES -> TIME CT");
-    } else if (teamTR.length < 5) {
-        setTeamTR(prev => [...prev, soaresPlayer]);
-        setStatusMsg("SOARES -> TIME TR");
-    } else {
-        alert("Times cheios!");
-    }
-  };
-
-  const handleLimparTimes = () => {
-      if(confirm("Limpar os times?")) {
-          setTeamCT([]);
-          setTeamTR([]);
-          setStatusMsg("Aguardando...");
+      if (error) {
+        console.error("Erro ao buscar tickets:", error);
+      } else {
+        setTickets(data as any);
       }
+    } catch (error) {
+      console.error("Erro geral:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para renderizar o badge de status
+  const renderStatus = (status: string) => {
+    switch (status) {
+      case "Aprovado":
+        return (
+          <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded border border-green-400/20 text-xs font-bold uppercase tracking-wide">
+            <CheckCircle className="w-3.5 h-3.5" /> Confirmado
+          </div>
+        );
+      case "Rejeitado":
+        return (
+          <div className="flex items-center gap-1.5 text-red-400 bg-red-400/10 px-3 py-1 rounded border border-red-400/20 text-xs font-bold uppercase tracking-wide">
+            <XCircle className="w-3.5 h-3.5" /> Recusado
+          </div>
+        );
+      default: // Pendente
+        return (
+          <div className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded border border-yellow-500/20 text-xs font-bold uppercase tracking-wide animate-pulse">
+            <Clock className="w-3.5 h-3.5" /> Analisando
+          </div>
+        );
+    }
+  };
+
+  // Se não estiver logado
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-[#0f1014] flex flex-col items-center justify-center p-4 text-center">
+        <Ticket className="w-16 h-16 text-slate-600 mb-4" />
+        <h1 className="text-2xl font-bold text-white mb-2">Você precisa estar logado</h1>
+        <p className="text-slate-400 mb-6">Faça login para ver seus tickets e histórico.</p>
+        <button onClick={() => signIn("google")} className="bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-bold uppercase transition">
+          Fazer Login
+        </button>
+      </div>
+    );
   }
-
-  const handleDragStart = (list: 'CT' | 'TR', index: number) => {
-    setDraggedItem({ list, index });
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); 
-  };
-
-  const handleDrop = (targetList: 'CT' | 'TR', targetIndex: number) => {
-    if (!draggedItem) return;
-    if (draggedItem.list === targetList && draggedItem.index === targetIndex) return;
-
-    const newTeamCT = [...teamCT];
-    const newTeamTR = [...teamTR];
-
-    let itemArrastado: Player;
-    if (draggedItem.list === 'CT') itemArrastado = newTeamCT[draggedItem.index];
-    else itemArrastado = newTeamTR[draggedItem.index];
-
-    let itemAlvo: Player;
-    if (targetList === 'CT') itemAlvo = newTeamCT[targetIndex];
-    else itemAlvo = newTeamTR[targetIndex];
-
-    if (draggedItem.list === 'CT') newTeamCT[draggedItem.index] = itemAlvo;
-    else newTeamTR[draggedItem.index] = itemAlvo;
-
-    if (targetList === 'CT') newTeamCT[targetIndex] = itemArrastado;
-    else newTeamTR[targetIndex] = itemArrastado;
-
-    setTeamCT(newTeamCT);
-    setTeamTR(newTeamTR);
-    setDraggedItem(null);
-    setStatusMsg("TROCA REALIZADA!");
-  };
 
   return (
     <div 
-        className="flex flex-col min-h-screen bg-[#0f1014] bg-cover bg-center bg-fixed font-sans"
+        className="flex flex-col min-h-screen bg-[#0f1014] bg-cover bg-center bg-fixed"
         style={{
-            backgroundImage: `linear-gradient(to bottom, rgba(15, 16, 20, 0.85), rgba(15, 16, 20, 0.95)), url('${bgImageUrl}')`
+            backgroundImage: `linear-gradient(to bottom, rgba(15, 16, 20, 0.95), rgba(15, 16, 20, 0.98)), url('${bgImageUrl}')`
         }}
     >
-        <div className="h-32 w-full flex-shrink-0"></div>
+      {/* ESPAÇADOR DA NAVBAR */}
+      <div className="h-32 w-full flex-shrink-0"></div>
 
-        <main className="flex-1 text-white p-4 md:p-8 mb-24">
-            <div className="max-w-5xl mx-auto">
-                
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-white drop-shadow-lg flex items-center justify-center gap-3">
-                        <Users className="w-10 h-10 text-yellow-500"/> Mix do Soso
-                    </h1>
-                    <p className="text-slate-400 text-sm mt-2 font-bold uppercase tracking-widest">
-                        Arraste um nome sobre outro para trocar de time
-                    </p>
-                </div>
-
-                <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-2xl mb-10">
-                    <textarea 
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        placeholder="Cole a lista de nicks aqui (um por linha)..."
-                        className="w-full h-48 bg-[#0f1014] border border-white/10 rounded-xl p-4 text-white placeholder:text-slate-600 focus:border-yellow-500 outline-none transition font-mono text-sm resize-y mb-6"
-                    ></textarea>
-
-                    <div className="flex flex-wrap justify-center gap-4 mb-6">
-                        <button 
-                            onClick={handleSortear} 
-                            disabled={isSorting}
-                            className="bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-black uppercase italic tracking-wide transition shadow-lg flex items-center gap-2"
-                        >
-                            {isSorting ? "Sorteando..." : <><Shuffle className="w-5 h-5"/> Sortear Próximo</>}
-                        </button>
-
-                        <button 
-                            onClick={handleSoares}
-                            disabled={isSorting}
-                            className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-xl font-black uppercase italic tracking-wide transition shadow-lg flex items-center gap-2"
-                        >
-                            <UserPlus className="w-5 h-5"/> Soares
-                        </button>
-
-                        <button 
-                            onClick={handleLimparTimes}
-                            className="bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/50 px-6 py-3 rounded-xl font-bold uppercase transition flex items-center gap-2"
-                        >
-                            <Trash2 className="w-5 h-5"/> Resetar
-                        </button>
-                    </div>
-
-                    <div className="bg-[#0f1014] border border-white/10 rounded-xl p-4 text-center h-20 flex items-center justify-center">
-                        <h2 className="text-2xl font-black uppercase italic tracking-widest text-white animate-pulse">
-                            {statusMsg}
-                        </h2>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    
-                    <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#5d79ae] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
-                        <div className="bg-[#5d79ae]/10 p-4 border-b border-[#5d79ae]/20 text-center">
-                            <h2 className="text-2xl font-black text-[#5d79ae] uppercase tracking-tighter">Contra-Terroristas</h2>
-                            <p className="text-xs text-[#5d79ae]/70 font-bold uppercase">{teamCT.length} / 5 Jogadores</p>
-                        </div>
-                        <div className="p-4 flex-1 space-y-2">
-                            {teamCT.map((player, index) => (
-                                <div 
-                                    key={player.id}
-                                    draggable
-                                    onDragStart={() => handleDragStart('CT', index)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={() => handleDrop('CT', index)}
-                                    className="bg-[#0f1014] border-l-4 border-[#5d79ae] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center gap-3 animate-in slide-in-from-left-4 duration-300"
-                                >
-                                    <span className="text-[#5d79ae]/50 text-sm">#{index + 1}</span>
-                                    {player.name}
-                                </div>
-                            ))}
-                            {teamCT.length === 0 && (
-                                <div className="text-center text-slate-600 italic py-10 text-sm uppercase font-bold">Aguardando jogadores...</div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#de9b35] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
-                        <div className="bg-[#de9b35]/10 p-4 border-b border-[#de9b35]/20 text-center">
-                            <h2 className="text-2xl font-black text-[#de9b35] uppercase tracking-tighter">Terroristas</h2>
-                            <p className="text-xs text-[#de9b35]/70 font-bold uppercase">{teamTR.length} / 5 Jogadores</p>
-                        </div>
-                        <div className="p-4 flex-1 space-y-2">
-                            {teamTR.map((player, index) => (
-                                <div 
-                                    key={player.id}
-                                    draggable
-                                    onDragStart={() => handleDragStart('TR', index)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={() => handleDrop('TR', index)}
-                                    className="bg-[#0f1014] border-l-4 border-[#de9b35] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center gap-3 animate-in slide-in-from-right-4 duration-300"
-                                >
-                                    <span className="text-[#de9b35]/50 text-sm">#{index + 1}</span>
-                                    {player.name}
-                                </div>
-                            ))}
-                            {teamTR.length === 0 && (
-                                <div className="text-center text-slate-600 italic py-10 text-sm uppercase font-bold">Aguardando jogadores...</div>
-                            )}
-                        </div>
-                    </div>
-
-                </div>
-
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-20">
+        
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <div>
+                <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
+                    <Ticket className="text-yellow-500" /> Meus Tickets
+                </h1>
+                <p className="text-slate-400 text-sm mt-1">Acompanhe o status das suas participações.</p>
             </div>
-        </main>
+            
+            <Link href="/" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg border border-white/10 font-bold text-sm uppercase transition flex items-center gap-2">
+                <Home className="w-4 h-4"/> Voltar para Home
+            </Link>
+        </div>
 
-        {/* RODAPÉ */}
-         <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
+        {/* LOADING */}
+        {loading ? (
+            <div className="text-center py-20">
+                <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">Carregando seus dados...</p>
+            </div>
+        ) : tickets.length === 0 ? (
+            /* EMPTY STATE */
+            <div className="bg-[#1b1e24]/50 border border-white/5 rounded-2xl p-12 text-center">
+                <Search className="w-16 h-16 text-slate-700 mx-auto mb-4"/>
+                <h3 className="text-xl font-bold text-white mb-2">Nenhum ticket encontrado</h3>
+                <p className="text-slate-400 mb-6 max-w-md mx-auto">
+                    Você ainda não participou de nenhum sorteio. Escolha uma skin irada na home e participe agora mesmo!
+                </p>
+                <Link href="/" className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-black uppercase transition">
+                    Ver Sorteios Ativos
+                </Link>
+            </div>
+        ) : (
+            /* LISTA DE TICKETS */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tickets.map((ticket) => (
+                    <div key={ticket.id} className="bg-[#1b1e24] border border-white/5 rounded-xl overflow-hidden hover:border-yellow-500/30 transition group shadow-lg">
+                        
+                        {/* Imagem do Sorteio */}
+                        <div className="h-32 bg-[#15171c] relative overflow-hidden flex items-center justify-center p-4">
+                             {/* Overlay Gradiente */}
+                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent)]"></div>
+                             
+                             {ticket.sorteios ? (
+                                <img 
+                                    src={ticket.sorteios.img} 
+                                    alt={ticket.sorteios.nome} 
+                                    className={`h-full object-contain drop-shadow-lg transition duration-500 group-hover:scale-110 ${ticket.sorteios.status === 'Finalizado' ? 'grayscale opacity-50' : ''}`}
+                                />
+                             ) : (
+                                <span className="text-slate-600 text-xs">Imagem indisponível</span>
+                             )}
+
+                             {/* Status do Sorteio (Label) */}
+                             {ticket.sorteios?.status === 'Finalizado' && (
+                                 <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] text-red-500 font-bold uppercase border border-red-500/20">
+                                     Sorteio Finalizado
+                                 </div>
+                             )}
+                        </div>
+
+                        {/* Corpo do Card */}
+                        <div className="p-5">
+                            <div className="mb-4">
+                                <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
+                                    {ticket.sorteios?.nome || "Sorteio Removido"}
+                                </h3>
+                                <p className="text-xs text-slate-500 flex items-center gap-1">
+                                    Data: <span className="text-slate-300">{new Date(ticket.created_at).toLocaleDateString()} às {new Date(ticket.created_at).toLocaleTimeString().slice(0,5)}</span>
+                                </p>
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
+                                <div className="text-left">
+                                    <p className="text-[10px] text-slate-500 uppercase font-bold mb-0.5">Sua Entrada</p>
+                                    <p className="text-yellow-500 font-black text-lg">{ticket.coins} <span className="text-xs font-bold text-yellow-500/50">COINS</span></p>
+                                </div>
+                                
+                                <div className="text-right">
+                                    {renderStatus(ticket.status)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
+
+      </main>
+
+      {/* RODAPÉ COMPLETO */}
+      <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                     <div className="space-y-4">
@@ -299,11 +237,11 @@ export default function MixPage() {
                         <div className="flex gap-4">
                             <a href="https://www.twitch.tv/soares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
                                 <Twitch className="w-5 h-5"/>
-
                             </a>
                             <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
                                 <Instagram className="w-5 h-5"/>
                             </a>
+                            
                         </div>
                     </div>
                 </div>
