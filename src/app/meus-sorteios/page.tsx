@@ -119,7 +119,11 @@ export default function MeusSorteios() {
       {/* ESPAÇADOR DA NAVBAR */}
       <div className="h-32 w-full flex-shrink-0"></div>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-20">
+      {/* AQUI ESTÁ A MÁGICA: 
+          'flex-1' faz a main ocupar todo o espaço disponível, empurrando o footer pra baixo.
+          'pb-24' garante um respiro no final da lista antes do footer.
+      */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-24">
         
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
@@ -143,7 +147,7 @@ export default function MeusSorteios() {
             </div>
         ) : tickets.length === 0 ? (
             /* EMPTY STATE */
-            <div className="bg-[#1b1e24]/50 border border-white/5 rounded-2xl p-12 text-center">
+            <div className="bg-[#1b1e24]/50 border border-white/5 rounded-2xl p-12 text-center mt-10">
                 <Search className="w-16 h-16 text-slate-700 mx-auto mb-4"/>
                 <h3 className="text-xl font-bold text-white mb-2">Nenhum ticket encontrado</h3>
                 <p className="text-slate-400 mb-6 max-w-md mx-auto">
@@ -157,10 +161,10 @@ export default function MeusSorteios() {
             /* LISTA DE TICKETS */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tickets.map((ticket) => (
-                    <div key={ticket.id} className="bg-[#1b1e24] border border-white/5 rounded-xl overflow-hidden hover:border-yellow-500/30 transition group shadow-lg">
+                    <div key={ticket.id} className="bg-[#1b1e24] border border-white/5 rounded-xl overflow-hidden hover:border-yellow-500/30 transition group shadow-lg flex flex-col h-full">
                         
                         {/* Imagem do Sorteio */}
-                        <div className="h-32 bg-[#15171c] relative overflow-hidden flex items-center justify-center p-4">
+                        <div className="h-40 bg-[#15171c] relative overflow-hidden flex items-center justify-center p-4">
                              {/* Overlay Gradiente */}
                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent)]"></div>
                              
@@ -183,7 +187,7 @@ export default function MeusSorteios() {
                         </div>
 
                         {/* Corpo do Card */}
-                        <div className="p-5">
+                        <div className="p-5 flex flex-col flex-1">
                             <div className="mb-4">
                                 <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
                                     {ticket.sorteios?.nome || "Sorteio Removido"}
@@ -212,7 +216,8 @@ export default function MeusSorteios() {
       </main>
 
       {/* RODAPÉ COMPLETO */}
-      <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
+      {/* Adicionei 'mt-auto' para forçar ele pro final se a página for pequena */}
+      <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10 relative">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
                     <div className="space-y-4">
