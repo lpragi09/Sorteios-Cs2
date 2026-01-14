@@ -86,16 +86,16 @@ export default function Home() {
     setEnviando(true);
 
     const { error } = await supabase.from('tickets').insert([{
-        sorteio_id: sorteioSelecionado.id,
-        email: session?.user?.email,
-        user_image: session?.user?.image,
-        csgobig_id: csgobigId,
-        coins: Number(qtdCoins),
-        instagram: instagram,
-        print: arquivoPrint,
-        status: "Pendente",
-        data: new Date().toLocaleString()
-    }]);
+    sorteio_id: sorteioSelecionado.id,
+    email: session?.user?.email,
+    user_image: session?.user?.image,
+    csgobig_id: csgobigId,
+    coins: Number(qtdCoins),
+    instagram: instagram,
+    print: "comprovante_pendente_storage", 
+    status: "Pendente",
+    data: new Date().toLocaleString()
+}]);
 
     setEnviando(false);
 
