@@ -4,7 +4,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
-import { Ticket, CheckCircle, Search, Home, ChevronLeft, ChevronRight, AlertCircle, Twitch, Instagram } from "lucide-react";
+import { Ticket, CheckCircle, Search, Home, ChevronLeft, ChevronRight, AlertCircle, Twitch, Instagram, Clock, XCircle } from "lucide-react";
 
 // Definição dos Tipos
 type Sorteio = {
@@ -19,12 +19,13 @@ type TicketData = {
   data: string; 
   sorteio_id: string;
   coins: number;
+  status: string; // Adicionado o campo status aqui
   sorteios?: Sorteio; 
 };
 
 const supabase = createClient();
 
-// ALTERADO PARA 9 ITENS POR PÁGINA
+// 9 ITENS POR PÁGINA (Paginação)
 const ITENS_POR_PAGINA = 9; 
 
 export default function MeusSorteios() {
@@ -60,6 +61,7 @@ export default function MeusSorteios() {
           id,
           data,
           coins,
+          status, 
           sorteio_id,
           sorteios (
             nome,
@@ -77,7 +79,7 @@ export default function MeusSorteios() {
         if (error.code === "PGRST200" || error.message.includes("foreign key")) {
             const { data: dataSimples, count: countSimples } = await supabase
                 .from('tickets')
-                .select('id, data, coins, sorteio_id', { count: 'exact' })
+                .select('id, data, coins, status, sorteio_id', { count: 'exact' })
                 .eq('email', session?.user?.email)
                 .order('id', { ascending: false })
                 .range(from, to);
@@ -104,17 +106,32 @@ export default function MeusSorteios() {
   const mudarPagina = (novaPagina: number) => {
     if (novaPagina >= 1 && novaPagina <= totalPaginas) {
         carregarMeusTickets(novaPagina);
-        // Rola suave para o topo da lista
         window.scrollTo({ top: 100, behavior: 'smooth' });
     }
   };
 
-  const renderStatus = () => {
-    return (
-      <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded border border-green-400/20 text-xs font-bold uppercase tracking-wide">
-        <CheckCircle className="w-3.5 h-3.5" /> Confirmado
-      </div>
-    );
+  // --- LÓGICA DE STATUS RESTAURADA ---
+  const renderStatus = (statusTicket: string) => {
+    switch (statusTicket) {
+        case "Aprovado":
+            return (
+                <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded border border-green-400/20 text-xs font-bold uppercase tracking-wide">
+                    <CheckCircle className="w-3.5 h-3.5" /> Confirmado
+                </div>
+            );
+        case "Rejeitado":
+            return (
+                <div className="flex items-center gap-1.5 text-red-400 bg-red-400/10 px-3 py-1 rounded border border-red-400/20 text-xs font-bold uppercase tracking-wide">
+                    <XCircle className="w-3.5 h-3.5" /> Recusado
+                </div>
+            );
+        default: // Pendente ou qualquer outro
+            return (
+                <div className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded border border-yellow-500/20 text-xs font-bold uppercase tracking-wide animate-pulse">
+                    <Clock className="w-3.5 h-3.5" /> Analisando
+                </div>
+            );
+    }
   };
 
   const totalPaginas = Math.ceil(totalTickets / ITENS_POR_PAGINA);
@@ -218,7 +235,8 @@ export default function MeusSorteios() {
                                         <p className="text-yellow-500 font-black text-lg">{ticket.coins} <span className="text-xs font-bold text-yellow-500/50">COINS</span></p>
                                     </div>
                                     <div className="text-right">
-                                        {renderStatus()}
+                                        {/* AQUI CHAMA A FUNÇÃO DE STATUS DINÂMICO */}
+                                        {renderStatus(ticket.status)}
                                     </div>
                                 </div>
                             </div>
@@ -257,7 +275,7 @@ export default function MeusSorteios() {
 
       </main>
 
-      {/* FOOTER COMPLETO SOLICITADO */}
+      {/* FOOTER */}
       <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
