@@ -4,7 +4,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
-import { Ticket, Clock, CheckCircle, XCircle, Search, Home, Twitch, Instagram, Youtube } from "lucide-react";
+import { Ticket, Clock, CheckCircle, XCircle, Search, Home, Twitch, Instagram, Youtube, AlertCircle } from "lucide-react";
 
 // Definição dos Tipos ajustada ao seu Banco
 type Sorteio = {
@@ -18,9 +18,9 @@ type TicketData = {
   id: number;
   data: string; // Nome correto da coluna no seu banco
   sorteio_id: string; // No seu banco parece ser texto ("EditAqui")
-  status?: string; // Pode não existir
   coins: number;
-  sorteios?: Sorteio; // Pode vir vazio se o ID estiver errado
+  // sorteios pode vir vazio se o ID for inválido (ex: "EditAqui")
+  sorteios?: Sorteio; 
 };
 
 const supabase = createClient();
@@ -44,8 +44,10 @@ export default function MeusSorteios() {
     try {
       // AJUSTE CRÍTICO: 
       // 1. Usando 'data' em vez de 'created_at'
-      // 2. Removi 'status' da busca direta para evitar erro se a coluna não existir
+      // 2. Removi 'status' da busca
       // 3. Mantive o join com sorteios, mas ele pode falhar se o ID for "EditAqui"
+      
+      // Tenta buscar com o relacionamento primeiro
       const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -65,9 +67,18 @@ export default function MeusSorteios() {
 
       if (error) {
         console.error("Erro ao buscar tickets:", error);
+        // Se der erro no JOIN (porque EditAqui não é um número válido pra FK),
+        // tentamos buscar SÓ os tickets sem os detalhes do sorteio para não travar a tela.
+        if (error.code === "PGRST200" || error.message.includes("foreign key")) {
+            console.log("Tentando buscar sem JOIN...");
+            const { data: dataSimples } = await supabase
+                .from('tickets')
+                .select('id, data, coins, sorteio_id')
+                .eq('email', session?.user?.email)
+                .order('id', { ascending: false });
+            setTickets(dataSimples as any);
+        }
       } else {
-        // Se a coluna status existir no banco mas eu não chamei, adiciono manualmente um fallback
-        // Se ela não existir no select, o TS vai reclamar, mas o 'any' resolve pro build.
         setTickets(data as any);
       }
     } catch (error) {
@@ -77,30 +88,14 @@ export default function MeusSorteios() {
     }
   };
 
-  const renderStatus = (status: string | undefined) => {
-    // Se não tiver status (null/undefined), assume Pendente
-    const st = status || "Pendente"; 
-
-    switch (st) {
-      case "Aprovado":
-        return (
-          <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded border border-green-400/20 text-xs font-bold uppercase tracking-wide">
-            <CheckCircle className="w-3.5 h-3.5" /> Confirmado
-          </div>
-        );
-      case "Rejeitado":
-        return (
-          <div className="flex items-center gap-1.5 text-red-400 bg-red-400/10 px-3 py-1 rounded border border-red-400/20 text-xs font-bold uppercase tracking-wide">
-            <XCircle className="w-3.5 h-3.5" /> Recusado
-          </div>
-        );
-      default: // Pendente
-        return (
-          <div className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded border border-yellow-500/20 text-xs font-bold uppercase tracking-wide animate-pulse">
-            <Clock className="w-3.5 h-3.5" /> Analisando
-          </div>
-        );
-    }
+  const renderStatus = () => {
+    // Como não tem coluna status no banco, vamos assumir que se o ticket existe, está válido.
+    // Ou você pode criar uma lógica baseada em outra coisa. Por padrão vou deixar "Confirmado".
+    return (
+      <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded border border-green-400/20 text-xs font-bold uppercase tracking-wide">
+        <CheckCircle className="w-3.5 h-3.5" /> Confirmado
+      </div>
+    );
   };
 
   if (status === "unauthenticated") {
@@ -164,6 +159,7 @@ export default function MeusSorteios() {
                         <div className="h-40 bg-[#15171c] relative overflow-hidden flex items-center justify-center p-4">
                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent)]"></div>
                              
+                             {/* Verifica se existe o objeto sorteios (JOIN funcionou) */}
                              {ticket.sorteios ? (
                                 <img 
                                     src={ticket.sorteios.img} 
@@ -171,9 +167,10 @@ export default function MeusSorteios() {
                                     className={`h-full object-contain drop-shadow-lg transition duration-500 group-hover:scale-110 ${ticket.sorteios.status === 'Finalizado' ? 'grayscale opacity-50' : ''}`}
                                 />
                              ) : (
-                                <div className="flex flex-col items-center justify-center">
-                                    <span className="text-slate-600 text-xs font-bold uppercase">Sorteio não vinculado</span>
-                                    <span className="text-slate-700 text-[10px] mt-1">(ID: {ticket.sorteio_id})</span>
+                                <div className="flex flex-col items-center justify-center text-center px-4">
+                                    <AlertCircle className="w-8 h-8 text-yellow-500 mb-2 opacity-50"/>
+                                    <span className="text-slate-500 text-xs font-bold uppercase">Sorteio não localizado</span>
+                                    <span className="text-slate-700 text-[10px] mt-1 break-all">ID: {ticket.sorteio_id}</span>
                                 </div>
                              )}
 
@@ -187,7 +184,7 @@ export default function MeusSorteios() {
                         <div className="p-5 flex flex-col flex-1">
                             <div className="mb-4">
                                 <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
-                                    {ticket.sorteios?.nome || "Dados do Sorteio Indisponíveis"}
+                                    {ticket.sorteios?.nome || "Ticket Avulso"}
                                 </h3>
                                 {/* Usando a coluna 'data' correta do banco */}
                                 <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
@@ -202,7 +199,7 @@ export default function MeusSorteios() {
                                 </div>
                                 
                                 <div className="text-right">
-                                    {renderStatus(ticket.status)}
+                                    {renderStatus()}
                                 </div>
                             </div>
                         </div>
