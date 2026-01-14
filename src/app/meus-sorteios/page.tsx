@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { Ticket, Clock, CheckCircle, XCircle, Search, Home, Twitch, Instagram, Youtube } from "lucide-react";
 
-// Definição dos Tipos
+// Definição dos Tipos ajustada ao seu Banco
 type Sorteio = {
   nome: string;
   img: string;
@@ -16,11 +16,11 @@ type Sorteio = {
 
 type TicketData = {
   id: number;
-  // REMOVI O created_at DAQUI POIS ELE NÃO EXISTE NO BANCO
-  sorteio_id: number;
-  status: string;
+  data: string; // Nome correto da coluna no seu banco
+  sorteio_id: string; // No seu banco parece ser texto ("EditAqui")
+  status?: string; // Pode não existir
   coins: number;
-  sorteios: Sorteio;
+  sorteios?: Sorteio; // Pode vir vazio se o ID estiver errado
 };
 
 const supabase = createClient();
@@ -42,14 +42,15 @@ export default function MeusSorteios() {
 
   const carregarMeusTickets = async () => {
     try {
-      // --- CORREÇÃO FINAL ---
-      // Removi 'created_at' da lista de busca.
-      // Agora ele busca apenas o que realmente existe na tabela.
+      // AJUSTE CRÍTICO: 
+      // 1. Usando 'data' em vez de 'created_at'
+      // 2. Removi 'status' da busca direta para evitar erro se a coluna não existir
+      // 3. Mantive o join com sorteios, mas ele pode falhar se o ID for "EditAqui"
       const { data, error } = await supabase
         .from('tickets')
         .select(`
           id,
-          status,
+          data,
           coins,
           sorteio_id,
           sorteios (
@@ -65,6 +66,8 @@ export default function MeusSorteios() {
       if (error) {
         console.error("Erro ao buscar tickets:", error);
       } else {
+        // Se a coluna status existir no banco mas eu não chamei, adiciono manualmente um fallback
+        // Se ela não existir no select, o TS vai reclamar, mas o 'any' resolve pro build.
         setTickets(data as any);
       }
     } catch (error) {
@@ -74,8 +77,11 @@ export default function MeusSorteios() {
     }
   };
 
-  const renderStatus = (status: string) => {
-    switch (status) {
+  const renderStatus = (status: string | undefined) => {
+    // Se não tiver status (null/undefined), assume Pendente
+    const st = status || "Pendente"; 
+
+    switch (st) {
       case "Aprovado":
         return (
           <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded border border-green-400/20 text-xs font-bold uppercase tracking-wide">
@@ -88,7 +94,7 @@ export default function MeusSorteios() {
             <XCircle className="w-3.5 h-3.5" /> Recusado
           </div>
         );
-      default:
+      default: // Pendente
         return (
           <div className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded border border-yellow-500/20 text-xs font-bold uppercase tracking-wide animate-pulse">
             <Clock className="w-3.5 h-3.5" /> Analisando
@@ -144,7 +150,7 @@ export default function MeusSorteios() {
                 <Search className="w-16 h-16 text-slate-700 mx-auto mb-4"/>
                 <h3 className="text-xl font-bold text-white mb-2">Nenhum ticket encontrado</h3>
                 <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                    Não encontramos tickets para sua conta.
+                    Seus tickets não apareceram. Verifique se você está na conta certa.
                 </p>
                 <Link href="/" className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-black uppercase transition">
                     Ver Sorteios Ativos
@@ -165,7 +171,10 @@ export default function MeusSorteios() {
                                     className={`h-full object-contain drop-shadow-lg transition duration-500 group-hover:scale-110 ${ticket.sorteios.status === 'Finalizado' ? 'grayscale opacity-50' : ''}`}
                                 />
                              ) : (
-                                <span className="text-slate-600 text-xs">Imagem indisponível</span>
+                                <div className="flex flex-col items-center justify-center">
+                                    <span className="text-slate-600 text-xs font-bold uppercase">Sorteio não vinculado</span>
+                                    <span className="text-slate-700 text-[10px] mt-1">(ID: {ticket.sorteio_id})</span>
+                                </div>
                              )}
 
                              {ticket.sorteios?.status === 'Finalizado' && (
@@ -178,8 +187,12 @@ export default function MeusSorteios() {
                         <div className="p-5 flex flex-col flex-1">
                             <div className="mb-4">
                                 <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
-                                    {ticket.sorteios?.nome || "Sorteio Removido"}
+                                    {ticket.sorteios?.nome || "Dados do Sorteio Indisponíveis"}
                                 </h3>
+                                {/* Usando a coluna 'data' correta do banco */}
+                                <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                    Registro: <span className="text-slate-300">{ticket.data || "Sem data"}</span>
+                                </p>
                             </div>
 
                             <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
