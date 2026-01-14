@@ -32,7 +32,10 @@ export default function Home() {
   const [csgobigId, setCsgobigId] = useState("");
   const [qtdCoins, setQtdCoins] = useState("");
   const [instagram, setInstagram] = useState("");
-  const [arquivoPrint, setArquivoPrint] = useState<string | null>(null);
+  
+  // ESTADOS DE ARQUIVO (ATUALIZADO)
+  const [arquivoPrint, setArquivoPrint] = useState<string | null>(null); // Apenas para o Preview na tela (Leve)
+  const [arquivoParaUpload, setArquivoParaUpload] = useState<File | null>(null); // O Arquivo Real (Para enviar depois)
 
   // LINK DA IMAGEM DE FUNDO
   const bgImageUrl = "/background.png"; 
@@ -55,47 +58,65 @@ export default function Home() {
   const abrirModal = (sorteio: Sorteio) => {
     if (sorteio.status === "Finalizado") return;
     if (!session) { signIn("google"); return; }
+    
     setSorteioSelecionado(sorteio);
-    setCsgobigId(""); setQtdCoins(""); setInstagram(""); setArquivoPrint(null);
+    
+    // Resetar todos os campos
+    setCsgobigId(""); 
+    setQtdCoins(""); 
+    setInstagram(""); 
+    setArquivoPrint(null);
+    setArquivoParaUpload(null); // Limpa o arquivo real também
+    
     setModalAberto(true);
   };
 
+  // --- NOVA FUNÇÃO OTIMIZADA (LEVE) ---
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    
     if (file) {
       // TRAVA DE SEGURANÇA: 5MB
-      // Se a imagem for maior que 5MB, avisa o usuário.
       if (file.size > 5 * 1024 * 1024) {
           alert("Imagem muito pesada! Por favor, envie um print menor que 5MB.");
           return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => setArquivoPrint(reader.result as string);
-      reader.readAsDataURL(file);
+      // 1. Guarda o arquivo ORIGINAL (para upload futuro)
+      setArquivoParaUpload(file);
+
+      // 2. Cria um link temporário SUPER LEVE só para mostrar na tela
+      const previewUrl = URL.createObjectURL(file);
+      setArquivoPrint(previewUrl);
     }
-};
+  };
 
   const confirmarParticipacao = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!csgobigId || !qtdCoins || !instagram || !arquivoPrint || !sorteioSelecionado) {
-      alert("Preencha todos os dados!");
+    
+    // Verifica se tem arquivoParaUpload em vez de arquivoPrint string
+    if (!csgobigId || !qtdCoins || !instagram || !arquivoParaUpload || !sorteioSelecionado) {
+      alert("Preencha todos os dados e envie o comprovante!");
       return;
     }
 
     setEnviando(true);
 
+    // --- INSERT SEGURO (SEM BASE64) ---
     const { error } = await supabase.from('tickets').insert([{
-    sorteio_id: sorteioSelecionado.id,
-    email: session?.user?.email,
-    user_image: session?.user?.image,
-    csgobig_id: csgobigId,
-    coins: Number(qtdCoins),
-    instagram: instagram,
-    print: "imagem_temporaria_teste",
-    status: "Pendente",
-    data: new Date().toLocaleString()
-}]);
+        sorteio_id: sorteioSelecionado.id,
+        email: session?.user?.email,
+        user_image: session?.user?.image,
+        csgobig_id: csgobigId,
+        coins: Number(qtdCoins),
+        instagram: instagram,
+        
+        // ENVIA TEXTO CURTO AGORA (FUTURAMENTE ENVIAREMOS O LINK DO STORAGE AQUI)
+        print: "imagem_temporaria_teste", 
+        
+        status: "Pendente",
+        data: new Date().toLocaleString()
+    }]);
 
     setEnviando(false);
 
@@ -169,7 +190,6 @@ export default function Home() {
                               {/* Conteúdo */}
                               <div className="p-6 flex flex-col flex-1 border-t border-white/5">
                                   <div className="mb-6">
-                                      {/* CORREÇÃO AQUI: Removi 'truncate' e adicionei 'leading-tight' */}
                                       <h2 className="text-2xl font-black text-white uppercase italic leading-tight break-words">
                                           {sorteio.nome}
                                       </h2>
@@ -305,7 +325,7 @@ export default function Home() {
                             )}
                         </div>
                     </div>
-                    <button type="submit" disabled={enviando || !arquivoPrint} className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-white transition shadow-lg shadow-green-900/20 text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2 active:scale-95 uppercase italic tracking-wide">
+                    <button type="submit" disabled={enviando || !arquivoParaUpload} className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-white transition shadow-lg shadow-green-900/20 text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2 active:scale-95 uppercase italic tracking-wide">
                         {enviando ? "ENVIANDO DADOS..." : "CONFIRMAR PARTICIPAÇÃO"}
                     </button>
                 </form>
