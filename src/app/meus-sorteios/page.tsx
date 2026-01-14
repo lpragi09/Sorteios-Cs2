@@ -16,7 +16,7 @@ type Sorteio = {
 
 type TicketData = {
   id: number;
-  created_at: string;
+  // REMOVI O created_at DAQUI POIS ELE NÃO EXISTE NO BANCO
   sorteio_id: number;
   status: string;
   coins: number;
@@ -42,14 +42,13 @@ export default function MeusSorteios() {
 
   const carregarMeusTickets = async () => {
     try {
-      // --- CORREÇÃO DE PERFORMANCE ---
-      // Antes estava: .select('*', ...) -> Trazia o 'print' (imagem pesada) de todos.
-      // Agora: Selecionamos APENAS os campos leves. O banco agradece!
+      // --- CORREÇÃO FINAL ---
+      // Removi 'created_at' da lista de busca.
+      // Agora ele busca apenas o que realmente existe na tabela.
       const { data, error } = await supabase
         .from('tickets')
         .select(`
           id,
-          created_at,
           status,
           coins,
           sorteio_id,
@@ -145,7 +144,7 @@ export default function MeusSorteios() {
                 <Search className="w-16 h-16 text-slate-700 mx-auto mb-4"/>
                 <h3 className="text-xl font-bold text-white mb-2">Nenhum ticket encontrado</h3>
                 <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                    Seus tickets não puderam ser carregados ou você ainda não tem participações.
+                    Não encontramos tickets para sua conta.
                 </p>
                 <Link href="/" className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-black uppercase transition">
                     Ver Sorteios Ativos
