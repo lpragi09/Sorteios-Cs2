@@ -119,11 +119,7 @@ export default function MeusSorteios() {
       {/* ESPAÇADOR DA NAVBAR */}
       <div className="h-32 w-full flex-shrink-0"></div>
 
-      {/* AQUI ESTÁ A MÁGICA: 
-          'flex-1' faz a main ocupar todo o espaço disponível, empurrando o footer pra baixo.
-          'pb-24' garante um respiro no final da lista antes do footer.
-      */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-24">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-40 min-h-screen">
         
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
@@ -189,12 +185,10 @@ export default function MeusSorteios() {
                         {/* Corpo do Card */}
                         <div className="p-5 flex flex-col flex-1">
                             <div className="mb-4">
+                                {/* DATA REMOVIDA AQUI */}
                                 <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
                                     {ticket.sorteios?.nome || "Sorteio Removido"}
                                 </h3>
-                                <p className="text-xs text-slate-500 flex items-center gap-1">
-                                    Data: <span className="text-slate-300">{new Date(ticket.created_at).toLocaleDateString()} às {new Date(ticket.created_at).toLocaleTimeString().slice(0,5)}</span>
-                                </p>
                             </div>
 
                             <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
@@ -216,7 +210,6 @@ export default function MeusSorteios() {
       </main>
 
       {/* RODAPÉ COMPLETO */}
-      {/* Adicionei 'mt-auto' para forçar ele pro final se a página for pequena */}
       <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10 relative">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
