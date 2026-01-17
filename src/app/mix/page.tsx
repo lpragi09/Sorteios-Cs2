@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube, Gamepad2 } from "lucide-react";
+import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube, Gamepad2, Home } from "lucide-react";
 
 type Player = {
   id: string;
@@ -21,6 +21,25 @@ export default function MixPage() {
   const bgImageUrl = "/background.png";
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // --- NOVA FUNÇÃO: REMOVER JOGADOR DO TIME ---
+  const handleRemoveFromTeam = (team: 'CT' | 'TR', index: number) => {
+    // Identifica o jogador para mostrar o nome no popup
+    const jogador = team === 'CT' ? teamCT[index] : teamTR[index];
+
+    if (confirm(`Tem certeza que deseja remover "${jogador.name}" do time?`)) {
+        if (team === 'CT') {
+            const newTeam = [...teamCT];
+            newTeam.splice(index, 1);
+            setTeamCT(newTeam);
+        } else {
+            const newTeam = [...teamTR];
+            newTeam.splice(index, 1);
+            setTeamTR(newTeam);
+        }
+        setStatusMsg("JOGADOR REMOVIDO!");
+    }
+  };
 
   const handleSortear = async () => {
     const nomes = inputText.split('\n').map(n => n.trim()).filter(n => n !== "");
@@ -42,9 +61,9 @@ export default function MixPage() {
 
     setIsSorting(true);
 
+    // Easter egg mantido
     const _0x7a = atob('bHVpeg==');
     const _0x8b = atob('bHVpcw==');
-    
     const _0x9c = disponiveis.filter(n => n.toLowerCase().includes(_0x7a) || n.toLowerCase().includes(_0x8b));
     
     let escolhidoNome: string;
@@ -170,10 +189,6 @@ export default function MixPage() {
                 </div>
 
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-2xl mb-10">
-                    {/* MUDANÇA AQUI: 
-                        - Adicionei 'resize-y' (permite puxar pra baixo)
-                        - Aumentei 'h-32' para 'h-48' (mais alto por padrão)
-                    */}
                     <textarea 
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
@@ -215,6 +230,7 @@ export default function MixPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     
+                    {/* COLUNA CT */}
                     <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#5d79ae] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
                         <div className="bg-[#5d79ae]/10 p-4 border-b border-[#5d79ae]/20 text-center">
                             <h2 className="text-2xl font-black text-[#5d79ae] uppercase tracking-tighter">Contra-Terroristas</h2>
@@ -228,10 +244,19 @@ export default function MixPage() {
                                     onDragStart={() => handleDragStart('CT', index)}
                                     onDragOver={handleDragOver}
                                     onDrop={() => handleDrop('CT', index)}
-                                    className="bg-[#0f1014] border-l-4 border-[#5d79ae] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center gap-3 animate-in slide-in-from-left-4 duration-300"
+                                    className="bg-[#0f1014] border-l-4 border-[#5d79ae] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center animate-in slide-in-from-left-4 duration-300 group"
                                 >
-                                    <span className="text-[#5d79ae]/50 text-sm">#{index + 1}</span>
-                                    {player.name}
+                                    <span className="text-[#5d79ae]/50 text-sm mr-3">#{index + 1}</span>
+                                    <span className="flex-1 truncate">{player.name}</span>
+                                    
+                                    {/* BOTÃO EXCLUIR */}
+                                    <button 
+                                        onClick={() => handleRemoveFromTeam('CT', index)}
+                                        className="text-slate-600 hover:text-red-500 transition p-1 opacity-0 group-hover:opacity-100"
+                                        title="Remover jogador"
+                                    >
+                                        <Trash2 className="w-4 h-4"/>
+                                    </button>
                                 </div>
                             ))}
                             {teamCT.length === 0 && (
@@ -240,6 +265,7 @@ export default function MixPage() {
                         </div>
                     </div>
 
+                    {/* COLUNA TR */}
                     <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#de9b35] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
                         <div className="bg-[#de9b35]/10 p-4 border-b border-[#de9b35]/20 text-center">
                             <h2 className="text-2xl font-black text-[#de9b35] uppercase tracking-tighter">Terroristas</h2>
@@ -253,10 +279,19 @@ export default function MixPage() {
                                     onDragStart={() => handleDragStart('TR', index)}
                                     onDragOver={handleDragOver}
                                     onDrop={() => handleDrop('TR', index)}
-                                    className="bg-[#0f1014] border-l-4 border-[#de9b35] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center gap-3 animate-in slide-in-from-right-4 duration-300"
+                                    className="bg-[#0f1014] border-l-4 border-[#de9b35] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center animate-in slide-in-from-right-4 duration-300 group"
                                 >
-                                    <span className="text-[#de9b35]/50 text-sm">#{index + 1}</span>
-                                    {player.name}
+                                    <span className="text-[#de9b35]/50 text-sm mr-3">#{index + 1}</span>
+                                    <span className="flex-1 truncate">{player.name}</span>
+
+                                    {/* BOTÃO EXCLUIR */}
+                                    <button 
+                                        onClick={() => handleRemoveFromTeam('TR', index)}
+                                        className="text-slate-600 hover:text-red-500 transition p-1 opacity-0 group-hover:opacity-100"
+                                        title="Remover jogador"
+                                    >
+                                        <Trash2 className="w-4 h-4"/>
+                                    </button>
                                 </div>
                             ))}
                             {teamTR.length === 0 && (
