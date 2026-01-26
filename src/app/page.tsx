@@ -207,9 +207,13 @@ export default function Home() {
                               </div>
 
                               {/* Imagem com Efeito */}
-                              <div className="bg-[#15171c]/50 p-8 flex items-center justify-center relative h-64 overflow-hidden group-hover:bg-[#181a20]/50 transition">
+                              <div className="bg-[#15171c]/50 p-6 md:p-10 flex items-center justify-center relative h-80 md:h-96 overflow-hidden group-hover:bg-[#181a20]/50 transition">
                                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent)]"></div>
-                                  <img src={sorteio.img} alt="Skin" className={`max-h-full drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-3" : "grayscale opacity-50"}`} />
+                                  <img
+                                    src={sorteio.img}
+                                    alt="Skin"
+                                    className={`h-full w-auto max-w-[92%] object-contain drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-3" : "grayscale opacity-50"}`}
+                                  />
                               </div>
 
                               {/* Conteúdo */}
