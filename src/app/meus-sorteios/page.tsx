@@ -5,11 +5,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { Ticket, CheckCircle, Search, Home, ChevronLeft, ChevronRight, AlertCircle, Twitch, Instagram, Clock, XCircle } from "lucide-react";
+import { getHighlightOption } from "@/lib/sorteioHighlight";
 
 // Definição dos Tipos
 type Sorteio = {
   nome: string;
   descricao?: string | null;
+  destaque_texto?: string | null;
+  destaque_cor?: string | null;
   img: string;
   status: string;
   valor: string;
@@ -222,6 +225,14 @@ export default function MeusSorteios() {
                                     <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
                                         {ticket.sorteios?.nome || "Ticket Avulso"}
                                     </h3>
+                                    {!!ticket.sorteios?.destaque_texto && (
+                                      <div className="mb-2">
+                                        <span className={`inline-flex items-center gap-2 border px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getHighlightOption(ticket.sorteios.destaque_cor).pill}`}>
+                                          <span className={`w-2 h-2 rounded-full ${getHighlightOption(ticket.sorteios.destaque_cor).dot}`}></span>
+                                          {ticket.sorteios.destaque_texto}
+                                        </span>
+                                      </div>
+                                    )}
                                     {!!ticket.sorteios?.descricao && (
                                       <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
                                         {ticket.sorteios.descricao}

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link"; 
 import { X, Image as ImageIcon, Lock, Gift, CheckCircle, Trophy, Twitch, Instagram, Youtube, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
+import { getHighlightOption } from "@/lib/sorteioHighlight";
 
 // Inicialização do cliente Supabase
 const supabase = createClient();
@@ -13,6 +14,8 @@ type Sorteio = {
   id: string;
   nome: string;
   descricao?: string | null;
+  destaque_texto?: string | null;
+  destaque_cor?: string | null;
   img: string;
   valor: string;
   status: string;
@@ -236,6 +239,14 @@ export default function Home() {
                                           <h2 className="text-2xl font-black text-white uppercase italic leading-tight break-words">
                                               {sorteio.nome}
                                           </h2>
+                                          {!!sorteio.destaque_texto && (
+                                            <div className="mt-3">
+                                              <span className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getHighlightOption(sorteio.destaque_cor).pill}`}>
+                                                <span className={`w-2 h-2 rounded-full ${getHighlightOption(sorteio.destaque_cor).dot}`}></span>
+                                                {sorteio.destaque_texto}
+                                              </span>
+                                            </div>
+                                          )}
                                           {!!sorteio.descricao && (
                                             <p className="text-slate-400 text-sm mt-2 leading-relaxed">
                                               {sorteio.descricao}
