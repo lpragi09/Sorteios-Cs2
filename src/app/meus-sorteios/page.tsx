@@ -29,8 +29,8 @@ type TicketData = {
 
 const supabase = createClient();
 
-// 9 ITENS POR PÁGINA (Paginação)
-const ITENS_POR_PAGINA = 9; 
+// 6 ITENS POR PÁGINA (Paginação)
+const ITENS_POR_PAGINA = 6; 
 
 export default function MeusSorteios() {
   const { data: session, status } = useSession();
