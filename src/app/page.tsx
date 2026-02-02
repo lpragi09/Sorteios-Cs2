@@ -218,13 +218,23 @@ export default function Home() {
                                       )}
                                   </div>
 
-                                  {/* IMAGEM (preenche todo o topo + animação) */}
+                                  {/* IMAGEM (topo 100% preenchido SEM cortar informação da arte) */}
                                   <div className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden">
-                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_70%)]"></div>
+                                      {/* Fundo preenchendo (não importa cortar porque fica desfocado) */}
+                                      <img
+                                        src={sorteio.img}
+                                        alt=""
+                                        aria-hidden="true"
+                                        className={`absolute inset-0 w-full h-full object-cover object-center blur-xl scale-110 opacity-50 transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-125" : "grayscale opacity-40"}`}
+                                      />
+                                      <div className="absolute inset-0 bg-black/25"></div>
+                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_70%)]"></div>
+
+                                      {/* Arte principal inteira (não corta) */}
                                       <img
                                         src={sorteio.img}
                                         alt="Skin"
-                                        className={`relative w-full h-full object-cover object-[center_35%] transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-1" : "grayscale opacity-50"}`}
+                                        className={`relative w-full h-full object-contain object-center transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-[1.03]" : "grayscale opacity-50"}`}
                                       />
                                   </div>
 
