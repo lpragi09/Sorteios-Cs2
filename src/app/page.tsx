@@ -218,13 +218,13 @@ export default function Home() {
                                       )}
                                   </div>
 
-                                  {/* IMAGEM (preenche o bloco de cima sem cortar informações) */}
-                                  <div className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden flex items-center justify-center">
+                                  {/* IMAGEM (preenche todo o topo + animação) */}
+                                  <div className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden">
                                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_70%)]"></div>
                                       <img
                                         src={sorteio.img}
                                         alt="Skin"
-                                        className={`relative w-full h-full object-contain object-center transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:brightness-110" : "grayscale opacity-50"}`}
+                                        className={`relative w-full h-full object-cover object-[center_35%] transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-1" : "grayscale opacity-50"}`}
                                       />
                                   </div>
 
