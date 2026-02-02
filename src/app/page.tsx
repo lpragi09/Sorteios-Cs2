@@ -266,15 +266,16 @@ export default function Home() {
                 <p className="text-slate-500 text-sm mt-2">Utilize nossos cupons para os melhores bônus do mercado.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center">
-                <div className="bg-[#1b1e24]/90 backdrop-blur-md p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
-                    <img src="/image_2.png" alt="INSANE.GG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10">
+                    <div className="aspect-[4/5] w-full flex items-center justify-center">
+                        <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="w-full h-full object-contain rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
+                    </div>
                 </div>
-                <div className="bg-[#1b1e24]/90 backdrop-blur-md p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
-                    <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
-                </div>
-                <div className="bg-[#1b1e24]/90 backdrop-blur-md p-4 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 flex justify-center shadow-lg hover:shadow-yellow-500/10">
-                    <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="max-w-full h-auto rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
+                <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10">
+                    <div className="aspect-[4/5] w-full flex items-center justify-center">
+                        <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="w-full h-full object-contain rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
+                    </div>
                 </div>
             </div>
           </section>
