@@ -268,13 +268,13 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10">
-                    <div className="aspect-[4/5] w-full flex items-center justify-center">
-                        <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="w-full h-full object-contain rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
+                    <div className="aspect-[4/5] w-full overflow-hidden rounded-xl">
+                        <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="w-full h-full object-cover object-center drop-shadow-md transition group-hover:scale-[1.02]"/>
                     </div>
                 </div>
                 <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10">
-                    <div className="aspect-[4/5] w-full flex items-center justify-center">
-                        <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="w-full h-full object-contain rounded-xl drop-shadow-md transition group-hover:scale-[1.02]"/>
+                    <div className="aspect-[4/5] w-full overflow-hidden rounded-xl">
+                        <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="w-full h-full object-cover object-center drop-shadow-md transition group-hover:scale-[1.02]"/>
                     </div>
                 </div>
             </div>
