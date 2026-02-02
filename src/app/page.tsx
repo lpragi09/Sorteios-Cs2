@@ -218,13 +218,13 @@ export default function Home() {
                                       )}
                                   </div>
 
-                                  {/* IMAGEM */}
-                                  <div className="bg-[#15171c]/50 relative p-6 md:p-10 flex items-center justify-center h-80 md:h-96 overflow-hidden">
+                                  {/* IMAGEM (preenche todo o espaço de cima) */}
+                                  <div className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden">
                                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_70%)]"></div>
                                       <img
                                         src={sorteio.img}
                                         alt="Skin"
-                                        className={`relative h-full w-auto max-w-[92%] object-contain drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-3" : "grayscale opacity-50"}`}
+                                        className={`relative w-full h-full object-cover object-center transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-[1.03]" : "grayscale opacity-50"}`}
                                       />
                                   </div>
 
