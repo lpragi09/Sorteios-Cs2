@@ -218,25 +218,14 @@ export default function Home() {
                                       )}
                                   </div>
 
-                                  {/* IMAGEM (preenche 100%: centro sem cortar + laterais “esticadas”) */}
-                                  <div
-                                    className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden"
-                                    style={{
-                                      backgroundImage: `url('${sorteio.img}')`,
-                                      backgroundRepeat: "no-repeat",
-                                      backgroundPosition: "center",
-                                      // Estica a imagem nas laterais para ocupar todo o topo
-                                      backgroundSize: "100% 100%",
-                                    }}
-                                  >
-                                      <div className="absolute inset-0 bg-black/20"></div>
+                                  {/* IMAGEM (um único layer; estica só na horizontal, sem duplicar) */}
+                                  <div className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden flex items-center justify-center">
                                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_70%)]"></div>
 
-                                      {/* Arte principal inteira (não corta) */}
                                       <img
                                         src={sorteio.img}
                                         alt="Skin"
-                                        className={`relative w-full h-full object-contain object-center transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-[1.03]" : "grayscale opacity-50"}`}
+                                        className={`relative w-full h-full object-contain object-center transform-gpu scale-x-110 transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-x-[1.14]" : "grayscale opacity-50"}`}
                                       />
                                   </div>
 
