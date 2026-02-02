@@ -225,7 +225,7 @@ export default function Home() {
                                       <img
                                         src={sorteio.img}
                                         alt="Skin"
-                                        className={`relative w-full h-full object-contain object-center transform-gpu scale-x-110 transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-x-[1.14]" : "grayscale opacity-50"}`}
+                                        className={`relative w-full h-full object-contain object-center transform-gpu scale-x-110 ${sorteio.status === "Finalizado" ? "grayscale opacity-50" : ""}`}
                                       />
                                   </div>
 
