@@ -218,16 +218,18 @@ export default function Home() {
                                       )}
                                   </div>
 
-                                  {/* IMAGEM (topo 100% preenchido SEM cortar informação da arte) */}
-                                  <div className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden">
-                                      {/* Fundo preenchendo (não importa cortar porque fica desfocado) */}
-                                      <img
-                                        src={sorteio.img}
-                                        alt=""
-                                        aria-hidden="true"
-                                        className={`absolute inset-0 w-full h-full object-cover object-center blur-xl scale-110 opacity-50 transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-125" : "grayscale opacity-40"}`}
-                                      />
-                                      <div className="absolute inset-0 bg-black/25"></div>
+                                  {/* IMAGEM (preenche 100%: centro sem cortar + laterais “esticadas”) */}
+                                  <div
+                                    className="bg-[#15171c]/50 relative p-0 h-80 md:h-96 overflow-hidden"
+                                    style={{
+                                      backgroundImage: `url('${sorteio.img}')`,
+                                      backgroundRepeat: "no-repeat",
+                                      backgroundPosition: "center",
+                                      // Estica a imagem nas laterais para ocupar todo o topo
+                                      backgroundSize: "100% 100%",
+                                    }}
+                                  >
+                                      <div className="absolute inset-0 bg-black/20"></div>
                                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_70%)]"></div>
 
                                       {/* Arte principal inteira (não corta) */}
