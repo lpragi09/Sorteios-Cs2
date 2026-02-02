@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabaseClient";
 import { Shield, Users, Gift, CheckCircle, XCircle, ExternalLink, Plus, Pencil, X, Upload, Trash2, Coins, BarChart3, Trophy, RefreshCw, Lock, Unlock, TrendingUp, Sparkles, Zap, Twitch, Instagram, Youtube } from "lucide-react";
 
 // --- TIPOS ---
-type Sorteio = { id: string; nome: string; img: string; valor: string; status: "Ativo" | "Finalizado"; };
+type Sorteio = { id: string; nome: string; descricao?: string | null; img: string; valor: string; status: "Ativo" | "Finalizado"; };
 type Ticket = { id: number; data: string; csgobigId: string; coins: number; instagram: string; print: string; status: string; email?: string; userImage?: string; sorteio_id?: string; };
 type Ganhador = { round: number; ticket: Ticket; dataGanhou: string; };
 type StatsSorteio = { entries: number; coins: number; };
@@ -45,6 +45,7 @@ export default function AdminDashboard() {
   const [intensidadeEfeito, setIntensidadeEfeito] = useState(1);
 
   const [formNome, setFormNome] = useState("");
+  const [formDescricao, setFormDescricao] = useState("");
   const [formImg, setFormImg] = useState("");
   const [formValor, setFormValor] = useState("");
 
@@ -63,6 +64,7 @@ export default function AdminDashboard() {
     const { data: sorteiosData, error: sorteiosError } = await supabase.from('sorteios').select('*');
     if (sorteiosError) return;
     if (!sorteiosData || sorteiosData.length === 0) {
+        // Obs: não inclui "descricao" aqui para não quebrar caso a coluna ainda não exista no Supabase
         const defaultSorteio = { id: "EditAqui", nome: "Edite Aqui", img: "", valor: "X", status: "Ativo" };
         await supabase.from('sorteios').insert([defaultSorteio]);
         setListaSorteios([defaultSorteio as any]);
@@ -239,11 +241,67 @@ const iniciarSorteio = () => {
     setTicketEmEdicao(null);
   };
 
-  const limparForm = () => { setFormNome(""); setFormImg(""); setFormValor(""); };
+  const limparForm = () => { setFormNome(""); setFormDescricao(""); setFormImg(""); setFormValor(""); };
   const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => setFormImg(reader.result as string); reader.readAsDataURL(file); } };
-  const handleCriarSorteio = async (e: React.FormEvent) => { e.preventDefault(); if (!formImg) return; const novo = { id: Date.now().toString(), nome: formNome, img: formImg, valor: formValor, status: "Ativo" }; await supabase.from('sorteios').insert([novo]); setListaSorteios([...listaSorteios, novo as Sorteio]); setModalCriarAberto(false); limparForm(); carregarDadosCompletos(); };
-  const handleAbrirEdicaoSorteio = (e: React.MouseEvent, s: Sorteio) => { e.stopPropagation(); setSorteioEmEdicao(s); setFormNome(s.nome); setFormValor(s.valor); setFormImg(s.img); };
-  const handleSalvarEdicaoSorteio = async (e: React.FormEvent) => { e.preventDefault(); if (!sorteioEmEdicao) return; const updates = { nome: formNome, valor: formValor, img: formImg }; await supabase.from('sorteios').update(updates).eq('id', sorteioEmEdicao.id); const nova = listaSorteios.map(s => s.id === sorteioEmEdicao.id ? { ...s, ...updates } : s) as Sorteio[]; setListaSorteios(nova); setSorteioEmEdicao(null); carregarDadosCompletos(); };
+  const handleCriarSorteio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formImg) return;
+
+    // 1) Cria o sorteio (sem "descricao" para não quebrar se a coluna ainda não existir)
+    const novo = { id: Date.now().toString(), nome: formNome, img: formImg, valor: formValor, status: "Ativo" };
+    const { error } = await supabase.from('sorteios').insert([novo]);
+    if (error) {
+        alert("Erro ao criar sorteio: " + error.message);
+        return;
+    }
+
+    // 2) Tenta salvar a descrição separadamente (se existir coluna no Supabase)
+    if (formDescricao.trim()) {
+        const { error: descErr } = await supabase.from('sorteios').update({ descricao: formDescricao.trim() }).eq('id', novo.id);
+        if (descErr) {
+            console.warn("Não foi possível salvar a descrição. Verifique se existe a coluna 'descricao' na tabela 'sorteios'.", descErr);
+        }
+    }
+
+    setListaSorteios([...listaSorteios, { ...(novo as any), descricao: formDescricao.trim() } as Sorteio]);
+    setModalCriarAberto(false);
+    limparForm();
+    carregarDadosCompletos();
+  };
+
+  const handleAbrirEdicaoSorteio = (e: React.MouseEvent, s: Sorteio) => {
+    e.stopPropagation();
+    setSorteioEmEdicao(s);
+    setFormNome(s.nome);
+    setFormDescricao((s.descricao || "") as string);
+    setFormValor(s.valor);
+    setFormImg(s.img);
+  };
+
+  const handleSalvarEdicaoSorteio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sorteioEmEdicao) return;
+
+    // 1) Atualiza campos principais (sem "descricao" para não quebrar se a coluna ainda não existir)
+    const updates = { nome: formNome, valor: formValor, img: formImg };
+    const { error } = await supabase.from('sorteios').update(updates).eq('id', sorteioEmEdicao.id);
+    if (error) {
+        alert("Erro ao salvar alterações: " + error.message);
+        return;
+    }
+
+    // 2) Tenta atualizar descrição separadamente
+    const desc = formDescricao.trim();
+    const { error: descErr } = await supabase.from('sorteios').update({ descricao: desc }).eq('id', sorteioEmEdicao.id);
+    if (descErr) {
+        console.warn("Não foi possível salvar a descrição. Verifique se existe a coluna 'descricao' na tabela 'sorteios'.", descErr);
+    }
+
+    const nova = listaSorteios.map(s => s.id === sorteioEmEdicao.id ? { ...s, ...updates, descricao: desc } : s) as Sorteio[];
+    setListaSorteios(nova);
+    setSorteioEmEdicao(null);
+    carregarDadosCompletos();
+  };
   const resetarGanhadores = async () => { if(confirm("Limpar histórico de ganhadores?")) { await supabase.from('ganhadores').delete().eq('sorteio_id', sorteioSelecionado?.id); setListaGanhadores([]); } };
 
   if (!isAdmin) return null;
@@ -315,8 +373,8 @@ const iniciarSorteio = () => {
             )}
 
             {/* MODAIS (Com fundo escuro sólido) */}
-            {modalCriarAberto && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-white/5 p-8 shadow-2xl relative"><button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3><form onSubmit={handleCriarSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome da Skin</label><input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: M4A4 | Howl" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor de Mercado</label><input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: 1.200,00" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem da Skin</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-[#0f1014] transition-all group"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto drop-shadow-2xl" /> : <div className="text-slate-500 flex flex-col items-center gap-2"><Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/><span className="text-xs font-bold uppercase">Clique para enviar</span></div>}</div></div><button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-400 py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg shadow-yellow-900/10 active:scale-95 uppercase tracking-tighter">Salvar Sorteio</button></form></div></div>)}
-            {sorteioEmEdicao && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-blue-500/20 p-8 shadow-2xl relative"><button onClick={()=>setSorteioEmEdicao(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight flex items-center gap-2"><Pencil className="text-blue-500"/> Editar</h3><form onSubmit={handleSalvarEdicaoSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome</label><input type="text" value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor</label><input type="text" value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center relative hover:bg-[#0f1014] transition cursor-pointer"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto" /> : <Upload className="mx-auto text-slate-500"/>}</div></div><button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black text-white text-lg transition shadow-lg active:scale-95 uppercase tracking-tighter">Salvar Alterações</button></form></div></div>)}
+            {modalCriarAberto && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-white/5 p-8 shadow-2xl relative"><button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3><form onSubmit={handleCriarSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome</label><input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: Sorteio Mensal TopSkin" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Descrição</label><textarea value={formDescricao} onChange={e => setFormDescricao(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all min-h-[96px] resize-none" placeholder="Ex: Respostas aceitas de 20/01 até 28/02. Regras, cupom, etc." /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor</label><input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: 1.200,00" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-[#0f1014] transition-all group"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto drop-shadow-2xl" /> : <div className="text-slate-500 flex flex-col items-center gap-2"><Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/><span className="text-xs font-bold uppercase">Clique para enviar</span></div>}</div></div><button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-400 py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg shadow-yellow-900/10 active:scale-95 uppercase tracking-tighter">Salvar Sorteio</button></form></div></div>)}
+            {sorteioEmEdicao && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-blue-500/20 p-8 shadow-2xl relative"><button onClick={()=>setSorteioEmEdicao(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight flex items-center gap-2"><Pencil className="text-blue-500"/> Editar</h3><form onSubmit={handleSalvarEdicaoSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome</label><input type="text" value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Descrição</label><textarea value={formDescricao} onChange={e => setFormDescricao(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none min-h-[96px] resize-none" placeholder="Ex: Regras, prazo, cupom, etc." /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor</label><input type="text" value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center relative hover:bg-[#0f1014] transition cursor-pointer"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto" /> : <Upload className="mx-auto text-slate-500"/>}</div></div><button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black text-white text-lg transition shadow-lg active:scale-95 uppercase tracking-tighter">Salvar Alterações</button></form></div></div>)}
             {ticketEmEdicao && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-yellow-500/20 p-8 shadow-2xl relative"><button onClick={()=>setTicketEmEdicao(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight flex items-center gap-2"><Pencil className="text-yellow-500"/> Ajustar Ticket</h3><form onSubmit={salvarEdicaoTicket} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">ID CSGOBIG</label><input type="text" value={ticketEmEdicao.csgobigId} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, csgobigId: e.target.value})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Quantidade Coins</label><input type="number" value={ticketEmEdicao.coins} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, coins: Number(e.target.value)})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-yellow-500 font-black" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Nome Instagram</label><input type="text" value={ticketEmEdicao.instagram} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, instagram: e.target.value})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white outline-none" /></div><button type="submit" className="w-full bg-blue-600 py-5 rounded-2xl font-black text-white text-lg transition shadow-lg active:scale-95">SALVAR MUDANÇAS</button></form></div></div>)}
             {/* Modal de sorteio épico também atualizado com as cores, apenas escondido na minimização */}
             {modalSorteioAberto && (

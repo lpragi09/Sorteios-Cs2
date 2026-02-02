@@ -9,6 +9,7 @@ import { Ticket, CheckCircle, Search, Home, ChevronLeft, ChevronRight, AlertCirc
 // Definição dos Tipos
 type Sorteio = {
   nome: string;
+  descricao?: string | null;
   img: string;
   status: string;
   valor: string;
@@ -64,10 +65,7 @@ export default function MeusSorteios() {
           status, 
           sorteio_id,
           sorteios (
-            nome,
-            img,
-            status,
-            valor
+            *
           )
         `, { count: 'exact' }) 
         .eq('email', session?.user?.email)
@@ -224,6 +222,11 @@ export default function MeusSorteios() {
                                     <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">
                                         {ticket.sorteios?.nome || "Ticket Avulso"}
                                     </h3>
+                                    {!!ticket.sorteios?.descricao && (
+                                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
+                                        {ticket.sorteios.descricao}
+                                      </p>
+                                    )}
                                     <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
                                         Registro: <span className="text-slate-300">{ticket.data || "Sem data"}</span>
                                     </p>

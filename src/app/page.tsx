@@ -12,6 +12,7 @@ const supabase = createClient();
 type Sorteio = {
   id: string;
   nome: string;
+  descricao?: string | null;
   img: string;
   valor: string;
   status: string;
@@ -235,6 +236,11 @@ export default function Home() {
                                           <h2 className="text-2xl font-black text-white uppercase italic leading-tight break-words">
                                               {sorteio.nome}
                                           </h2>
+                                          {!!sorteio.descricao && (
+                                            <p className="text-slate-400 text-sm mt-2 leading-relaxed">
+                                              {sorteio.descricao}
+                                            </p>
+                                          )}
                                           <p className="text-slate-400 font-medium text-sm mt-2 flex items-center gap-2">
                                               Valor Estimado: <span className="text-green-400 font-bold">R$ {sorteio.valor}</span>
                                           </p>
