@@ -201,7 +201,7 @@ export default function Home() {
                           >
                               {/* CARD ÚNICO (UM BLOCO POR SORTEIO) */}
                               <div
-                                className={`relative bg-[#1b1e24]/90 backdrop-blur-md rounded-[40px] border overflow-hidden shadow-lg shadow-black/40 transition flex flex-col ${sorteio.status === "Finalizado" ? "border-red-900/50" : "border-white/5 group-hover:border-yellow-500/50 group-hover:shadow-2xl group-hover:shadow-yellow-500/10"}`}
+                                className={`relative bg-[#1b1e24]/90 backdrop-blur-md rounded-[40px] border overflow-hidden shadow-lg shadow-black/40 transition duration-300 flex flex-col transform-gpu ${sorteio.status === "Finalizado" ? "border-red-900/50" : "border-white/5 group-hover:border-yellow-500/50 group-hover:shadow-2xl group-hover:shadow-yellow-500/10 group-hover:-translate-y-1"}`}
                               >
                                   {/* Badge de Status */}
                                   <div className="absolute top-5 right-5 z-10">
