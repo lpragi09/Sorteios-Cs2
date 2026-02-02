@@ -195,35 +195,43 @@ export default function Home() {
               ) : (
                   <div className={listaSorteios.length === 1 ? "flex justify-center" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"}>
                       {listaSorteios.map((sorteio) => (
-                          <div key={sorteio.id} className={`bg-[#1b1e24]/90 backdrop-blur-md rounded-2xl border overflow-hidden flex flex-col transition relative group ${listaSorteios.length === 1 ? "w-full max-w-4xl" : "w-full"} ${sorteio.status === "Finalizado" ? "border-red-900/50 opacity-90" : "border-white/5 hover:border-yellow-500/50 hover:shadow-2xl hover:shadow-yellow-500/10"}`}>
-                              
-                              {/* Badge de Status */}
-                              <div className="absolute top-4 right-4 z-10">
-                                  {sorteio.status === "Ativo" ? (
-                                      <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded border border-green-500/30">
-                                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]"></div>
-                                          <span className="text-[10px] text-white font-bold uppercase tracking-widest">Online</span>
-                                      </div>
-                                  ) : (
-                                      <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded border border-red-500/30">
-                                          <Lock className="w-3 h-3 text-red-500"/>
-                                          <span className="text-[10px] text-white font-bold uppercase tracking-widest">Encerrado</span>
-                                      </div>
-                                  )}
+                          <div
+                            key={sorteio.id}
+                            className={`relative group transition ${listaSorteios.length === 1 ? "w-full max-w-4xl" : "w-full"} ${sorteio.status === "Finalizado" ? "opacity-90" : ""}`}
+                          >
+                              {/* BLOCO 1: IMAGEM (PÍLULA) */}
+                              <div
+                                className={`relative bg-[#1b1e24]/90 backdrop-blur-md rounded-[40px] border overflow-hidden shadow-lg shadow-black/40 transition ${sorteio.status === "Finalizado" ? "border-red-900/50" : "border-white/5 group-hover:border-yellow-500/50 group-hover:shadow-2xl group-hover:shadow-yellow-500/10"}`}
+                              >
+                                  {/* Badge de Status */}
+                                  <div className="absolute top-5 right-5 z-10">
+                                      {sorteio.status === "Ativo" ? (
+                                          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-green-500/30">
+                                              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]"></div>
+                                              <span className="text-[10px] text-white font-bold uppercase tracking-widest">Online</span>
+                                          </div>
+                                      ) : (
+                                          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30">
+                                              <Lock className="w-3 h-3 text-red-500"/>
+                                              <span className="text-[10px] text-white font-bold uppercase tracking-widest">Encerrado</span>
+                                          </div>
+                                      )}
+                                  </div>
+
+                                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_70%)]"></div>
+                                  <div className="relative p-6 md:p-10 flex items-center justify-center h-80 md:h-96">
+                                      <img
+                                        src={sorteio.img}
+                                        alt="Skin"
+                                        className={`h-full w-auto max-w-[92%] object-contain drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-3" : "grayscale opacity-50"}`}
+                                      />
+                                  </div>
                               </div>
 
-                              {/* Imagem com Efeito */}
-                              <div className="bg-[#15171c]/50 p-6 md:p-10 flex items-center justify-center relative h-80 md:h-96 overflow-hidden group-hover:bg-[#181a20]/50 transition">
-                                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent)]"></div>
-                                  <img
-                                    src={sorteio.img}
-                                    alt="Skin"
-                                    className={`h-full w-auto max-w-[92%] object-contain drop-shadow-2xl transition duration-500 ${sorteio.status === "Ativo" ? "group-hover:scale-110 group-hover:rotate-3" : "grayscale opacity-50"}`}
-                                  />
-                              </div>
-
-                              {/* Conteúdo */}
-                              <div className="p-6 flex flex-col flex-1 border-t border-white/5">
+                              {/* BLOCO 2: CONTEÚDO (PÍLULA) */}
+                              <div
+                                className={`mt-4 bg-[#1b1e24]/90 backdrop-blur-md rounded-[40px] border p-6 md:p-7 shadow-lg shadow-black/40 transition flex flex-col ${sorteio.status === "Finalizado" ? "border-red-900/50" : "border-white/5 group-hover:border-yellow-500/50 group-hover:shadow-2xl group-hover:shadow-yellow-500/10"}`}
+                              >
                                   <div className="mb-6">
                                       <h2 className="text-2xl font-black text-white uppercase italic leading-tight break-words">
                                           {sorteio.nome}
@@ -232,6 +240,7 @@ export default function Home() {
                                           Valor Estimado: <span className="text-green-400 font-bold">R$ {sorteio.valor}</span>
                                       </p>
                                   </div>
+
                                   <div className="mt-auto">
                                       {sorteio.status === "Ativo" ? (
                                           <button onClick={() => abrirModal(sorteio)} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase text-sm rounded-lg transition shadow-lg shadow-yellow-500/10 flex items-center justify-center gap-2 active:scale-95 tracking-wide">
