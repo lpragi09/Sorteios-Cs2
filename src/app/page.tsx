@@ -104,8 +104,14 @@ export default function Home() {
 
     try {
         // --- 1. UPLOAD DA IMAGEM PRO STORAGE (BUCKET: prints) ---
+        // Limpeza profunda: Remove acentos e caracteres especiais
+        const nomeLimpo = arquivoParaUpload.name
+            .normalize("NFD") // Separa os acentos das letras (ex: ó vira o + ´)
+            .replace(/[\u0300-\u036f]/g, "") // Remove os acentos
+            .replace(/[^a-zA-Z0-9._-]/g, ""); // Remove qualquer coisa que não seja letra, número, ponto ou traço
+        
         // Gera um nome único: timestamp_nomedoarquivo.png
-        const nomeArquivo = `${Date.now()}_${arquivoParaUpload.name.replace(/\s/g, '')}`;
+        const nomeArquivo = `${Date.now()}_${nomeLimpo}`;
         
         const { error: uploadError } = await supabase
             .storage
