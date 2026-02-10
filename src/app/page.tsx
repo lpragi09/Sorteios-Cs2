@@ -355,8 +355,8 @@ export default function Home() {
                 <form onSubmit={confirmarParticipacao} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">ID CSGOBIG</label>
-                            <input type="text" placeholder="Seu ID..." required value={csgobigId} onChange={e=>setCsgobigId(e.target.value)} className="w-full bg-[#0f1014] border border-white/10 rounded-lg p-3 text-white outline-none focus:border-yellow-500 transition placeholder:text-slate-700"/>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">ID da Casa</label>
+                            <input type="text" placeholder="Seu ID na casa..." required value={csgobigId} onChange={e=>setCsgobigId(e.target.value)} className="w-full bg-[#0f1014] border border-white/10 rounded-lg p-3 text-white outline-none focus:border-yellow-500 transition placeholder:text-slate-700"/>
                         </div>
                         <div>
                             <label className="text-[10px] uppercase font-bold text-yellow-500 mb-1 block">Qtd. Coins</label>
