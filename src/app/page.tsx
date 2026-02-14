@@ -284,21 +284,41 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto justify-items-center">
-                <div className="w-full max-w-md bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10">
+                <a
+                    href="https://csgobig.com/r/soares"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Abrir parceiro CSGOBIG (cupom Soares)"
+                    className="w-full max-w-md bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10 block"
+                >
                     <div className="aspect-[4/5] w-full overflow-hidden rounded-xl">
                         <img src="/image_3.png" alt="CSGOBIG Cupom Soares" className="w-full h-full object-cover object-center drop-shadow-md transition group-hover:scale-[1.02]"/>
                     </div>
-                </div>
-                <div className="w-full max-w-md bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10">
+                </a>
+
+                <a
+                    href="https://topskin.net/utm/soares"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Abrir parceiro TOPSKIN (cupom Soares)"
+                    className="w-full max-w-md bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10 block"
+                >
                     <div className="aspect-[4/5] w-full overflow-hidden rounded-xl">
                         <img src="/image_4.png" alt="TOPSKIN Cupom Soares" className="w-full h-full object-cover object-center drop-shadow-md transition group-hover:scale-[1.02]"/>
                     </div>
-                </div>
-                <div className="w-full max-w-md md:col-span-2 lg:col-span-1 bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10">
+                </a>
+
+                <a
+                    href="https://togamme.com/soares"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Abrir parceiro LEON (cupom Soares)"
+                    className="w-full max-w-md md:col-span-2 lg:col-span-1 bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10 block"
+                >
                     <div className="aspect-[4/5] w-full overflow-hidden rounded-xl">
                         <img src="/leon.png" alt="LEON Cupom Soares" className="w-full h-full object-cover object-center drop-shadow-md transition group-hover:scale-[1.02]"/>
                     </div>
-                </div>
+                </a>
             </div>
           </section>
 
