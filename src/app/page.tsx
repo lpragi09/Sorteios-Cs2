@@ -316,7 +316,21 @@ export default function Home() {
                     className="w-full max-w-md md:col-span-2 lg:col-span-1 bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10 block"
                 >
                     <div className="aspect-[4/5] w-full overflow-hidden rounded-xl">
-                        <img src="/leon.png" alt="LEON Cupom Soares" className="w-full h-full object-cover object-center drop-shadow-md transition group-hover:scale-[1.02]"/>
+                        {/* Fundo preenchendo (sem bordas) + imagem principal sem corte */}
+                        <div className="relative w-full h-full">
+                            <img
+                                src="/leon.png"
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60"
+                            />
+                            <div className="absolute inset-0 bg-black/20"></div>
+                            <img
+                                src="/leon.png"
+                                alt="LEON Cupom Soares"
+                                className="relative z-10 w-full h-full object-contain drop-shadow-md transition group-hover:scale-[1.02]"
+                            />
+                        </div>
                     </div>
                 </a>
             </div>
