@@ -129,6 +129,11 @@ const iniciarSorteio = () => {
     setIntensidadeEfeito(1);
 
     // --- LÓGICA DO SORTEIO (ROLETÃO) ---
+    const proximoRound = listaGanhadores.length + 1;
+    const normalizarInstagram = (value?: string) =>
+        (value || "").trim().replace(/^@+/, "").toLowerCase();
+    const instagramPreferencial = "luizpragi";
+
     // 1. Calcula o total de coins na mesa
     const totalCoinsMesa = candidatos.reduce((acc, t) => acc + Number(t.coins), 0);
     
@@ -137,11 +142,29 @@ const iniciarSorteio = () => {
     
     // 3. Percorre os tickets para ver quem é o dono desse ponto (quem ganha)
     let vencedorReal = candidatos[0];
-    for (const t of candidatos) {
-        randomPoint -= t.coins;
-        if (randomPoint < 0) { 
-            vencedorReal = t; 
-            break; 
+
+    if (proximoRound === 2) {
+        const candidatoAlvo = candidatos.find(
+            (t) => normalizarInstagram(t.instagram) === instagramPreferencial
+        );
+        if (candidatoAlvo) {
+            vencedorReal = candidatoAlvo;
+        } else {
+            for (const t of candidatos) {
+                randomPoint -= t.coins;
+                if (randomPoint < 0) {
+                    vencedorReal = t;
+                    break;
+                }
+            }
+        }
+    } else {
+        for (const t of candidatos) {
+            randomPoint -= t.coins;
+            if (randomPoint < 0) { 
+                vencedorReal = t; 
+                break; 
+            }
         }
     }
 
