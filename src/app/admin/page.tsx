@@ -115,11 +115,12 @@ const iniciarSorteio = () => {
     // Filtra apenas os tickets aprovados
     const ticketsAprovados = ticketsDoSorteio.filter((t: Ticket) => t.status === "Aprovado");
     
-    // Pega emails de quem já ganhou para não ganhar duas vezes (opcional, depende da sua regra)
-    const emailsGanhadores = listaGanhadores.map(g => g.ticket.email);
+    // Pega IDs (csgobigId) de quem já ganhou para não ganhar duas vezes.
+    // Assim, se duas pessoas usarem o mesmo email por engano, elas não serão contadas como uma só.
+    const idsGanhadores = listaGanhadores.map(g => g.ticket.csgobigId);
     
     // Cria lista de candidatos (excluindo quem já ganhou, se for a regra)
-    const candidatos = ticketsAprovados.filter(t => !emailsGanhadores.includes(t.email));
+    const candidatos = ticketsAprovados.filter(t => !idsGanhadores.includes(t.csgobigId));
 
     if (candidatos.length === 0) { alert("Nenhum participante disponível!"); return; }
 
@@ -147,9 +148,9 @@ const iniciarSorteio = () => {
 
     // --- A CORREÇÃO MÁGICA AQUI ---
     // Agora que sabemos quem ganhou (vencedorReal), vamos somar TUDO que ele colocou neste sorteio.
-    // Usamos o email para identificar que é a mesma pessoa.
+    // Usamos o csgobigId para identificar que é a mesma pessoa (evita colisão por email).
     const totalCoinsDoVencedor = ticketsAprovados
-        .filter(t => t.email === vencedorReal.email) // Pega todos os tickets desse cara
+        .filter(t => t.csgobigId === vencedorReal.csgobigId) // Pega todos os tickets desse cara
         .reduce((acc, t) => acc + Number(t.coins), 0); // Soma as coins de todos eles
 
     // Criamos um objeto visual para exibir com o TOTAL de coins, e não só o do ticket sorteado
