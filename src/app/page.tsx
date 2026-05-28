@@ -315,8 +315,8 @@ export default function Home() {
                     aria-label="Abrir parceiro PirateSwap (cupom Soares)"
                     className="w-full max-w-md bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-yellow-500/50 transition duration-300 group hover:-translate-y-1 shadow-lg hover:shadow-yellow-500/10 block"
                 >
-                    <div className="aspect-[4/5] w-full overflow-hidden rounded-xl">
-                        <img src="/pirate.png" alt="PirateSwap Cupom Soares" className="w-full h-full object-cover object-center drop-shadow-md transition group-hover:scale-[1.02]"/>
+                    <div className="w-full overflow-hidden rounded-xl">
+                        <img src="/pirate.png" alt="PirateSwap Cupom Soares" className="w-full h-auto object-contain drop-shadow-md transition group-hover:scale-[1.02]"/>
                     </div>
                 </a>
             </div>
