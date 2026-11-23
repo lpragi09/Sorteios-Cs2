@@ -1,194 +1,129 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-// ADICIONEI O ICONE 'Gamepad2' AQUI
-import { LogOut, Shield, Twitch, Instagram, Handshake, Ticket, Menu, X, Home, Gamepad2 } from "lucide-react";
+import { signIn, signOut, useSession } from "next-auth/react";
+import { LogOut, Menu, Shield, Ticket, X } from "lucide-react";
+
+export function Marca({ className = "" }: { className?: string }) {
+  return (
+    <span className={`flex items-center gap-2 font-display font-black text-[28px] leading-none ${className}`}>
+      <b className="bg-vermelho text-white px-2 pt-0.5 [clip-path:polygon(0_0,100%_0,100%_70%,85%_100%,0_100%)]">CS2</b>
+      SOARES
+    </span>
+  );
+}
+
+const LINKS = [
+  { href: "/#sorteios", label: "Sorteios" },
+  { href: "/chat", label: "Sorteio do chat" },
+  { href: "/#ganhadores", label: "Ganhadores" },
+  { href: "/mix", label: "Mix 5v5" },
+];
 
 export default function Navbar() {
-  const { data: session } = useSession();
-  const [menuAberto, setMenuAberto] = useState(false);
+  const { data: session, status } = useSession();
   const pathname = usePathname();
-  
-  const ADMIN_EMAILS = ["soarescscontato@gmail.com", "lpmragi@gmail.com"];
+  const [aberto, setAberto] = useState(false);
+  const [rotaDoMenu, setRotaDoMenu] = useState(pathname);
+  const isAdmin = !!(session?.user as { isAdmin?: boolean } | undefined)?.isAdmin;
 
-  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, targetId: string) => {
-    if (pathname === "/") {
-        e.preventDefault();
-        if (targetId === "top") {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-        } else {
-            const element = document.getElementById(targetId);
-            if (element) {
-                const headerOffset = 100;
-                const elementPosition = element.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-            }
-        }
-    }
-    setMenuAberto(false);
-  };
+  // Fecha o menu do celular ao trocar de página
+  if (rotaDoMenu !== pathname) {
+    setRotaDoMenu(pathname);
+    setAberto(false);
+  }
+
+  const ativo = (href: string) => (href.startsWith("/#") ? false : pathname === href);
 
   return (
-    <>
-      {/* CAMADA INVISÍVEL (CORREÇÃO DO BUG) */}
-      {menuAberto && (
-        <div 
-            className="fixed inset-0 z-[99] bg-black/10 backdrop-blur-[1px] cursor-default" 
-            onClick={() => setMenuAberto(false)}
-        />
-      )}
+    <header className="sticky top-0 z-40 bg-preto/90 backdrop-blur-md border-b border-grafite">
+      <div className="mx-auto w-[min(1180px,100%-40px)] h-[72px] flex items-center justify-between gap-5">
+        <Link href="/" aria-label="Início">
+          <Marca />
+        </Link>
 
-      {/* BARRA DE NAVEGAÇÃO */}
-      <nav className="fixed top-0 left-0 w-full z-[100] border-b border-white/5 bg-[#0f1014]/95 backdrop-blur-md h-20 flex items-center shadow-lg shadow-black/40">
-        
-        <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center relative">
-          
-          {/* LOGO */}
-          <a href="/" onClick={(e) => handleSmoothScroll(e, "top")} className="text-2xl font-black italic tracking-tighter text-white uppercase flex items-center gap-1 group cursor-pointer">
-            <span className="text-yellow-500 group-hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] transition-all">CS2</span>
-            SOARES
+        <nav aria-label="Principal" className="hidden lg:block">
+          <ul className="flex gap-1">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <Link
+                  href={l.href}
+                  aria-current={ativo(l.href) ? "page" : undefined}
+                  className="block px-3.5 py-2 font-semibold text-cinza hover:text-osso border-b-2 border-transparent aria-[current=page]:text-osso aria-[current=page]:border-vermelho"
+                >
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="flex items-center gap-2.5">
+          <a
+            href="https://www.twitch.tv/soares"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden md:flex items-center gap-2 font-bold text-[15px] px-3 py-2 border border-grafite hover:border-grafite-2"
+          >
+            <i className="w-2 h-2 rounded-full bg-vermelho animate-pisca" aria-hidden />
+            Twitch
           </a>
 
-          {/* --- LINKS DESKTOP --- */}
-          <div className="hidden md:flex items-center gap-6">
-              
-              <a 
-                  href="/" 
-                  onClick={(e) => handleSmoothScroll(e, "top")}
-                  className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group cursor-pointer"
-              >
-                  <Home className="w-5 h-5 group-hover:text-yellow-500 transition-all"/>
-                  HOME
-              </a>
-
-              {/* NOVO ITEM: MIX (Desktop) */}
-              <Link href="/mix" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group">
-                  <Gamepad2 className="w-5 h-5 group-hover:text-yellow-500 transition-all" />
-                  Mix
-              </Link>
-
-              <a href="https://www.twitch.tv/soares" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#9146ff] transition-colors group">
-                  <Twitch className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#9146ff] transition-all"/>
-                  Twitch
-              </a>
-
-              <a href="https://www.instagram.com/soarexcs/" target="_blank" className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-[#E1306C] transition-colors group">
-                  <Instagram className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_#E1306C] transition-all"/>
-                  Instagram
-              </a>
-
-              <a 
-                  href="/#parceiros" 
-                  onClick={(e) => handleSmoothScroll(e, "parceiros")}
-                  className="flex items-center gap-2 font-bold text-sm uppercase text-white hover:text-yellow-500 transition-colors group cursor-pointer"
-              >
-                  <Handshake className="w-5 h-5 group-hover:text-yellow-500 transition-all"/>
-                  Parceiros
-              </a>
-
-              <div className="h-6 w-px bg-white/10 mx-2"></div>
-
-              {/* Área do Usuário */}
-              {session ? (
-                  <div className="relative">
-                      <button 
-                          onClick={() => setMenuAberto(!menuAberto)}
-                          className="flex items-center gap-3 hover:bg-white/5 p-1.5 pr-3 rounded-full border border-transparent hover:border-white/10 transition"
-                      >
-                          <img 
-                              src={session.user?.image || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
-                              alt="Avatar" 
-                              className="w-9 h-9 rounded-full object-cover border border-white/20"
-                          />
-                          <div className="text-left leading-tight hidden lg:block">
-                              <p className="text-xs font-bold text-white uppercase">{session.user?.name?.split(' ')[0]}</p>
-                              <p className="text-[10px] text-gray-400">Minha Conta</p>
-                          </div>
-                      </button>
-
-                      {/* Dropdown Menu (Desktop) */}
-                      {menuAberto && (
-                          <div className="absolute right-0 top-full mt-2 w-56 bg-[#1b1e24] border border-white/10 rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 z-[101]">
-                              {session?.user?.email && ADMIN_EMAILS.includes(session.user.email) && (
-                                  <Link href="/admin" onClick={() => setMenuAberto(false)}>
-                                      <div className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-yellow-500 font-bold border-b border-white/5">
-                                          <Shield className="w-4 h-4" /> Painel Admin
-                                      </div>
-                                  </Link>
-                              )}
-                              <Link href="/meus-sorteios" onClick={() => setMenuAberto(false)}>
-                                  <div className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-white">
-                                      <Ticket className="w-4 h-4" /> Meus Tickets
-                                  </div>
-                              </Link>
-                              <button onClick={() => signOut()} className="w-full text-left px-4 py-3 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition flex items-center gap-3 border-t border-white/5">
-                                  <LogOut className="w-4 h-4" /> Sair
-                              </button>
-                          </div>
-                      )}
-                  </div>
-              ) : (
-                  <button onClick={() => signIn("google")} className="bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-2 rounded font-black text-sm uppercase tracking-wide transition shadow-[0_0_15px_rgba(234,179,8,0.2)]">
-                      Login
-                  </button>
+          {status === "authenticated" ? (
+            <>
+              {isAdmin && (
+                <Link href="/admin" className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base" aria-label="Painel admin">
+                  <Shield className="w-4 h-4" /> Admin
+                </Link>
               )}
-          </div>
-
-          {/* MOBILE MENU BUTTON */}
-          <button className="md:hidden text-white p-2" onClick={() => setMenuAberto(!menuAberto)}>
-              {menuAberto ? <X /> : <Menu />}
-          </button>
-
-          {/* MOBILE OVERLAY MENU */}
-          {menuAberto && (
-               <div className="absolute top-20 left-0 w-full bg-[#0f1014] border-b border-white/10 p-4 flex flex-col gap-4 md:hidden shadow-2xl animate-in slide-in-from-top-5 h-screen z-[101]">
-                  
-                  <a href="/" onClick={(e) => handleSmoothScroll(e, "top")} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold hover:text-yellow-500">
-                      <Home className="w-5 h-5"/> HOME
-                  </a>
-
-                  {/* NOVO ITEM: MIX (Mobile) */}
-                  <Link href="/mix" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold hover:text-yellow-500">
-                      <Gamepad2 className="w-5 h-5"/> Mix Maker
-                  </Link>
-
-                  <a href="https://www.twitch.tv/soares" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#9146ff] font-bold">
-                      <Twitch className="w-5 h-5"/> Twitch
-                  </a>
-                  <a href="https://www.instagram.com/soarexcs/" className="flex items-center gap-3 p-3 rounded bg-white/5 text-[#E1306C] font-bold">
-                      <Instagram className="w-5 h-5"/> Instagram
-                  </a>
-                  <a href="#parceiros" onClick={(e) => handleSmoothScroll(e, "parceiros")} className="flex items-center gap-3 p-3 rounded bg-white/5 text-yellow-500 font-bold">
-                      <Handshake className="w-5 h-5"/> Parceiros
-                  </a>
-                  
-                  {session ? (
-                      <>
-                          <Link href="/meus-sorteios" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-white/5 text-white font-bold">
-                              <Ticket className="w-5 h-5"/> Meus Tickets
-                          </Link>
-                           {session?.user?.email && ADMIN_EMAILS.includes(session.user.email) && (
-                              <Link href="/admin" onClick={() => setMenuAberto(false)} className="flex items-center gap-3 p-3 rounded bg-yellow-500/10 text-yellow-500 font-bold">
-                                  <Shield className="w-5 h-5"/> Admin
-                              </Link>
-                           )}
-                          <button onClick={() => signOut()} className="flex items-center gap-3 p-3 rounded bg-red-500/10 text-red-400 font-bold w-full">
-                              <LogOut className="w-5 h-5"/> Sair
-                          </button>
-                      </>
-                  ) : (
-                      <button onClick={() => signIn("google")} className="bg-yellow-500 text-black p-3 rounded font-black uppercase">
-                          Entrar com Google
-                      </button>
-                  )}
-               </div>
+              <Link href="/meus-tickets" className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base">
+                <Ticket className="w-4 h-4" /> Meus tickets
+              </Link>
+              <button onClick={() => signOut({ callbackUrl: "/" })} className="hidden sm:grid place-items-center w-11 h-11 bg-carvao hover:bg-grafite" aria-label="Sair">
+                {session.user?.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+                ) : (
+                  <LogOut className="w-5 h-5" />
+                )}
+              </button>
+            </>
+          ) : (
+            <button onClick={() => signIn("google")} disabled={status === "loading"} className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base">
+              Entrar com Google
+            </button>
           )}
+
+          <button onClick={() => setAberto((v) => !v)} className="lg:hidden grid place-items-center w-11 h-11 bg-carvao" aria-label="Menu" aria-expanded={aberto}>
+            {aberto ? <X /> : <Menu />}
+          </button>
         </div>
-      </nav>
-    </>
+      </div>
+
+      {aberto && (
+        <div className="lg:hidden border-t border-grafite bg-preto animate-surge">
+          <ul className="mx-auto w-[min(1180px,100%-40px)] py-3 flex flex-col">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <Link href={l.href} onClick={() => setAberto(false)} className="block py-3 font-semibold text-lg border-b border-grafite">
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+            {status === "authenticated" ? (
+              <>
+                <li><Link href="/meus-tickets" className="block py-3 font-semibold text-lg border-b border-grafite">Meus tickets</Link></li>
+                {isAdmin && <li><Link href="/admin" className="block py-3 font-semibold text-lg border-b border-grafite">Painel admin</Link></li>}
+                <li><button onClick={() => signOut({ callbackUrl: "/" })} className="py-3 font-semibold text-lg text-cinza">Sair ({session.user?.email})</button></li>
+              </>
+            ) : (
+              <li className="pt-3"><button onClick={() => signIn("google")} className="btn btn-vermelho w-full">Entrar com Google</button></li>
+            )}
+          </ul>
+        </div>
+      )}
+    </header>
   );
 }

@@ -1,447 +1,266 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link"; 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabaseClient";
-import { HIGHLIGHT_OPTIONS, type HighlightColorKey, getHighlightOption } from "@/lib/sorteioHighlight";
-import { Shield, Users, Gift, CheckCircle, XCircle, ExternalLink, Plus, Pencil, X, Upload, Trash2, Coins, BarChart3, Trophy, RefreshCw, Lock, Unlock, TrendingUp, Sparkles, Zap, Twitch, Instagram, Youtube } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { Dices, ExternalLink, Gift, Loader2, Lock, MessageSquare, Pencil, Plus, ShieldCheck, Ticket, Trash2, Trophy, Unlock } from "lucide-react";
+import { adminApi } from "@/lib/adminApi";
+import { formatarNumero, formatarReais, nomeCasa, type Sorteio } from "@/lib/sorteios";
+import { usePopup } from "@/components/Popup";
+import FormSorteio from "@/components/admin/FormSorteio";
+import TicketsSorteio from "@/components/admin/TicketsSorteio";
+import ChatAoVivo from "@/components/admin/ChatAoVivo";
+import Roleta from "@/components/admin/Roleta";
 
-// --- TIPOS ---
-type Sorteio = {
-  id: string;
-  nome: string;
-  descricao?: string | null;
-  destaque_texto?: string | null;
-  destaque_cor?: string | null;
-  img: string;
-  valor: string;
-  status: "Ativo" | "Finalizado";
-};
-type Ticket = { id: number; data: string; csgobigId: string; coins: number; instagram: string; print: string; status: string; email?: string; userImage?: string; sorteio_id?: string; };
-type Ganhador = { round: number; ticket: Ticket; dataGanhou: string; };
-type StatsSorteio = { entries: number; coins: number; };
+type SorteioAdmin = Sorteio & { tickets: number; coins: number; pendentes: number; chat: number };
+type GanhadorAdmin = { id: number; rodada: number; nome: string; email: string | null; casa: string | null; casa_id: string | null; coins: number | null; fair_draw_id: string | null; criado_em: string };
 
-export default function AdminDashboard() {
+export default function Admin() {
   const { data: session, status } = useSession();
-  const router = useRouter();
-  const supabase = createClient(); 
-  const ADMIN_EMAILS = ["soarescscontato@gmail.com", "lpmragi@gmail.com"];
+  const isAdmin = !!(session?.user as { isAdmin?: boolean } | undefined)?.isAdmin;
+  const popup = usePopup();
+  const [sorteios, setSorteios] = useState<SorteioAdmin[] | null>(null);
+  const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
+  const [form, setForm] = useState<{ sorteio: Sorteio | null } | null>(null);
 
-  // --- ALTERADO: Aponta para arquivo local na pasta public ---
-  const bgImageUrl = "/background.png"; 
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [abaAtiva, setAbaAtiva] = useState("dashboard");
-  const [sorteioSelecionado, setSorteioSelecionado] = useState<Sorteio | null>(null);
-  
-  const [listaSorteios, setListaSorteios] = useState<Sorteio[]>([]);
-  const [ticketsDoSorteio, setTicketsDoSorteio] = useState<Ticket[]>([]);
-  const [totalEntradasAtivas, setTotalEntradasAtivas] = useState(0);
-  const [totalCoinsAtivos, setTotalCoinsAtivos] = useState(0);
-  const [totalSorteiosAtivos, setTotalSorteiosAtivos] = useState(0);
-  const [statsDetalhadas, setStatsDetalhadas] = useState<Record<string, StatsSorteio>>({});
-
-  const [modalCriarAberto, setModalCriarAberto] = useState(false);
-  const [ticketEmEdicao, setTicketEmEdicao] = useState<Ticket | null>(null);
-  const [sorteioEmEdicao, setSorteioEmEdicao] = useState<Sorteio | null>(null);
-
-  const [modalSorteioAberto, setModalSorteioAberto] = useState(false);
-  const [sorteando, setSorteando] = useState(false);
-  const [ganhadorRevelado, setGanhadorRevelado] = useState<Ticket | null>(null);
-  const [participanteFake, setParticipanteFake] = useState<Ticket | null>(null);
-  const [listaGanhadores, setListaGanhadores] = useState<Ganhador[]>([]);
-  const [intensidadeEfeito, setIntensidadeEfeito] = useState(1);
-
-  const [formNome, setFormNome] = useState("");
-  const [formDescricao, setFormDescricao] = useState("");
-  const [formDestaqueTexto, setFormDestaqueTexto] = useState("");
-  const [formDestaqueCor, setFormDestaqueCor] = useState<HighlightColorKey>("yellow");
-  const [formImg, setFormImg] = useState("");
-  const [formValor, setFormValor] = useState("");
-
-  useEffect(() => {
-    if (status === "loading") return;
-    const emailUsuario = session?.user?.email || "";
-    if (status === "unauthenticated" || !ADMIN_EMAILS.includes(emailUsuario)) {
-      router.push("/");
-      return;
+  const carregar = useCallback(async () => {
+    try {
+      const { sorteios } = await adminApi<{ sorteios: SorteioAdmin[] }>("listarSorteios");
+      setSorteios(sorteios);
+      setSelecionadoId((atual) => (atual && sorteios.some((s) => s.id === atual) ? atual : sorteios[0]?.id ?? null));
+    } catch (err) {
+      popup.erro(err);
     }
-    setIsAdmin(true);
-    carregarDadosCompletos();
-  }, [status, session]);
+  }, [popup]);
 
-  const carregarDadosCompletos = async () => {
-    const { data: sorteiosData, error: sorteiosError } = await supabase.from('sorteios').select('*');
-    if (sorteiosError) return;
-    if (!sorteiosData || sorteiosData.length === 0) {
-        // Obs: não inclui "descricao" aqui para não quebrar caso a coluna ainda não exista no Supabase
-        const defaultSorteio = { id: "EditAqui", nome: "Edite Aqui", img: "", valor: "X", status: "Ativo" };
-        await supabase.from('sorteios').insert([defaultSorteio]);
-        setListaSorteios([defaultSorteio as any]);
-    } else {
-        setListaSorteios(sorteiosData as Sorteio[]);
-    }
-    const { data: allTickets } = await supabase.from('tickets').select('sorteio_id, coins');
-    let somaE = 0, somaC = 0, contaA = 0;
-    const statsTemp: Record<string, StatsSorteio> = {};
-    (sorteiosData || []).forEach((s: any) => {
-        const tickets = allTickets?.filter((t: any) => t.sorteio_id === s.id) || [];
-        const coins = tickets.reduce((acc: number, t: any) => acc + Number(t.coins), 0);
-        statsTemp[s.id] = { entries: tickets.length, coins };
-        if (s.status === "Ativo") { somaE += tickets.length; somaC += coins; contaA++; }
-    });
-    setTotalEntradasAtivas(somaE); setTotalCoinsAtivos(somaC); setTotalSorteiosAtivos(contaA); setStatsDetalhadas(statsTemp);
-  };
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- busca de dados: o state só muda depois da resposta
+  useEffect(() => { if (isAdmin) carregar(); }, [isAdmin, carregar]);
 
-  const abrirSorteio = async (sorteio: Sorteio) => {
-    setSorteioSelecionado(sorteio);
-    const { data: ticketsRaw } = await supabase.from('tickets').select('*').eq('sorteio_id', sorteio.id);
-    const ticketsFormatados: Ticket[] = (ticketsRaw || []).map((t: any) => ({
-        id: t.id, data: t.data, csgobigId: t.csgobig_id, coins: t.coins, instagram: t.instagram, print: t.print, status: t.status, email: t.email, userImage: t.user_image, sorteio_id: t.sorteio_id
-    }));
-    setTicketsDoSorteio(ticketsFormatados);
-    const { data: ganhadoresRaw } = await supabase.from('ganhadores').select(`round, data_ganhou, ticket:tickets (*)`).eq('sorteio_id', sorteio.id);
-    const ganhadoresFormatados: Ganhador[] = (ganhadoresRaw || []).map((g: any) => ({
-        round: g.round, dataGanhou: g.data_ganhou, ticket: { id: g.ticket.id, data: g.ticket.data, csgobigId: g.ticket.csgobig_id, coins: g.ticket.coins, instagram: g.ticket.instagram, print: g.ticket.print, status: g.ticket.status, email: g.ticket.email, userImage: g.ticket.user_image }
-    }));
-    setListaGanhadores(ganhadoresFormatados);
-  };
+  if (status === "loading") return <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-vermelho" /></div>;
+  if (!isAdmin) {
+    return (
+      <div className="mx-auto w-[min(700px,100%-40px)] py-20">
+        <Lock className="w-10 h-10 text-vermelho mb-4" />
+        <h1 className="font-display font-black uppercase text-6xl leading-none">Painel admin</h1>
+        <p className="text-cinza mt-3">{status === "authenticated" ? `A conta ${session?.user?.email} não tem acesso ao painel.` : "Entre com a conta Google da equipe."}</p>
+        {status !== "authenticated" && <button onClick={() => signIn("google")} className="btn btn-vermelho mt-6">Entrar com Google</button>}
+      </div>
+    );
+  }
 
-const iniciarSorteio = () => {
-    if (!sorteioSelecionado) return;
-    
-    // Filtra apenas os tickets aprovados
-    const ticketsAprovados = ticketsDoSorteio.filter((t: Ticket) => t.status === "Aprovado");
-    
-    // Pega IDs (csgobigId) de quem já ganhou para não ganhar duas vezes.
-    // Assim, se duas pessoas usarem o mesmo email por engano, elas não serão contadas como uma só.
-    const idsGanhadores = listaGanhadores.map(g => g.ticket.csgobigId);
-    
-    // Cria lista de candidatos (excluindo quem já ganhou, se for a regra)
-    const candidatos = ticketsAprovados.filter(t => !idsGanhadores.includes(t.csgobigId));
-
-    if (candidatos.length === 0) { alert("Nenhum participante disponível!"); return; }
-
-    setModalSorteioAberto(true);
-    setSorteando(true);
-    setGanhadorRevelado(null);
-    setIntensidadeEfeito(1);
-
-    // --- LÓGICA DO SORTEIO (ROLETÃO) ---
-    // 1. Calcula o total de coins na mesa
-    const totalCoinsMesa = candidatos.reduce((acc, t) => acc + Number(t.coins), 0);
-    
-    // 2. Escolhe um "ponto" aleatório entre 0 e o total de coins
-    let randomPoint = Math.floor(Math.random() * totalCoinsMesa);
-    
-    // 3. Percorre os tickets para ver quem é o dono desse ponto (quem ganha)
-    let vencedorReal = candidatos[0];
-    for (const t of candidatos) {
-        randomPoint -= t.coins;
-        if (randomPoint < 0) { 
-            vencedorReal = t; 
-            break; 
-        }
-    }
-
-    // --- A CORREÇÃO MÁGICA AQUI ---
-    // Agora que sabemos quem ganhou (vencedorReal), vamos somar TUDO que ele colocou neste sorteio.
-    // Usamos o csgobigId para identificar que é a mesma pessoa (evita colisão por email).
-    const totalCoinsDoVencedor = ticketsAprovados
-        .filter(t => t.csgobigId === vencedorReal.csgobigId) // Pega todos os tickets desse cara
-        .reduce((acc, t) => acc + Number(t.coins), 0); // Soma as coins de todos eles
-
-    // Criamos um objeto visual para exibir com o TOTAL de coins, e não só o do ticket sorteado
-    const vencedorParaExibir = {
-        ...vencedorReal,
-        coins: totalCoinsDoVencedor // Aqui substituímos pelo TOTAL
-    };
-
-    // --- CONFIGURAÇÃO DO SUSPENSE ---
-    // Aumentei de 50 para 100 interações. Isso faz o sorteio durar o dobro do tempo.
-    let interacoes = 0;
-    const maxInteracoes = 100; 
-
-    const loopSorteio = async () => {
-        // Efeito visual de trocar nomes aleatórios
-        setParticipanteFake(candidatos[Math.floor(Math.random() * candidatos.length)]);
-        interacoes++;
-
-        // --- AQUI ESTÁ O CONTROLE DE VELOCIDADE ---
-        let delay = 30; // Começa MUITO rápido (30ms) - vira um borrão
-
-        // Quando chega em 60% do tempo, começa a desacelerar
-        if (interacoes > 60) delay = 100; 
-        
-        // Entrando na reta final (suspense)
-        if (interacoes > 80) delay = 300; 
-        
-        // Os últimos 5 nomes (quase parando...)
-        if (interacoes > 90) delay = 800; 
-
-        // O último pulo antes de mostrar o vencedor (1.5 segundos de tensão)
-        if (interacoes > 98) delay = 1500;
-
-        if (interacoes < maxInteracoes) {
-            setTimeout(loopSorteio, delay);
-        } else {
-            setSorteando(false);
-            
-            // ... (resto do código que salva o ganhador e exibe o modal) ...
-            
-            // AQUI: Usamos o objeto com o valor SOMADO para exibir na tela
-            setGanhadorRevelado(vencedorParaExibir);
-            
-            const novoRound = listaGanhadores.length + 1;
-            const dataGanhou = new Date().toLocaleString();
-
-            const { error } = await supabase.from('ganhadores').insert([{
-                sorteio_id: sorteioSelecionado.id,
-                ticket_id: vencedorReal.id,
-                round: novoRound,
-                data_ganhou: dataGanhou
-            }]);
-
-            if (!error) {
-                const novoG: Ganhador = { 
-                    round: novoRound, 
-                    ticket: vencedorParaExibir,
-                    dataGanhou: dataGanhou 
-                };
-                setListaGanhadores([...listaGanhadores, novoG]);
-            } else {
-                alert("Erro ao salvar ganhador no banco.");
-            }
-        }
-    };
-
-    loopSorteio();
-  };
-
-  const handleToggleStatus = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    const sorteio = listaSorteios.find(s => s.id === id);
-    if (!sorteio) return;
-    const novoStatus = sorteio.status === "Ativo" ? "Finalizado" : "Ativo";
-    await supabase.from('sorteios').update({ status: novoStatus }).eq('id', id);
-    const nova = listaSorteios.map(s => s.id === id ? { ...s, status: novoStatus } : s) as Sorteio[];
-    setListaSorteios(nova);
-    carregarDadosCompletos();
-  };
-
-  const handleDeletarSorteio = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); if (!confirm("Excluir sorteio?")) return;
-    await supabase.from('sorteios').delete().eq('id', id);
-    setListaSorteios(listaSorteios.filter(s => s.id !== id));
-    carregarDadosCompletos();
-  };
-
-  const validarTicket = async (id: number, status: string) => {
-    await supabase.from('tickets').update({ status }).eq('id', id);
-    const nova = ticketsDoSorteio.map(t => t.id === id ? { ...t, status } : t);
-    setTicketsDoSorteio(nova);
-    carregarDadosCompletos();
-  };
-
-  const salvarEdicaoTicket = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!ticketEmEdicao || !sorteioSelecionado) return;
-    await supabase.from('tickets').update({ csgobig_id: ticketEmEdicao.csgobigId, coins: ticketEmEdicao.coins, instagram: ticketEmEdicao.instagram }).eq('id', ticketEmEdicao.id);
-    const nova = ticketsDoSorteio.map(t => t.id === ticketEmEdicao.id ? ticketEmEdicao : t);
-    setTicketsDoSorteio(nova);
-    carregarDadosCompletos();
-    setTicketEmEdicao(null);
-  };
-
-  const limparForm = () => {
-    setFormNome("");
-    setFormDescricao("");
-    setFormDestaqueTexto("");
-    setFormDestaqueCor("yellow");
-    setFormImg("");
-    setFormValor("");
-  };
-  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => setFormImg(reader.result as string); reader.readAsDataURL(file); } };
-  const handleCriarSorteio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formImg) return;
-
-    // 1) Cria o sorteio (sem "descricao" para não quebrar se a coluna ainda não existir)
-    const novo = { id: Date.now().toString(), nome: formNome, img: formImg, valor: formValor, status: "Ativo" };
-    const { error } = await supabase.from('sorteios').insert([novo]);
-    if (error) {
-        alert("Erro ao criar sorteio: " + error.message);
-        return;
-    }
-
-    // 2) Tenta salvar campos extras separadamente (não quebra se colunas não existirem)
-    const desc = formDescricao.trim();
-    const destaqueTexto = formDestaqueTexto.trim();
-    const extras: any = {};
-    if (desc) extras.descricao = desc;
-    if (destaqueTexto) {
-      extras.destaque_texto = destaqueTexto;
-      extras.destaque_cor = formDestaqueCor;
-    }
-
-    if (Object.keys(extras).length > 0) {
-        const { error: extrasErr } = await supabase.from('sorteios').update(extras).eq('id', novo.id);
-        if (extrasErr) {
-            console.warn("Não foi possível salvar campos extras (descrição/destaque). Verifique as colunas na tabela 'sorteios'.", extrasErr);
-        }
-    }
-
-    setListaSorteios([
-      ...listaSorteios,
-      { ...(novo as any), descricao: desc, destaque_texto: destaqueTexto, destaque_cor: destaqueTexto ? formDestaqueCor : null } as Sorteio
-    ]);
-    setModalCriarAberto(false);
-    limparForm();
-    carregarDadosCompletos();
-  };
-
-  const handleAbrirEdicaoSorteio = (e: React.MouseEvent, s: Sorteio) => {
-    e.stopPropagation();
-    setSorteioEmEdicao(s);
-    setFormNome(s.nome);
-    setFormDescricao((s.descricao || "") as string);
-    setFormDestaqueTexto((s.destaque_texto || "") as string);
-    setFormDestaqueCor((getHighlightOption(s.destaque_cor).key as HighlightColorKey) || "yellow");
-    setFormValor(s.valor);
-    setFormImg(s.img);
-  };
-
-  const handleSalvarEdicaoSorteio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!sorteioEmEdicao) return;
-
-    // 1) Atualiza campos principais (sem "descricao" para não quebrar se a coluna ainda não existir)
-    const updates = { nome: formNome, valor: formValor, img: formImg };
-    const { error } = await supabase.from('sorteios').update(updates).eq('id', sorteioEmEdicao.id);
-    if (error) {
-        alert("Erro ao salvar alterações: " + error.message);
-        return;
-    }
-
-    // 2) Tenta atualizar descrição + destaque separadamente
-    const desc = formDescricao.trim();
-    const destaqueTexto = formDestaqueTexto.trim();
-    const extras: any = {
-      descricao: desc || null,
-      destaque_texto: destaqueTexto || null,
-      destaque_cor: destaqueTexto ? formDestaqueCor : null,
-    };
-
-    const { error: extrasErr } = await supabase.from('sorteios').update(extras).eq('id', sorteioEmEdicao.id);
-    if (extrasErr) {
-        console.warn("Não foi possível salvar campos extras (descrição/destaque). Verifique as colunas na tabela 'sorteios'.", extrasErr);
-    }
-
-    const nova = listaSorteios.map(s => s.id === sorteioEmEdicao.id ? { ...s, ...updates, ...extras } : s) as Sorteio[];
-    setListaSorteios(nova);
-    setSorteioEmEdicao(null);
-    carregarDadosCompletos();
-  };
-  const resetarGanhadores = async () => { if(confirm("Limpar histórico de ganhadores?")) { await supabase.from('ganhadores').delete().eq('sorteio_id', sorteioSelecionado?.id); setListaGanhadores([]); } };
-
-  if (!isAdmin) return null;
+  const selecionado = sorteios?.find((s) => s.id === selecionadoId) ?? null;
 
   return (
-    // Fundo com imagem local
-    <div 
-        className="flex flex-col min-h-screen bg-[#0f1014] bg-cover bg-center bg-fixed"
-        style={{
-            backgroundImage: `linear-gradient(to bottom, rgba(15, 16, 20, 0.90), rgba(15, 16, 20, 0.98)), url('${bgImageUrl}')`
-        }}
-    >
-        
-        {/* Espaçador da Navbar Fixa */}
-        <div className="h-32 w-full flex-shrink-0"></div>
+    <div className="mx-auto w-[min(1280px,100%-32px)] py-10">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <h1 className="font-display font-black uppercase text-[clamp(44px,6vw,72px)] leading-none">Painel</h1>
+        <button onClick={() => setForm({ sorteio: null })} className="btn btn-vermelho"><Plus className="w-5 h-5" /> Novo sorteio</button>
+      </div>
 
-        <main className="flex-1 text-white p-4 md:p-8 overflow-x-hidden mb-64">
-        <div className="max-w-7xl mx-auto">
-            
-            {/* HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 border-b border-white/5 pb-6">
-                <h1 className="text-3xl font-black text-white flex items-center gap-2 italic uppercase drop-shadow-lg"><Shield className="text-yellow-500" /> PAINEL ADMIN</h1>
-                <div className="flex gap-2 w-full md:w-auto">
-                    <button onClick={() => { setAbaAtiva("dashboard"); setSorteioSelecionado(null); }} className={`flex-1 md:flex-none px-6 py-2 rounded font-bold transition uppercase tracking-wide ${abaAtiva === "dashboard" ? "bg-yellow-500 text-black shadow-lg shadow-yellow-500/20" : "bg-[#1b1e24]/80 backdrop-blur-sm text-slate-400 hover:text-white border border-white/5"}`}>Visão Geral</button>
-                    <button onClick={() => setAbaAtiva("sorteios")} className={`flex-1 md:flex-none px-6 py-2 rounded font-bold transition uppercase tracking-wide ${abaAtiva === "sorteios" ? "bg-yellow-500 text-black shadow-lg shadow-yellow-500/20" : "bg-[#1b1e24]/80 backdrop-blur-sm text-slate-400 hover:text-white border border-white/5"}`}>Sorteios</button>
-                </div>
-            </div>
-
-            {/* CONTEÚDO (Com backdrop-blur para efeito de vidro) */}
-            {abaAtiva === "dashboard" && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-[#1b1e24]/80 backdrop-blur-sm p-6 rounded-2xl border border-white/5 flex items-center gap-4 hover:border-yellow-500/50 transition"><div className="bg-yellow-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-yellow-500"><Gift /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Sorteios Ativos</h3><p className="text-3xl font-black">{totalSorteiosAtivos}</p></div></div>
-                        <div className="bg-[#1b1e24]/80 backdrop-blur-sm p-6 rounded-2xl border border-white/5 flex items-center gap-4 hover:border-blue-500/50 transition"><div className="bg-blue-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-blue-500"><Users /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Entradas Ativas</h3><p className="text-3xl font-black">{totalEntradasAtivas}</p></div></div>
-                        <div className="bg-[#1b1e24]/80 backdrop-blur-sm p-6 rounded-2xl border border-white/5 flex items-center gap-4 hover:border-green-500/50 transition"><div className="bg-green-500/10 w-14 h-14 rounded-xl flex items-center justify-center text-green-500"><Coins /></div><div><h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Pool Ativo</h3><p className="text-3xl font-black text-green-400">{totalCoinsAtivos}</p></div></div>
-                    </div>
-                    <div><h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3 uppercase italic drop-shadow-lg"><TrendingUp className="text-blue-500"/> Detalhamento</h2>
-                        <div className="space-y-3">{listaSorteios.map((s) => (<div key={s.id} className="bg-[#1b1e24]/80 backdrop-blur-sm p-4 rounded-xl border border-white/5 flex flex-col md:flex-row md:items-center justify-between hover:bg-[#15171c]/80 transition gap-4"><div className="flex items-center gap-4"><img src={s.img} className="w-12 h-12 object-contain bg-[#0f1014]/50 rounded-lg p-1 border border-white/5" /><div><h3 className="font-bold text-white text-lg italic uppercase">{s.nome}</h3><span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${s.status === 'Ativo' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{s.status}</span></div></div><div className="flex gap-8 text-right justify-between md:justify-end"><div><p className="text-[10px] text-slate-400 uppercase tracking-widest">Entradas</p><p className="text-xl font-bold">{statsDetalhadas[s.id]?.entries || 0}</p></div><div><p className="text-[10px] text-slate-400 uppercase tracking-widest">Coins</p><p className="text-xl font-bold text-yellow-500">{statsDetalhadas[s.id]?.coins || 0}</p></div></div></div>))}</div>
-                    </div>
-                </div>
-            )}
-
-            {/* TABELA DE SORTEIOS */}
-            {abaAtiva === "sorteios" && (
-                <div className="animate-in fade-in duration-500">
-                    {!sorteioSelecionado ? (
-                        <div>
-                            <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold border-l-4 border-yellow-500 pl-3 uppercase italic drop-shadow-lg">Gerenciamento</h2><button onClick={() => { limparForm(); setModalCriarAberto(true); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-6 py-2 rounded-lg font-bold transition shadow-lg shadow-green-900/20 uppercase text-sm"><Plus className="w-5 h-5"/> Novo Sorteio</button></div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{listaSorteios.map((s) => (<div key={s.id} onClick={() => abrirSorteio(s)} className={`bg-[#1b1e24]/80 backdrop-blur-sm p-6 rounded-2xl border cursor-pointer hover:border-yellow-500 transition group relative flex flex-col sm:flex-row sm:items-center gap-6 ${s.status === "Finalizado" ? "border-red-900/50 opacity-80" : "border-white/5"}`}><img src={s.img} className="w-24 h-24 object-contain bg-[#0f1014]/50 rounded-xl p-2 transition group-hover:scale-110 border border-white/5" /><div className="flex-1"><h3 className="text-xl font-black text-white group-hover:text-yellow-500 transition italic uppercase">{s.nome}</h3><p className="text-slate-400 text-sm">R$ {s.valor}</p>{s.status === "Finalizado" && <span className="text-red-500 font-bold text-[10px] uppercase mt-1 inline-block border border-red-500 px-2 rounded">Encerrado</span>}</div><div className="flex gap-2 z-10"><button onClick={(e) => handleToggleStatus(e, s.id)} className={`p-2.5 rounded-lg shadow-lg transition ${s.status === "Ativo" ? "bg-[#0f1014]/80 text-yellow-500 hover:bg-yellow-600 hover:text-white border border-white/5" : "bg-red-600 text-white hover:bg-red-500"}`}>{s.status === "Ativo" ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}</button><button onClick={(e) => handleAbrirEdicaoSorteio(e, s)} className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500"><Pencil className="w-5 h-5" /></button><button onClick={(e) => handleDeletarSorteio(e, s.id)} className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500"><Trash2 className="w-5 h-5" /></button></div></div>))}</div>
-                        </div>
-                    ) : (
-                        <div className="animate-in slide-in-from-right-4 duration-500">
-                            <button onClick={() => setSorteioSelecionado(null)} className="text-sm text-slate-400 hover:text-white mb-4 flex items-center gap-1 uppercase font-bold tracking-wide">{"<- Voltar"}</button>
-                            <div className="bg-[#1b1e24]/90 backdrop-blur-md rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                                <div className="p-6 border-b border-white/5 bg-[#1b1e24]/50 flex flex-col sm:flex-row justify-between items-center gap-4"><h2 className="text-xl font-bold text-white flex gap-2 items-center italic uppercase"><BarChart3 className="text-yellow-500"/> Entradas: {sorteioSelecionado.nome}</h2><button onClick={iniciarSorteio} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-green-900/40 transition-all hover:scale-105 active:scale-95 uppercase italic"><Sparkles className="w-5 h-5"/> SORTEAR AGORA</button></div>
-                                <div className="overflow-x-auto"><table className="w-full text-left text-sm text-slate-400"><thead className="bg-[#15171c]/80 text-slate-200 uppercase font-bold text-[10px]"><tr><th className="p-4">Data/Email</th><th className="p-4">ID</th><th className="p-4">Instagram</th><th className="p-4 text-center">Coins</th><th className="p-4 text-center">Print</th><th className="p-4 text-center">Status</th><th className="p-4 text-center">Ações</th></tr></thead><tbody className="divide-y divide-white/5">{ticketsDoSorteio.length === 0 ? (<tr><td colSpan={7} className="p-8 text-center text-slate-500 italic">Nenhum ticket encontrado.</td></tr>) : (ticketsDoSorteio.map((t) => (<tr key={t.id} className="hover:bg-white/5 transition"><td className="p-4"><div>{t.data.split(",")[0]}</div><div className="text-[10px] text-slate-500">{t.email}</div></td><td className="p-4 text-white font-mono">{t.csgobigId}</td><td className="p-4 text-blue-400 font-bold">{t.instagram}</td><td className="p-4 text-center text-yellow-500 font-black">{t.coins}</td><td className="p-4 text-center"><a href={t.print} target="_blank" className="bg-[#0f1014] hover:bg-white/10 text-white px-3 py-1.5 rounded-lg text-[10px] inline-flex items-center gap-1 border border-white/10 shadow-sm transition">Abrir <ExternalLink className="w-3 h-3"/></a></td><td className="p-4 text-center"><span className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-wide ${t.status === "Aprovado" ? "bg-green-500/10 text-green-400 border-green-500/20" : t.status === "Rejeitado" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"}`}>{t.status}</span></td><td className="p-4 flex justify-center gap-2"><button onClick={() => setTicketEmEdicao(t)} className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-md transition active:scale-90"><Pencil className="w-4 h-4" /></button><button onClick={() => validarTicket(t.id, "Aprovado")} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg shadow-md transition active:scale-90"><CheckCircle className="w-4 h-4" /></button><button onClick={() => validarTicket(t.id, "Rejeitado")} className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-md transition active:scale-90"><XCircle className="w-4 h-4" /></button></td></tr>)))}</tbody></table></div>
-                            </div>
-                            
-                            {listaGanhadores.length > 0 && (
-                                <div className="mt-8 bg-[#1b1e24]/90 backdrop-blur-md rounded-2xl border border-white/5 p-6 animate-in fade-in duration-700">
-                                    <h3 className="text-yellow-500 font-black mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Trophy className="w-5 h-5"/> Ganhadores Registrados</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{listaGanhadores.map(g => (<div key={g.ticket.id} className="bg-[#0f1014]/80 p-4 rounded-2xl border border-green-900/30 flex items-center gap-4 relative overflow-hidden group hover:border-green-500/50 transition"><div className="absolute top-0 right-0 p-1.5 bg-yellow-500 text-black font-black text-[10px] rounded-bl-xl shadow-lg">WINNER #{g.round}</div><img src={g.ticket.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} className="w-14 h-14 rounded-full border-2 border-yellow-500/50 object-cover group-hover:scale-110 transition" /><div><p className="font-black text-white text-lg leading-none">@{g.ticket.instagram}</p><p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tighter">{g.dataGanhou}</p></div></div>))}</div>
-                                    <button onClick={resetarGanhadores} className="mt-6 text-[10px] text-slate-500 hover:text-red-500 font-bold flex items-center gap-1 uppercase tracking-widest transition"><RefreshCw className="w-3 h-3"/> Resetar Sessão</button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* MODAIS (Com fundo escuro sólido) */}
-            {modalCriarAberto && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-white/5 p-8 shadow-2xl relative"><button onClick={()=>setModalCriarAberto(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight">Criar Sorteio</h3><form onSubmit={handleCriarSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome</label><input type="text" required value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: Sorteio Mensal TopSkin" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Descrição</label><textarea value={formDescricao} onChange={e => setFormDescricao(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all min-h-[96px] resize-none" placeholder="Ex: Respostas aceitas de 20/01 até 28/02. Regras, cupom, etc." /></div><div className="space-y-3"><div className="flex items-center justify-between gap-3"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block ml-1">Destaque (opcional)</label>{formDestaqueTexto.trim() && (<span className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getHighlightOption(formDestaqueCor).pill}`}><span className={`w-2 h-2 rounded-full ${getHighlightOption(formDestaqueCor).dot}`}></span>{formDestaqueTexto.trim()}</span>)}</div><input type="text" value={formDestaqueTexto} onChange={e => setFormDestaqueTexto(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: BÔNUS, NOVO, URGENTE..." /><div className="flex flex-wrap gap-2">{HIGHLIGHT_OPTIONS.map((opt) => (<button key={opt.key} type="button" onClick={() => setFormDestaqueCor(opt.key)} className={`px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-2 ${formDestaqueCor === opt.key ? "border-white/20 bg-white/10 text-white" : "border-white/5 bg-[#0f1014] text-slate-400 hover:text-white hover:border-white/15"}`}><span className={`w-3 h-3 rounded-full ${opt.dot}`}></span>{opt.label}</button>))}</div></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor</label><input type="text" required value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all" placeholder="Ex: 1.200,00" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center cursor-pointer relative hover:border-yellow-500/50 hover:bg-[#0f1014] transition-all group"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto drop-shadow-2xl" /> : <div className="text-slate-500 flex flex-col items-center gap-2"><Upload className="w-8 h-8 group-hover:text-yellow-500 transition"/><span className="text-xs font-bold uppercase">Clique para enviar</span></div>}</div></div><button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-400 py-5 rounded-2xl font-black text-black text-lg transition-all shadow-lg shadow-yellow-900/10 active:scale-95 uppercase tracking-tighter">Salvar Sorteio</button></form></div></div>)}
-            {sorteioEmEdicao && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-blue-500/20 p-8 shadow-2xl relative"><button onClick={()=>setSorteioEmEdicao(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight flex items-center gap-2"><Pencil className="text-blue-500"/> Editar</h3><form onSubmit={handleSalvarEdicaoSorteio} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Nome</label><input type="text" value={formNome} onChange={e => setFormNome(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Descrição</label><textarea value={formDescricao} onChange={e => setFormDescricao(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none min-h-[96px] resize-none" placeholder="Ex: Regras, prazo, cupom, etc." /></div><div className="space-y-3"><div className="flex items-center justify-between gap-3"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block ml-1">Destaque (opcional)</label>{formDestaqueTexto.trim() && (<span className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getHighlightOption(formDestaqueCor).pill}`}><span className={`w-2 h-2 rounded-full ${getHighlightOption(formDestaqueCor).dot}`}></span>{formDestaqueTexto.trim()}</span>)}</div><input type="text" value={formDestaqueTexto} onChange={e => setFormDestaqueTexto(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none transition-all" placeholder="Ex: BÔNUS, NOVO, URGENTE..." /><div className="flex flex-wrap gap-2">{HIGHLIGHT_OPTIONS.map((opt) => (<button key={opt.key} type="button" onClick={() => setFormDestaqueCor(opt.key)} className={`px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-2 ${formDestaqueCor === opt.key ? "border-white/20 bg-white/10 text-white" : "border-white/5 bg-[#0f1014] text-slate-400 hover:text-white hover:border-white/15"}`}><span className={`w-3 h-3 rounded-full ${opt.dot}`}></span>{opt.label}</button>))}</div></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Valor</label><input type="text" value={formValor} onChange={e => setFormValor(e.target.value)} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block ml-1">Imagem</label><div className="border-2 border-dashed border-white/5 rounded-2xl p-6 text-center relative hover:bg-[#0f1014] transition cursor-pointer"><input type="file" accept="image/*" onChange={handleImagemChange} className="absolute inset-0 opacity-0 cursor-pointer" />{formImg ? <img src={formImg} className="h-24 mx-auto" /> : <Upload className="mx-auto text-slate-500"/>}</div></div><button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black text-white text-lg transition shadow-lg active:scale-95 uppercase tracking-tighter">Salvar Alterações</button></form></div></div>)}
-            {ticketEmEdicao && (<div className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-md animate-in zoom-in-95"><div className="bg-[#1b1e24] w-full max-w-md rounded-3xl border border-yellow-500/20 p-8 shadow-2xl relative"><button onClick={()=>setTicketEmEdicao(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X/></button><h3 className="font-black text-2xl mb-6 text-white uppercase tracking-tight flex items-center gap-2"><Pencil className="text-yellow-500"/> Ajustar Ticket</h3><form onSubmit={salvarEdicaoTicket} className="space-y-5"><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">ID da Casa</label><input type="text" value={ticketEmEdicao.csgobigId} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, csgobigId: e.target.value})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white outline-none" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Quantidade Coins</label><input type="number" value={ticketEmEdicao.coins} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, coins: Number(e.target.value)})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-yellow-500 font-black" /></div><div><label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Nome Instagram</label><input type="text" value={ticketEmEdicao.instagram} onChange={(e) => setTicketEmEdicao({...ticketEmEdicao, instagram: e.target.value})} className="w-full bg-[#0f1014] border border-white/5 rounded-2xl p-4 text-white outline-none" /></div><button type="submit" className="w-full bg-blue-600 py-5 rounded-2xl font-black text-white text-lg transition shadow-lg active:scale-95">SALVAR MUDANÇAS</button></form></div></div>)}
-            {/* Modal de sorteio épico também atualizado com as cores, apenas escondido na minimização */}
-            {modalSorteioAberto && (
-                <div className="fixed inset-0 bg-[#0f1014] z-[999] flex flex-col items-center justify-center p-4 md:p-10">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.08),transparent)] animate-pulse"></div>
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20"><div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div></div>
-                    {!ganhadorRevelado && (<button onClick={() => setModalSorteioAberto(false)} className="absolute top-8 right-8 text-slate-600 hover:text-white transition z-50"><X className="w-8 h-8"/></button>)}
-                    <div className="w-full max-w-2xl text-center relative z-10">
-                        {sorteando ? (
-                            <div className="space-y-12 animate-in zoom-in-90 duration-300">
-                                <div className="space-y-2"><h2 className="text-xl md:text-3xl font-black text-white uppercase tracking-[0.4em] drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">Sorteando...</h2><p className="text-yellow-500 font-bold text-xs uppercase tracking-widest animate-pulse">Cruzando os dados dos coins</p></div>
-                                <div className="relative group"><div className="absolute inset-0 bg-yellow-500 rounded-full blur-[60px] opacity-20 animate-pulse"></div><div className="w-56 h-56 md:w-72 md:h-72 mx-auto rounded-full border-[8px] border-[#0f1014] p-2 shadow-2xl bg-[#0f1014] relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div><img src={participanteFake?.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} className="w-full h-full rounded-full object-cover blur-[1px] opacity-70 transition-all duration-75 scale-105" style={{ filter: `blur(${intensidadeEfeito}px)` }}/><div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none"></div></div><div className="mt-8 py-4 bg-[#1b1e24]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-xl overflow-hidden relative"><div className="absolute top-0 left-0 w-2 h-full bg-yellow-500"></div><p className="text-3xl md:text-5xl font-black text-white font-mono tracking-tighter truncate px-6">@{participanteFake?.instagram || "BUSCANDO"}</p></div></div>
-                            </div>
-                        ) : ganhadorRevelado ? (
-                            <div className="space-y-8 animate-in fade-in zoom-in-50 duration-1000 ease-out flex flex-col items-center">
-                                <div className="relative"><div className="absolute inset-0 bg-green-500 rounded-full blur-[100px] opacity-30 animate-pulse"></div><div className="relative z-10"><Trophy className="w-24 h-24 text-yellow-500 mx-auto absolute -top-16 -left-16 -rotate-12 animate-bounce drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]" /><div className="w-64 h-64 md:w-80 md:h-80 mx-auto rounded-full border-[10px] border-green-500 p-2 shadow-[0_0_100px_rgba(34,197,94,0.5)] bg-[#0f1014] transform hover:scale-105 transition duration-500"><img src={ganhadorRevelado.userImage || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} className="w-full h-full rounded-full object-cover"/></div><Sparkles className="w-24 h-24 text-yellow-500 mx-auto absolute -bottom-12 -right-12 animate-pulse drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]" /></div></div>
-                                <div className="space-y-4"><div className="inline-block px-6 py-2 bg-green-500 text-black font-black rounded-full text-sm uppercase tracking-widest animate-bounce shadow-lg shadow-green-500/20">VENCEDOR IDENTIFICADO</div><h2 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter drop-shadow-2xl">@{ganhadorRevelado.instagram}</h2><div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-4"><div className="px-6 py-3 bg-[#1b1e24] border border-white/5 rounded-2xl flex items-center gap-3"><Coins className="text-yellow-500 w-6 h-6"/><span className="text-xl font-black text-white">{ganhadorRevelado.coins} COINS</span></div><div className="px-6 py-3 bg-[#1b1e24] border border-white/5 rounded-2xl flex items-center gap-3"><Zap className="text-blue-500 w-6 h-6"/><span className="text-lg font-bold text-slate-300 uppercase tracking-tighter">{ganhadorRevelado.csgobigId}</span></div></div></div>
-                                <button onClick={() => setModalSorteioAberto(false)} className="mt-10 group relative px-16 py-5 bg-white text-black rounded-full font-black text-2xl hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] active:scale-95">CONTINUAR SESSÃO<div className="absolute inset-0 rounded-full border-2 border-white group-hover:scale-125 group-hover:opacity-0 transition duration-500"></div></button>
-                            </div>
-                        ) : null}
-                    </div>
-                </div>
-            )}
+      {!sorteios ? (
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-vermelho" /></div>
+      ) : sorteios.length === 0 ? (
+        <div className="bg-carvao p-8 border-l-4 border-vermelho">
+          <p className="font-bold text-lg">Nenhum sorteio criado ainda.</p>
+          <p className="text-cinza mt-1">Crie um sorteio por print de depósito ou pelo chat da Twitch.</p>
         </div>
-        </main>
+      ) : (
+        <div className="grid lg:grid-cols-[340px_1fr] gap-6 items-start">
+          <ul className="flex flex-col gap-0.5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+            {sorteios.map((s) => (
+              <li key={s.id}>
+                <button
+                  onClick={() => setSelecionadoId(s.id)}
+                  className={`w-full text-left flex items-center gap-3 p-3 border-l-4 ${s.id === selecionadoId ? "bg-carvao-2 border-vermelho" : "bg-carvao border-transparent hover:bg-carvao-2"}`}
+                >
+                  <span className="w-12 h-12 shrink-0 fundo-premio grid place-items-center overflow-hidden">
+                    {s.imagem_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={s.imagem_url} alt="" className="w-[90%] h-[90%] object-contain" />
+                    ) : s.tipo === "chat" ? <MessageSquare className="w-5 h-5 text-cinza" /> : <Gift className="w-5 h-5 text-cinza" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <b className="block truncate">{s.titulo}</b>
+                    <span className="text-cinza text-sm">
+                      {s.status === "encerrado" ? "Encerrado" : s.tipo === "chat" ? (s.captando ? "Chat aberto" : "Chat fechado") : "Aberto"}
+                      {s.tipo === "chat" ? `, ${formatarNumero(s.chat)} no chat` : `, ${formatarNumero(s.tickets)} tickets`}
+                    </span>
+                  </span>
+                  {s.pendentes > 0 && <span className="shrink-0 bg-vermelho text-white text-sm font-bold px-2 py-0.5" title="Tickets esperando aprovação">{s.pendentes}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
 
+          {selecionado && <Detalhe key={selecionado.id} sorteio={selecionado} onEditar={() => setForm({ sorteio: selecionado })} onMudou={carregar} />}
+        </div>
+      )}
+
+      {form && (
+        <FormSorteio
+          sorteio={form.sorteio}
+          onFechar={() => setForm(null)}
+          onSalvo={(s) => {
+            setForm(null);
+            setSelecionadoId(s.id);
+            carregar();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function Detalhe({ sorteio, onEditar, onMudou }: { sorteio: SorteioAdmin; onEditar: () => void; onMudou: () => void }) {
+  const popup = usePopup();
+  const chat = sorteio.tipo === "chat";
+  const [aba, setAba] = useState<"principal" | "ganhadores">("principal");
+  const [sorteando, setSorteando] = useState(false);
+  const [ganhadores, setGanhadores] = useState<GanhadorAdmin[] | null>(null);
+
+  const carregarGanhadores = useCallback(async () => {
+    try {
+      const { ganhadores } = await adminApi<{ ganhadores: GanhadorAdmin[] }>("listarGanhadores", { sorteioId: sorteio.id });
+      setGanhadores(ganhadores);
+    } catch {}
+  }, [sorteio.id]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- busca de dados: o state só muda depois da resposta
+  useEffect(() => { carregarGanhadores(); }, [carregarGanhadores]);
+
+  const alternarStatus = async () => {
+    const status = sorteio.status === "aberto" ? "encerrado" : "aberto";
+    if (status === "encerrado" && !(await popup.confirmar("Ninguém mais consegue entrar. Dá pra reabrir depois.", { titulo: "Encerrar inscrições?", textoOk: "Encerrar" }))) return;
+    try {
+      await adminApi("statusSorteio", { id: sorteio.id, status });
+      onMudou();
+    } catch (err) {
+      popup.erro(err);
+    }
+  };
+
+  const excluir = async () => {
+    const ok = await popup.confirmar(
+      `"${sorteio.titulo}" será apagado junto com ${chat ? "a lista do chat" : `${formatarNumero(sorteio.tickets + sorteio.pendentes)} tickets e os prints`} e os ganhadores. Não dá pra desfazer.`,
+      { titulo: "Excluir sorteio?", textoOk: "Excluir" }
+    );
+    if (!ok) return;
+    try {
+      await adminApi("excluirSorteio", { id: sorteio.id });
+      onMudou();
+    } catch (err) {
+      popup.erro(err);
+    }
+  };
+
+  const excluirGanhador = async (g: GanhadorAdmin) => {
+    if (!(await popup.confirmar(`${g.nome} sai da lista de ganhadores (o giro continua registrado no provably fair).`, { titulo: "Tirar ganhador?", textoOk: "Tirar" }))) return;
+    try {
+      await adminApi("excluirGanhador", { id: g.id });
+      carregarGanhadores();
+    } catch (err) {
+      popup.erro(err);
+    }
+  };
+
+  return (
+    <section className="bg-carvao min-w-0">
+      <div className="grid sm:grid-cols-[160px_1fr] gap-5 p-5 border-b border-grafite">
+        <div className="aspect-square fundo-premio grid place-items-center overflow-hidden">
+          {sorteio.imagem_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={sorteio.imagem_url} alt="" className="w-[90%] h-[90%] object-contain" />
+          ) : <Gift className="w-12 h-12 text-grafite-2" />}
+        </div>
+        <div className="min-w-0">
+          <p className="text-vermelho font-bold">{chat ? "Sorteio do chat" : "Sorteio por depósito"}{sorteio.status === "encerrado" ? ", encerrado" : ""}</p>
+          <h2 className="font-display font-black uppercase text-[44px] leading-[.95] break-words">{sorteio.titulo}</h2>
+          <p className="text-cinza">
+            {sorteio.valor != null && <b className="text-osso">{formatarReais(sorteio.valor)}</b>}
+            {sorteio.fecha_em && ` Fecha em ${new Date(sorteio.fecha_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}.`}
+          </p>
+          {!chat && (
+            <div className="flex gap-8 mt-3 text-cinza">
+              <div><strong className="block text-osso font-display font-black text-[30px] leading-none">{formatarNumero(sorteio.coins)}</strong>coins aprovadas</div>
+              <div><strong className="block text-osso font-display font-black text-[30px] leading-none">{formatarNumero(sorteio.tickets)}</strong>tickets aprovados</div>
+              <div><strong className="block text-osso font-display font-black text-[30px] leading-none">{formatarNumero(sorteio.pendentes)}</strong>pendentes</div>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-1.5 mt-4">
+            {!chat && (
+              <button onClick={() => setSorteando(true)} disabled={sorteio.tickets === 0} className="btn btn-vermelho !py-2.5 !px-4 !text-base" title={sorteio.tickets === 0 ? "Aprove algum ticket antes" : undefined}>
+                <Dices className="w-5 h-5" /> Sortear
+              </button>
+            )}
+            <button onClick={alternarStatus} className="btn btn-cinza !py-2.5 !px-4 !text-base">
+              {sorteio.status === "aberto" ? <><Lock className="w-4 h-4" /> Encerrar</> : <><Unlock className="w-4 h-4" /> Reabrir</>}
+            </button>
+            <button onClick={onEditar} className="btn btn-cinza !py-2.5 !px-4 !text-base"><Pencil className="w-4 h-4" /> Editar</button>
+            <Link href={chat ? `/chat?id=${sorteio.id}` : "/#sorteios"} target="_blank" className="btn btn-cinza !py-2.5 !px-4 !text-base"><ExternalLink className="w-4 h-4" /> Ver no site</Link>
+            <button onClick={excluir} className="btn btn-cinza !py-2.5 !px-4 !text-base" aria-label="Excluir sorteio"><Trash2 className="w-4 h-4" /></button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex border-b border-grafite" role="tablist">
+        {([
+          ["principal", chat ? <><MessageSquare className="w-4 h-4" /> Chat ao vivo</> : <><Ticket className="w-4 h-4" /> Tickets</>],
+          ["ganhadores", <><Trophy className="w-4 h-4" /> Ganhadores{ganhadores?.length ? ` (${ganhadores.length})` : ""}</>],
+        ] as const).map(([id, rotulo]) => (
+          <button key={id} role="tab" aria-selected={aba === id} onClick={() => setAba(id)} className={`flex items-center gap-2 px-5 py-3.5 font-bold border-b-2 -mb-px ${aba === id ? "border-vermelho text-osso" : "border-transparent text-cinza hover:text-osso"}`}>
+            {rotulo}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-5">
+        {aba === "principal" ? (
+          chat ? (
+            <ChatAoVivo sorteio={sorteio} onMudou={() => { onMudou(); carregarGanhadores(); }} />
+          ) : (
+            <TicketsSorteio sorteioId={sorteio.id} onMudou={onMudou} />
+          )
+        ) : !ganhadores ? (
+          <Loader2 className="w-7 h-7 animate-spin text-vermelho" />
+        ) : ganhadores.length === 0 ? (
+          <p className="text-cinza bg-preto p-6">Ninguém ganhou este sorteio ainda.</p>
+        ) : (
+          <ul className="divide-y divide-grafite border-y border-grafite">
+            {ganhadores.map((g) => (
+              <li key={g.id} className="flex flex-wrap items-center gap-3 py-3">
+                <span className="font-display font-black text-3xl text-vermelho w-10">{g.rodada}º</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-lg">{g.nome}</p>
+                  {g.email && (
+                    <p className="text-cinza text-sm">
+                      {g.email}{g.casa ? `, ${nomeCasa(g.casa)} ID ${g.casa_id}` : ""}{g.coins != null ? `, ${formatarNumero(g.coins)} coins` : ""}
+                    </p>
+                  )}
+                </div>
+                {g.fair_draw_id && (
+                  <Link href={`/provably-fair?id=${g.fair_draw_id}`} target="_blank" className="w-10 h-10 grid place-items-center bg-grafite hover:bg-grafite-2" title="Prova do sorteio" aria-label="Prova do sorteio">
+                    <ShieldCheck className="w-4 h-4" />
+                  </Link>
+                )}
+                <button onClick={() => excluirGanhador(g)} className="w-10 h-10 grid place-items-center bg-grafite hover:bg-grafite-2" aria-label="Tirar ganhador"><Trash2 className="w-4 h-4" /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {sorteando && (
+        <Roleta
+          sorteio={sorteio}
+          onFechar={() => setSorteando(false)}
+          onConfirmado={() => {
+            setSorteando(false);
+            setAba("ganhadores");
+            carregarGanhadores();
+            onMudou();
+          }}
+        />
+      )}
+    </section>
   );
 }

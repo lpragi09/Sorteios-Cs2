@@ -1,27 +1,107 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-preto: #0a0a0b;
+  --color-carvao: #141416;
+  --color-carvao-2: #1a1a1d;
+  --color-grafite: #26262b;
+  --color-grafite-2: #34343b;
+  --color-vermelho: #e3101f;
+  --color-vermelho-claro: #ff2232;
+  --color-sangue: #7c0912;
+  --color-osso: #f1eee9;
+  --color-cinza: #8f8f98;
+  --font-display: var(--font-big-shoulders), Impact, sans-serif;
+  --font-sans: var(--font-barlow), system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--color-preto);
+    color: var(--color-osso);
+    font-family: var(--font-sans);
+    font-size: 18px;
+    line-height: 1.5;
+    overflow-x: clip;
   }
+  :focus-visible { outline: 2px solid var(--color-osso); outline-offset: 3px; }
+  button { cursor: pointer; }
+  ::selection { background: var(--color-vermelho); color: #fff; }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* Canto cortado no estilo da interface do CS2 */
+@utility corte {
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+@utility corte-sm {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+@utility etiqueta {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Botões */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: .02em;
+  padding: 14px 28px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  transition: background-color .15s, transform .1s, opacity .15s;
+  &:active { transform: translateY(2px); }
+  &:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+}
+@utility btn-vermelho {
+  background: var(--color-vermelho);
+  color: #fff;
+  &:hover:not(:disabled) { background: var(--color-vermelho-claro); }
+}
+@utility btn-cinza {
+  background: var(--color-grafite);
+  color: var(--color-osso);
+  &:hover:not(:disabled) { background: var(--color-grafite-2); }
+}
+
+/* Faixa diagonal atrás das imagens de prêmio */
+@utility fundo-premio {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(227, 16, 31, .32), transparent 62%),
+    repeating-linear-gradient(-45deg, #121214 0 12px, #161619 12px 24px);
+}
+
+/* Campos de formulário */
+@utility campo {
+  width: 100%;
+  background: var(--color-preto);
+  border: 1px solid var(--color-grafite);
+  color: var(--color-osso);
+  padding: 12px 14px;
+  font-size: 17px;
+  outline: none;
+  transition: border-color .15s;
+  &:focus { border-color: var(--color-vermelho); }
+  &::placeholder { color: #55555c; }
+}
+
+@keyframes aproxima { from { transform: scale(1.08); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes quica { 50% { transform: translateY(5px); } }
+@keyframes pisca { 50% { opacity: .2; } }
+@keyframes surge { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes contagem { 0% { transform: scale(1.6); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 80% { opacity: 1; } 100% { transform: scale(.85); opacity: 0; } }
+
+@utility animate-aproxima { animation: aproxima 1.4s cubic-bezier(.2, .8, .2, 1); }
+@utility animate-quica { animation: quica 1.6s ease-in-out infinite; }
+@utility animate-pisca { animation: pisca 1.2s steps(2) infinite; }
+@utility animate-surge { animation: surge .2s ease-out; }
+@utility animate-contagem { animation: contagem 1s ease-out; }
+
+/* Quem pediu menos movimento no sistema não vê animação decorativa
+   (as animações essenciais, como a roleta, usam requestAnimationFrame) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

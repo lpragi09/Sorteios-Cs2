@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+
 import { useState } from "react";
-import { Users, Shuffle, UserPlus, Trash2, Twitch, Instagram, Youtube, Gamepad2, Home } from "lucide-react";
+import { usePopup } from "@/components/Popup";
+import { Shuffle, UserPlus, Trash2 } from "lucide-react";
 
 type Player = {
   id: string;
@@ -10,6 +11,7 @@ type Player = {
 };
 
 export default function MixPage() {
+  const popup = usePopup();
   const [inputText, setInputText] = useState("");
   const [teamCT, setTeamCT] = useState<Player[]>([]);
   const [teamTR, setTeamTR] = useState<Player[]>([]);
@@ -18,16 +20,16 @@ export default function MixPage() {
   
   const [draggedItem, setDraggedItem] = useState<{ list: 'CT' | 'TR', index: number } | null>(null);
 
-  const bgImageUrl = "/background.png";
+
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   // --- NOVA FUNÇÃO: REMOVER JOGADOR DO TIME ---
-  const handleRemoveFromTeam = (team: 'CT' | 'TR', index: number) => {
+  const handleRemoveFromTeam = async (team: 'CT' | 'TR', index: number) => {
     // Identifica o jogador para mostrar o nome no popup
     const jogador = team === 'CT' ? teamCT[index] : teamTR[index];
 
-    if (confirm(`Tem certeza que deseja remover "${jogador.name}" do time?`)) {
+    if (await popup.confirmar(`Remover "${jogador.name}" do time?`, { textoOk: "Remover", perigo: true })) {
         if (team === 'CT') {
             const newTeam = [...teamCT];
             newTeam.splice(index, 1);
@@ -55,7 +57,7 @@ export default function MixPage() {
     }
 
     if (disponiveis.length === 0) {
-        alert("Não há novos nomes na lista ou todos já foram sorteados!");
+        popup.alerta("Não há novos nomes na lista ou todos já foram sorteados!", { tipo: "aviso" });
         return;
     }
 
@@ -107,7 +109,7 @@ export default function MixPage() {
   const handleSoares = () => {
     const nomesJaEmCampo = [...teamCT, ...teamTR].map(p => p.name.toLowerCase());
     if (nomesJaEmCampo.includes("soares")) {
-        alert("Soares já está em campo!");
+        popup.alerta("Soares já está em campo!", { tipo: "aviso" });
         return;
     }
 
@@ -120,12 +122,12 @@ export default function MixPage() {
         setTeamTR(prev => [...prev, soaresPlayer]);
         setStatusMsg("SOARES -> TIME TR");
     } else {
-        alert("Times cheios!");
+        popup.alerta("Os dois times já estão cheios.", { tipo: "aviso", titulo: "Times cheios" });
     }
   };
 
-  const handleLimparTimes = () => {
-      if(confirm("Limpar os times?")) {
+  const handleLimparTimes = async () => {
+      if(await popup.confirmar("Os dois times serão esvaziados.", { titulo: "Limpar os times?", textoOk: "Limpar", perigo: true })) {
           setTeamCT([]);
           setTeamTR([]);
           setStatusMsg("Aguardando...");
@@ -167,184 +169,69 @@ export default function MixPage() {
     setStatusMsg("TROCA REALIZADA!");
   };
 
+  const coluna = (time: "CT" | "TR", lista: Player[]) => {
+    const ct = time === "CT";
+    const cor = ct ? "#5d79ae" : "#de9b35";
+    return (
+      <div className="bg-carvao flex flex-col min-h-[400px] border-t-4" style={{ borderColor: cor }}>
+        <div className="p-4 border-b border-grafite flex items-baseline justify-between">
+          <h2 className="font-display font-black uppercase text-[32px] leading-none" style={{ color: cor }}>{ct ? "Contra-Terroristas" : "Terroristas"}</h2>
+          <p className="text-cinza font-bold tabular-nums">{lista.length}/5</p>
+        </div>
+        <div className="p-3 flex-1 space-y-1.5">
+          {lista.map((player, index) => (
+            <div
+              key={player.id}
+              draggable
+              onDragStart={() => handleDragStart(time, index)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(time, index)}
+              className="bg-preto border-l-4 px-4 py-3 font-bold text-lg cursor-grab active:cursor-grabbing hover:bg-carvao-2 transition-colors flex items-center group"
+              style={{ borderColor: cor }}
+            >
+              <span className="text-cinza text-sm mr-3 tabular-nums">{index + 1}</span>
+              <span className="flex-1 truncate">{player.name}</span>
+              <button onClick={() => handleRemoveFromTeam(time, index)} className="text-cinza hover:text-vermelho p-1 sm:opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={`Remover ${player.name}`}>
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {lista.length === 0 && <p className="text-center text-cinza py-10">Esperando jogadores</p>}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div 
-        className="flex flex-col min-h-screen bg-[#0f1014] bg-cover bg-center bg-fixed font-sans"
-        style={{
-            backgroundImage: `linear-gradient(to bottom, rgba(15, 16, 20, 0.85), rgba(15, 16, 20, 0.95)), url('${bgImageUrl}')`
-        }}
-    >
-        <div className="h-32 w-full flex-shrink-0"></div>
+    <div className="mx-auto w-[min(1000px,100%-40px)] py-14">
+      <h1 className="font-display font-black uppercase leading-[.9] text-[clamp(48px,7vw,88px)]">Mix do Soso</h1>
+      <p className="text-cinza mt-2 mb-8">Cole os nicks, sorteie um por vez e arraste um nome sobre outro pra trocar de time.</p>
 
-        <main className="flex-1 text-white p-4 md:p-8 mb-24">
-            <div className="max-w-5xl mx-auto">
-                
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-white drop-shadow-lg flex items-center justify-center gap-3">
-                        <Users className="w-10 h-10 text-yellow-500"/> Mix do Soso
-                    </h1>
-                    <p className="text-slate-400 text-sm mt-2 font-bold uppercase tracking-widest">
-                        Arraste um nome sobre outro para trocar de time
-                    </p>
-                </div>
+      <div className="bg-carvao p-5 mb-8">
+        <label htmlFor="nicks" className="font-semibold block mb-2">Lista de nicks (um por linha)</label>
+        <textarea
+          id="nicks"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder={"nick1\nnick2\nnick3"}
+          className="campo h-44 font-mono text-base resize-y mb-4"
+        />
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button onClick={handleSortear} disabled={isSorting} className="btn btn-vermelho">
+            <Shuffle className="w-5 h-5" /> {isSorting ? "Sorteando..." : "Sortear próximo"}
+          </button>
+          <button onClick={handleSoares} disabled={isSorting} className="btn btn-cinza"><UserPlus className="w-5 h-5" /> Colocar o Soares</button>
+          <button onClick={handleLimparTimes} className="btn btn-cinza sm:ml-auto"><Trash2 className="w-5 h-5" /> Limpar times</button>
+        </div>
+        <div className="bg-preto h-20 grid place-items-center px-4" aria-live="polite">
+          <p className={`font-display font-black uppercase text-3xl text-center ${isSorting ? "text-vermelho" : ""}`}>{statusMsg}</p>
+        </div>
+      </div>
 
-                <div className="bg-[#1b1e24]/90 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-2xl mb-10">
-                    <textarea 
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        placeholder="Cole a lista de nicks aqui (um por linha)..."
-                        className="w-full h-48 bg-[#0f1014] border border-white/10 rounded-xl p-4 text-white placeholder:text-slate-600 focus:border-yellow-500 outline-none transition font-mono text-sm resize-y mb-6"
-                    ></textarea>
-
-                    <div className="flex flex-wrap justify-center gap-4 mb-6">
-                        <button 
-                            onClick={handleSortear} 
-                            disabled={isSorting}
-                            className="bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-black uppercase italic tracking-wide transition shadow-lg flex items-center gap-2"
-                        >
-                            {isSorting ? "Sorteando..." : <><Shuffle className="w-5 h-5"/> Sortear Próximo</>}
-                        </button>
-
-                        <button 
-                            onClick={handleSoares}
-                            disabled={isSorting}
-                            className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-xl font-black uppercase italic tracking-wide transition shadow-lg flex items-center gap-2"
-                        >
-                            <UserPlus className="w-5 h-5"/> Soares
-                        </button>
-
-                        <button 
-                            onClick={handleLimparTimes}
-                            className="bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/50 px-6 py-3 rounded-xl font-bold uppercase transition flex items-center gap-2"
-                        >
-                            <Trash2 className="w-5 h-5"/> Resetar
-                        </button>
-                    </div>
-
-                    <div className="bg-[#0f1014] border border-white/10 rounded-xl p-4 text-center h-20 flex items-center justify-center">
-                        <h2 className="text-2xl font-black uppercase italic tracking-widest text-white animate-pulse">
-                            {statusMsg}
-                        </h2>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    
-                    {/* COLUNA CT */}
-                    <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#5d79ae] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
-                        <div className="bg-[#5d79ae]/10 p-4 border-b border-[#5d79ae]/20 text-center">
-                            <h2 className="text-2xl font-black text-[#5d79ae] uppercase tracking-tighter">Contra-Terroristas</h2>
-                            <p className="text-xs text-[#5d79ae]/70 font-bold uppercase">{teamCT.length} / 5 Jogadores</p>
-                        </div>
-                        <div className="p-4 flex-1 space-y-2">
-                            {teamCT.map((player, index) => (
-                                <div 
-                                    key={player.id}
-                                    draggable
-                                    onDragStart={() => handleDragStart('CT', index)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={() => handleDrop('CT', index)}
-                                    className="bg-[#0f1014] border-l-4 border-[#5d79ae] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center animate-in slide-in-from-left-4 duration-300 group"
-                                >
-                                    <span className="text-[#5d79ae]/50 text-sm mr-3">#{index + 1}</span>
-                                    <span className="flex-1 truncate">{player.name}</span>
-                                    
-                                    {/* BOTÃO EXCLUIR */}
-                                    <button 
-                                        onClick={() => handleRemoveFromTeam('CT', index)}
-                                        className="text-slate-600 hover:text-red-500 transition p-1 opacity-0 group-hover:opacity-100"
-                                        title="Remover jogador"
-                                    >
-                                        <Trash2 className="w-4 h-4"/>
-                                    </button>
-                                </div>
-                            ))}
-                            {teamCT.length === 0 && (
-                                <div className="text-center text-slate-600 italic py-10 text-sm uppercase font-bold">Aguardando jogadores...</div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* COLUNA TR */}
-                    <div className="bg-[#1b1e24]/80 backdrop-blur-sm rounded-2xl border-t-4 border-[#de9b35] shadow-lg overflow-hidden flex flex-col min-h-[400px]">
-                        <div className="bg-[#de9b35]/10 p-4 border-b border-[#de9b35]/20 text-center">
-                            <h2 className="text-2xl font-black text-[#de9b35] uppercase tracking-tighter">Terroristas</h2>
-                            <p className="text-xs text-[#de9b35]/70 font-bold uppercase">{teamTR.length} / 5 Jogadores</p>
-                        </div>
-                        <div className="p-4 flex-1 space-y-2">
-                            {teamTR.map((player, index) => (
-                                <div 
-                                    key={player.id}
-                                    draggable
-                                    onDragStart={() => handleDragStart('TR', index)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={() => handleDrop('TR', index)}
-                                    className="bg-[#0f1014] border-l-4 border-[#de9b35] p-4 rounded rouded-l-none text-white font-bold uppercase tracking-wide cursor-grab active:cursor-grabbing hover:bg-[#15181e] transition flex items-center animate-in slide-in-from-right-4 duration-300 group"
-                                >
-                                    <span className="text-[#de9b35]/50 text-sm mr-3">#{index + 1}</span>
-                                    <span className="flex-1 truncate">{player.name}</span>
-
-                                    {/* BOTÃO EXCLUIR */}
-                                    <button 
-                                        onClick={() => handleRemoveFromTeam('TR', index)}
-                                        className="text-slate-600 hover:text-red-500 transition p-1 opacity-0 group-hover:opacity-100"
-                                        title="Remover jogador"
-                                    >
-                                        <Trash2 className="w-4 h-4"/>
-                                    </button>
-                                </div>
-                            ))}
-                            {teamTR.length === 0 && (
-                                <div className="text-center text-slate-600 italic py-10 text-sm uppercase font-bold">Aguardando jogadores...</div>
-                            )}
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-        </main>
-
-        <footer className="bg-[#0f1014] border-t-2 border-yellow-600 pt-16 pb-8 px-4 md:px-8 mt-auto z-10">
-            <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                    <div className="space-y-4">
-                        <img src="/image_1.png" alt="Canal do Soares" className="h-28 w-auto mx-auto md:mx-0 object-contain hover:opacity-100 transition" />
-                        <p className="text-slate-400 text-sm leading-relaxed">
-                            Trazendo os melhores sorteios e conteúdo de CS2 para a comunidade. 
-                            Participe, jogue limpo e boa sorte!
-                        </p>
-                    </div>
-                    <div>
-                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Navegação</h4>
-                        <ul className="space-y-3 text-sm text-slate-400">
-                            <li><Link href="/" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Início</Link></li>
-                            <li><Link href="/mix" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Mix Maker</Link></li>
-                            <li><Link href="/#parceiros" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Parceiros</Link></li>
-                            <li><Link href="/meus-sorteios" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Meus Tickets</Link></li>
-                            <li><a href="https://www.twitch.tv/soares" target="_blank" className="hover:text-yellow-500 transition flex items-center gap-2"><div className="w-1 h-1 bg-yellow-500 rounded-full"></div> Live Stream</a></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="text-white font-bold uppercase mb-6 tracking-wide text-sm">Siga-nos</h4>
-                        <div className="flex gap-4">
-                            <a href="https://www.twitch.tv/soares" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#9146ff] hover:text-white transition">
-                                <Twitch className="w-5 h-5"/>
-                            </a>
-                            <a href="https://www.instagram.com/soarexcs/" target="_blank" className="w-10 h-10 bg-[#0f1014] rounded flex items-center justify-center text-slate-400 hover:bg-[#E1306C] hover:text-white transition">
-                                <Instagram className="w-5 h-5"/>
-                            </a>
-                            
-                        </div>
-                    </div>
-                </div>
-                <div className="border-t border-white/5 pt-8 text-center">
-                    <p className="text-slate-600 text-xs">
-                        © 2026 Canal do Soares. Todos os direitos reservados.
-                    </p>
-                </div>
-            </div>
-        </footer>
+      <div className="grid md:grid-cols-2 gap-6">
+        {coluna("CT", teamCT)}
+        {coluna("TR", teamTR)}
+      </div>
     </div>
   );
 }
