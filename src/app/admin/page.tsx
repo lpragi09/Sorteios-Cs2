@@ -36,6 +36,19 @@ export default function Admin() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- busca de dados: o state só muda depois da resposta
   useEffect(() => { if (isAdmin) carregar(); }, [isAdmin, carregar]);
 
+  // Volta da autorização da Twitch (/api/twitch/callback manda ?twitch=ok:login)
+  useEffect(() => {
+    const r = new URLSearchParams(window.location.search).get("twitch");
+    if (!r) return;
+    window.history.replaceState(null, "", "/admin");
+    if (r.startsWith("ok")) {
+      const login = r.split(":")[1];
+      popup.alerta(`${login ? `A conta ${login} autorizou` : "Autorizado"}. Feche e abra o chat do sorteio de novo pra ligar a captação pelo servidor.`, { tipo: "sucesso", titulo: "Twitch autorizada" });
+    } else if (r !== "cancelado") {
+      popup.alerta("Não foi possível concluir a autorização na Twitch. Tente de novo.", { tipo: "erro" });
+    }
+  }, [popup]);
+
   if (status === "loading") return <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-vermelho" /></div>;
   if (!isAdmin) {
     return (

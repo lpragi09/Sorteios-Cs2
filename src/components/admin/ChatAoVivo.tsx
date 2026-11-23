@@ -23,6 +23,7 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
   const [busca, setBusca] = useState("");
   const [sorteando, setSorteando] = useState(false);
   const [resposta, setResposta] = useState<string | null | undefined>(undefined);
+  const [servidor, setServidor] = useState<string | null>(null); // captação pelo servidor (EventSub)
   const captandoRef = useRef(captando);
   const vistos = useRef(new Map<string, number>()); // login -> maior tier já enviado
   const aguardando = useRef<string | null>(null);
@@ -92,7 +93,8 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
     const novo = !captando;
     setCaptando(novo);
     try {
-      await adminApi("captarChat", { sorteioId: sorteio.id, captando: novo });
+      const r = await adminApi<{ servidor: string }>("captarChat", { sorteioId: sorteio.id, captando: novo });
+      setServidor(r.servidor);
       onMudou();
     } catch (err) {
       setCaptando(!novo);
@@ -141,8 +143,16 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
             {bot === "conectado" ? `Lendo o chat de twitch.tv/${sorteio.canal}` : bot === "conectando" ? "Conectando no chat..." : "Desconectado do chat"}
           </p>
           <p className="text-cinza mt-1">
-            {captando ? <>Chat aberto: quem digitar <b className="text-osso font-mono">{sorteio.comando}</b> entra.</> : "Chat fechado: ninguém novo entra."} Deixe esta tela aberta durante a live.
+            {captando ? <>Chat aberto: quem digitar <b className="text-osso font-mono">{sorteio.comando}</b> entra.</> : "Chat fechado: ninguém novo entra."}{" "}
+            {servidor === "ligada" ? "O servidor também está captando, então dá pra fechar esta tela." : "Deixe esta tela aberta durante a live."}
           </p>
+          {servidor === "precisa_autorizar" && (
+            <p className="mt-2 text-[15px]">
+              Pra captar mesmo com o painel fechado, o dono do canal precisa autorizar o site uma vez:{" "}
+              <a href="/api/twitch/autorizar" className="font-bold border-b-2 border-vermelho">Autorizar na Twitch</a>
+            </p>
+          )}
+          {servidor === "erro" && <p className="mt-2 text-[15px] text-vermelho">A captação pelo servidor não ligou; o painel segue captando enquanto estiver aberto.</p>}
           <div className="flex gap-8 mt-3 text-cinza">
             <div><strong className="block text-osso font-display font-black text-[34px] leading-none">{formatarNumero(ativos.length)}</strong>no sorteio</div>
             <div><strong className="block text-osso font-display font-black text-[34px] leading-none">{formatarNumero(totalChances)}</strong>chances</div>

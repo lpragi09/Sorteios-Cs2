@@ -59,7 +59,9 @@ export default function Home() {
           aria-label="Ilustração do Soares sentado nas caixas do bombsite A, segurando uma karambit"
           className="w-full aspect-[4/3] object-cover object-[62%_30%] pointer-events-none lg:absolute lg:inset-0 lg:h-full lg:aspect-auto lg:object-[60%_30%] animate-aproxima"
         >
-          <source src="/hero-loop.mp4" type="video/mp4" />
+          {/* 1280px no celular e 1920px no computador (ampliados com IA a partir do original de 1024px) */}
+          <source src="/hero-720.mp4" type="video/mp4" media="(max-width: 768px)" />
+          <source src="/hero-1080.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(10,10,11,0)_40%,#0a0a0b_75%)] lg:bg-[linear-gradient(to_bottom,rgba(10,10,11,0)_45%,rgba(10,10,11,.75)_80%,#0a0a0b_100%),linear-gradient(to_right,rgba(10,10,11,.7)_0%,rgba(10,10,11,0)_45%)]" />
         <div className="relative z-10 mx-auto w-[min(1180px,100%-40px)] -mt-24 pb-10 lg:mt-0 lg:pb-16">

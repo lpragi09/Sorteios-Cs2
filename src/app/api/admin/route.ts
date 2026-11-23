@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSessionUser } from "@/lib/auth";
 import { SORTEIO_COLUNAS, limparInstagram } from "@/lib/sorteios";
 import { loginValido } from "@/lib/chat";
+import { registrarEntradaChat } from "@/lib/chatServer";
+import { desligarCaptura, ligarCaptura, type StatusCaptura } from "@/lib/eventsub";
 import { assinarPrints, EXTENSOES_IMAGEM, PREMIOS_BUCKET, removerImagemPremio, removerPrints } from "@/lib/prints";
 import { confirmFairDraw, runFairDraw, skipFairDraw } from "@/lib/fairServer";
 import { falha, semCache } from "@/lib/http";
@@ -34,6 +36,12 @@ function camposSorteio(b: Record<string, unknown>) {
     chance_t2: inteiro(b.chance_t2, 3),
     chance_t3: inteiro(b.chance_t3, 5),
   };
+}
+
+// Desliga a captação pelo servidor no canal só se nenhum outro sorteio estiver captando nele
+async function desligarSeNinguemCapta(canal: string) {
+  const { data } = await supabaseAdmin.from("sorteios").select("id").eq("tipo", "chat").eq("status", "aberto").eq("captando", true).eq("canal", canal).limit(1);
+  if (!data?.length) await desligarCaptura(canal);
 }
 
 export async function POST(request: Request) {
@@ -84,8 +92,10 @@ export async function POST(request: Request) {
       if (!ehId(b.id)) return falha("Sorteio inválido.");
       const status = b.status === "encerrado" ? "encerrado" : "aberto";
       const extra = status === "encerrado" ? { captando: false } : {};
-      const { error } = await db.from("sorteios").update({ status, ...extra }).eq("id", b.id);
-      return error ? falha(error.message, 500) : semCache({ ok: true });
+      const { data: s, error } = await db.from("sorteios").update({ status, ...extra }).eq("id", b.id).select("canal").single();
+      if (error) return falha(error.message, 500);
+      if (status === "encerrado" && s?.canal) await desligarSeNinguemCapta(s.canal);
+      return semCache({ ok: true });
     }
 
     case "excluirSorteio": {
@@ -186,36 +196,20 @@ export async function POST(request: Request) {
     // ---------- chat da Twitch ----------
     case "captarChat": {
       if (!ehId(b.sorteioId)) return falha("Sorteio inválido.");
-      const { error } = await db.from("sorteios").update({ captando: !!b.captando }).eq("id", b.sorteioId).eq("tipo", "chat");
-      return error ? falha(error.message, 500) : semCache({ ok: true });
+      const { data: s, error } = await db.from("sorteios").update({ captando: !!b.captando }).eq("id", b.sorteioId).eq("tipo", "chat").select("canal").single();
+      if (error) return falha(error.message, 500);
+      // Abrir o chat também liga a captação pelo servidor (se o app da Twitch estiver configurado)
+      let servidor: StatusCaptura | "desligada" = "desligada";
+      if (b.captando && s?.canal) servidor = await ligarCaptura(s.canal, new URL(request.url).origin);
+      else if (s?.canal) await desligarSeNinguemCapta(s.canal);
+      return semCache({ ok: true, servidor });
     }
 
     case "entradaChat": {
       // Mandado pelo painel (tmi.js) a cada pessoa que digita o comando
       if (!ehId(b.sorteioId)) return falha("Sorteio inválido.");
-      const login = String(b.login ?? "").toLowerCase();
-      const tier = [0, 1, 2, 3].includes(Number(b.tier)) ? Number(b.tier) : 0;
-      if (!loginValido(login)) return falha("Login inválido.");
-      const { data: s } = await db.from("sorteios").select("status, captando, tipo").eq("id", b.sorteioId).maybeSingle();
-      if (!s || s.tipo !== "chat" || s.status !== "aberto" || !s.captando) return falha("O chat não está aberto pra entrar.", 409);
-
-      const { data: existente } = await db
-        .from("chat_participantes")
-        .select("id, sub_tier, removido")
-        .eq("sorteio_id", b.sorteioId)
-        .eq("twitch_login", login)
-        .maybeSingle();
-      if (existente) {
-        // Quem foi tirado pelo admin não volta digitando de novo; quem virou sub sobe de tier
-        if (!existente.removido && tier > existente.sub_tier) {
-          await db.from("chat_participantes").update({ sub_tier: tier }).eq("id", existente.id);
-          return semCache({ ok: true, atualizado: true });
-        }
-        return semCache({ ok: true, repetido: true });
-      }
-      const { error } = await db.from("chat_participantes").insert({ sorteio_id: b.sorteioId, twitch_login: login, sub_tier: tier });
-      if (error?.code === "23505") return semCache({ ok: true, repetido: true });
-      return error ? falha(error.message, 500) : semCache({ ok: true, novo: true });
+      const r = await registrarEntradaChat(b.sorteioId, String(b.login ?? ""), Number(b.tier));
+      return r.ok ? semCache(r) : falha(r.erro, r.status);
     }
 
     case "listarChat": {

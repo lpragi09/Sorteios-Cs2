@@ -86,33 +86,44 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
     );
   };
 
-  // 3·2·1 enquanto o servidor congela a lista e espera o número público
+  // 3·2·1 enquanto o servidor congela a lista e espera o número público.
+  // Cada número é um passo de state (sobrevive ao React desmontar/remontar em desenvolvimento).
   const comecar = () => {
     limpar();
     sons.unlock();
     setGiro(null);
+    setNumero(3);
     setEsperando(false);
     setFase("contagem");
     onSorteado?.(null);
     const p = adminApi<{ draw: FairDraw }>("sortear", { sorteioId: sorteio.id }).then((r) => r.draw);
     p.catch(() => {});
     pedido.current = p;
-    [3, 2, 1].forEach((n, i) =>
-      timers.current.push(setTimeout(() => {
-        setNumero(n);
-        sons.tick(n === 1 ? 0.9 : n === 2 ? 0.5 : 0.15);
-      }, i * CONTAGEM_MS))
-    );
-    timers.current.push(
-      setTimeout(() => {
-        setEsperando(true);
-        p.then(girar, (err) => {
-          popup.erro(err, "Não foi possível sortear");
-          onFechar();
-        });
-      }, 3 * CONTAGEM_MS)
-    );
   };
+
+  useEffect(() => {
+    if (fase !== "contagem" || esperando) return;
+    sons.tick(numero === 1 ? 0.9 : numero === 2 ? 0.5 : 0.15);
+    const t = setTimeout(() => (numero > 1 ? setNumero(numero - 1) : setEsperando(true)), CONTAGEM_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fase, numero, esperando]);
+
+  // Contagem acabou: gira assim que o servidor responder (só uma vez por pedido)
+  useEffect(() => {
+    if (fase !== "contagem" || !esperando || !pedido.current) return;
+    let ativo = true;
+    pedido.current.then(
+      (d) => { if (ativo) girar(d); },
+      (err) => {
+        if (!ativo) return;
+        popup.erro(err, "Não foi possível sortear");
+        onFechar();
+      }
+    );
+    return () => { ativo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fase, esperando]);
 
   const iniciado = useRef(false); // o React em desenvolvimento roda o efeito duas vezes
   useEffect(() => {
@@ -120,9 +131,10 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
       iniciado.current = true;
       comecar();
     }
-    return limpar;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Ao fechar de verdade, para o giro e os timers
+  useEffect(() => () => limpar(), []);
 
   const descartar = (d: FairDraw | null) => {
     if (d) adminApi("descartarGiro", { drawId: d.id }).catch(() => {});
