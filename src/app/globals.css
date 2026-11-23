@@ -92,12 +92,14 @@
 @keyframes quica { 50% { transform: translateY(5px); } }
 @keyframes pisca { 50% { opacity: .2; } }
 @keyframes surge { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes faixa { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes contagem { 0% { transform: scale(1.6); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 80% { opacity: 1; } 100% { transform: scale(.85); opacity: 0; } }
 
 @utility animate-aproxima { animation: aproxima 1.4s cubic-bezier(.2, .8, .2, 1); }
 @utility animate-quica { animation: quica 1.6s ease-in-out infinite; }
 @utility animate-pisca { animation: pisca 1.2s steps(2) infinite; }
 @utility animate-surge { animation: surge .2s ease-out; }
+@utility animate-faixa { animation: faixa 30s linear infinite; }
 @utility animate-contagem { animation: contagem 1s ease-out; }
 
 /* Quem pediu menos movimento no sistema não vê animação decorativa

@@ -119,8 +119,15 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Faixa rolando sem parar: duas metades iguais, anda metade da largura e recomeça sem emenda */}
       <div className="bg-vermelho text-white overflow-hidden whitespace-nowrap font-display font-black text-[22px] py-2.5" aria-hidden>
-        {Array.from({ length: 10 }, (_, i) => <span key={i} className="inline-block pr-10">USE O CÓDIGO {CODIGO}</span>)}
+        <div className="flex w-max animate-faixa hover:[animation-play-state:paused]">
+          {[0, 1].map((metade) => (
+            <div key={metade} className="flex shrink-0">
+              {Array.from({ length: 10 }, (_, i) => <span key={i} className="pr-10">USE O CÓDIGO {CODIGO}</span>)}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Como participar */}
