@@ -15,7 +15,7 @@ export function Marca({ className = "" }: { className?: string }) {
   );
 }
 
-/** Foto da conta: abre um menu com Meus tickets e Sair. */
+/** Foto da conta: abre um menu com Meus tickets, Painel admin e Sair. */
 function MenuConta() {
   const { data: session } = useSession();
   const [aberto, setAberto] = useState(false);
@@ -137,17 +137,7 @@ export default function Navbar() {
           </a>
 
           {status === "authenticated" ? (
-            <>
-              {isAdmin && (
-                <Link href="/admin" className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base" aria-label="Painel admin">
-                  <Shield className="w-4 h-4" /> Admin
-                </Link>
-              )}
-              <Link href="/meus-tickets" className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base">
-                <Ticket className="w-4 h-4" /> Meus tickets
-              </Link>
-              <MenuConta />
-            </>
+            <MenuConta />
           ) : (
             <button onClick={() => signIn("google")} disabled={status === "loading"} className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base">
               Entrar com Google
