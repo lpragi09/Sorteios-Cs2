@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { LogOut, Menu, Shield, Ticket, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Shield, Ticket, User, X } from "lucide-react";
 
 export function Marca({ className = "" }: { className?: string }) {
   return (
@@ -12,6 +12,71 @@ export function Marca({ className = "" }: { className?: string }) {
       <b className="bg-vermelho text-white px-2 pt-0.5 [clip-path:polygon(0_0,100%_0,100%_70%,85%_100%,0_100%)]">CS2</b>
       SOARES
     </span>
+  );
+}
+
+/** Foto da conta: abre um menu com Meus tickets e Sair. */
+function MenuConta() {
+  const { data: session } = useSession();
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+  const isAdmin = !!(session?.user as { isAdmin?: boolean } | undefined)?.isAdmin;
+
+  // Fecha ao clicar fora ou apertar Esc
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => {
+      if (caixa.current && !caixa.current.contains(e.target as Node)) setAberto(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAberto(false);
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [aberto]);
+
+  const item = "flex items-center gap-3 w-full px-4 py-3 font-semibold text-left hover:bg-grafite";
+
+  return (
+    <div ref={caixa} className="relative hidden sm:block">
+      <button
+        onClick={() => setAberto((v) => !v)}
+        className="flex items-center gap-1.5 h-11 pl-2 pr-2.5 bg-carvao hover:bg-grafite"
+        aria-label="Menu da conta"
+        aria-haspopup="menu"
+        aria-expanded={aberto}
+      >
+        {session?.user?.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+        ) : (
+          <User className="w-5 h-5" />
+        )}
+        <ChevronDown className={`w-4 h-4 text-cinza transition-transform ${aberto ? "rotate-180" : ""}`} />
+      </button>
+
+      {aberto && (
+        <div role="menu" className="absolute right-0 top-[calc(100%+8px)] w-64 bg-carvao border border-grafite shadow-2xl shadow-black/60 animate-surge">
+          <div className="px-4 py-3 border-b border-grafite">
+            <p className="font-bold truncate">{session?.user?.name ?? "Sua conta"}</p>
+            <p className="text-sm text-cinza truncate">{session?.user?.email}</p>
+          </div>
+          <Link href="/meus-tickets" role="menuitem" onClick={() => setAberto(false)} className={item}>
+            <Ticket className="w-4 h-4 text-vermelho" /> Meus tickets
+          </Link>
+          {isAdmin && (
+            <Link href="/admin" role="menuitem" onClick={() => setAberto(false)} className={item}>
+              <Shield className="w-4 h-4 text-vermelho" /> Painel admin
+            </Link>
+          )}
+          <button role="menuitem" onClick={() => signOut({ callbackUrl: "/" })} className={`${item} border-t border-grafite text-cinza hover:text-osso`}>
+            <LogOut className="w-4 h-4" /> Sair
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -81,14 +146,7 @@ export default function Navbar() {
               <Link href="/meus-tickets" className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base">
                 <Ticket className="w-4 h-4" /> Meus tickets
               </Link>
-              <button onClick={() => signOut({ callbackUrl: "/" })} className="hidden sm:grid place-items-center w-11 h-11 bg-carvao hover:bg-grafite" aria-label="Sair">
-                {session.user?.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
-                ) : (
-                  <LogOut className="w-5 h-5" />
-                )}
-              </button>
+              <MenuConta />
             </>
           ) : (
             <button onClick={() => signIn("google")} disabled={status === "loading"} className="hidden sm:flex btn btn-cinza !py-2.5 !px-4 !text-base">
