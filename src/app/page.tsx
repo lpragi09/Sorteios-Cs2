@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, Copy, ShieldCheck } from "lucide-react";
+import { ChevronDown, ShieldCheck } from "lucide-react";
 import SorteioCard from "@/components/SorteioCard";
 import ModalParticipar from "@/components/ModalParticipar";
+import ComoParticipar from "@/components/ComoParticipar";
 import { CODIGO, formatarReais, PARCEIROS_PADRAO, type Ganhador, type Parceiro, type SorteioPublico } from "@/lib/sorteios";
 import { dataVersionQuery, useRefreshOnReturn } from "@/lib/freshData";
 
@@ -16,7 +17,6 @@ export default function Home() {
   const [dados, setDados] = useState<Dados | null>(null);
   const [erro, setErro] = useState(false);
   const [participando, setParticipando] = useState<SorteioPublico | null>(null);
-  const [copiado, setCopiado] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
@@ -32,14 +32,6 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- busca de dados: o state só muda depois da resposta
   useEffect(() => { carregar(); }, [carregar]);
   useRefreshOnReturn(carregar);
-
-  const copiar = async () => {
-    try {
-      await navigator.clipboard.writeText(CODIGO);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 1800);
-    } catch {}
-  };
 
   const abertos = dados?.sorteios.filter((s) => s.status === "aberto") ?? [];
   const encerrados = dados?.sorteios.filter((s) => s.status === "encerrado") ?? [];
@@ -131,36 +123,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Como participar */}
-      <section id="participar" className="scroll-mt-20 py-20">
-        <div className="mx-auto w-[min(1180px,100%-40px)]">
-          <h2 className="font-display font-black uppercase leading-[.95] text-[clamp(40px,5vw,64px)]">Como participar</h2>
-          <p className="text-cinza max-w-[56ch] mt-2 mb-10">Seu ticket entra no sorteio depois que a equipe confere o print.</p>
-          <ol className="grid md:grid-cols-3 gap-0.5">
-            <li className="bg-carvao p-7">
-              <span className="block font-display font-black text-[64px] leading-none text-vermelho mb-2.5">1</span>
-              <h3 className="text-[23px] font-bold mb-1.5">Deposite com o código</h3>
-              <p className="text-cinza">Na {parceiros.map((c) => c.nome).join(" ou na ")}, use o código do Soares no depósito.</p>
-              <button onClick={copiar} className="inline-flex items-center gap-3 mt-5 border border-dashed border-vermelho pl-3.5 pr-1.5 py-1.5 font-display font-black text-[26px] tracking-wide">
-                {CODIGO}
-                <span className="font-sans text-sm font-bold bg-vermelho text-white px-3 py-2 flex items-center gap-1.5">
-                  <Copy className="w-3.5 h-3.5" /> {copiado ? "Copiado" : "Copiar"}
-                </span>
-              </button>
-            </li>
-            <li className="bg-carvao p-7">
-              <span className="block font-display font-black text-[64px] leading-none text-vermelho mb-2.5">2</span>
-              <h3 className="text-[23px] font-bold mb-1.5">Tire print do depósito</h3>
-              <p className="text-cinza">O print precisa mostrar o seu ID na casa e quantas coins você depositou.</p>
-            </li>
-            <li className="bg-carvao p-7">
-              <span className="block font-display font-black text-[64px] leading-none text-vermelho mb-2.5">3</span>
-              <h3 className="text-[23px] font-bold mb-1.5">Envie o seu ticket</h3>
-              <p className="text-cinza">Entre com o Google, escolha o sorteio e mande o print com o seu ID e Instagram.</p>
-            </li>
-          </ol>
-        </div>
-      </section>
+      <ComoParticipar parceiros={parceiros} />
 
       {/* Parceiros */}
       <section id="parceiros" className="scroll-mt-20 pb-20">
