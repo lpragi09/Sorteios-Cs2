@@ -279,7 +279,7 @@ export async function POST(request: Request) {
     // ---------- usuários do site ----------
     case "listarUsuarios": {
       const [{ data: usuarios, error }, { data: tickets }, { data: ganhos }] = await Promise.all([
-        db.from("usuarios").select("email, nome, avatar_url, criado_em, ultimo_acesso, acessos, bloqueado").order("ultimo_acesso", { ascending: false }).limit(10000),
+        db.from("usuarios").select("*").order("ultimo_acesso", { ascending: false }).limit(10000),
         db.from("tickets").select("email, status, coins").limit(100000),
         db.from("ganhadores").select("email").not("email", "is", null),
       ]);

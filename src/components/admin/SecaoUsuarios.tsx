@@ -1,16 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Ban, Download, Loader2, Search, Trophy, Undo2, UserCheck, UserPlus, Users } from "lucide-react";
+import { Ban, Download, Loader2, MessageCircle, Search, Trophy, Undo2, UserCheck, UserPlus, Users } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { usePopup } from "@/components/Popup";
 import Paginacao, { usePaginacao } from "@/components/Paginacao";
 import { formatarNumero } from "@/lib/sorteios";
 import { baixarCsv } from "@/lib/csv";
+import { formatarWhatsapp } from "@/lib/perfil";
 
 type Usuario = {
   email: string;
   nome: string | null;
+  nome_cadastro?: string | null; // o que a pessoa digitou no popup depois do login
+  whatsapp?: string | null;
   avatar_url: string | null;
   criado_em: string;
   ultimo_acesso: string;
@@ -53,7 +56,15 @@ export default function SecaoUsuarios() {
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return (lista ?? []).filter((u) => !q || u.email.includes(q) || (u.nome ?? "").toLowerCase().includes(q));
+    const digitos = q.replace(/\D/g, "");
+    return (lista ?? []).filter(
+      (u) =>
+        !q ||
+        u.email.includes(q) ||
+        (u.nome ?? "").toLowerCase().includes(q) ||
+        (u.nome_cadastro ?? "").toLowerCase().includes(q) ||
+        (digitos.length >= 4 && (u.whatsapp ?? "").includes(digitos))
+    );
   }, [lista, busca]);
   const pag = usePaginacao(filtrados);
 
@@ -71,8 +82,8 @@ export default function SecaoUsuarios() {
   const exportar = () =>
     baixarCsv(
       "usuarios.csv",
-      ["Nome", "E-mail", "Cadastro", "Último acesso", "Acessos", "Tickets", "Aprovados", "Coins aprovadas", "Vitórias", "Bloqueado"],
-      filtrados.map((u) => [u.nome ?? "", u.email, data(u.criado_em), data(u.ultimo_acesso), u.acessos, u.tickets, u.aprovados, u.coins, u.vitorias, u.bloqueado ? "sim" : "não"])
+      ["Nome", "Nome no Google", "WhatsApp", "E-mail", "Cadastro", "Último acesso", "Acessos", "Tickets", "Aprovados", "Coins aprovadas", "Vitórias", "Bloqueado"],
+      filtrados.map((u) => [u.nome_cadastro ?? "", u.nome ?? "", formatarWhatsapp(u.whatsapp), u.email, data(u.criado_em), data(u.ultimo_acesso), u.acessos, u.tickets, u.aprovados, u.coins, u.vitorias, u.bloqueado ? "sim" : "não"])
     );
 
   return (
@@ -97,7 +108,7 @@ export default function SecaoUsuarios() {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <label className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cinza" />
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome ou e-mail" className="campo !py-2 !pl-9" aria-label="Buscar usuário" />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, e-mail ou WhatsApp" className="campo !py-2 !pl-9" aria-label="Buscar usuário" />
         </label>
         <button onClick={exportar} disabled={!filtrados.length} className="ml-auto h-10 px-3 bg-grafite hover:bg-grafite-2 font-bold flex items-center gap-1.5 disabled:opacity-40" title={busca ? "Baixa só os usuários da busca" : "Baixa todos os usuários"}>
           <Download className="w-4 h-4" /> CSV
@@ -115,6 +126,7 @@ export default function SecaoUsuarios() {
               <thead className="text-cinza border-b border-grafite">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Usuário</th>
+                  <th className="px-4 py-3 font-semibold">WhatsApp</th>
                   <th className="px-4 py-3 font-semibold">Cadastro</th>
                   <th className="px-4 py-3 font-semibold">Último acesso</th>
                   <th className="px-4 py-3 font-semibold text-right">Acessos</th>
@@ -136,10 +148,19 @@ export default function SecaoUsuarios() {
                           <span className="w-9 h-9 rounded-full bg-sangue grid place-items-center font-bold">{(u.nome ?? u.email)[0].toUpperCase()}</span>
                         )}
                         <div className="min-w-0">
-                          <p className="font-bold truncate">{u.nome ?? "Sem nome"}{u.bloqueado && <span className="ml-2 text-vermelho text-sm">bloqueado</span>}</p>
-                          <p className="text-cinza text-sm truncate">{u.email}</p>
+                          <p className="font-bold truncate">{u.nome_cadastro ?? u.nome ?? "Sem nome"}{u.bloqueado && <span className="ml-2 text-vermelho text-sm">bloqueado</span>}</p>
+                          <p className="text-cinza text-sm truncate">{u.nome_cadastro && u.nome && u.nome_cadastro !== u.nome ? `${u.nome}, ` : ""}{u.email}</p>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {u.whatsapp ? (
+                        <a href={`https://wa.me/55${u.whatsapp}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold hover:text-vermelho-claro tabular-nums" title="Abrir conversa no WhatsApp">
+                          <MessageCircle className="w-4 h-4 text-[#25d366]" /> {formatarWhatsapp(u.whatsapp)}
+                        </a>
+                      ) : (
+                        <span className="text-cinza">Não preencheu</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-cinza whitespace-nowrap">{data(u.criado_em)}</td>
                     <td className="px-4 py-3 text-cinza whitespace-nowrap">{data(u.ultimo_acesso)}</td>
