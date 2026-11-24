@@ -64,6 +64,8 @@ export interface Ganhador {
   sorteio_titulo?: string;
   sorteio_valor?: number | null;
   fair_draw_id: string | null;
+  /** Foto da Twitch (chat) ou do Google (mensal). */
+  foto?: string | null;
 }
 
 export const SORTEIO_COLUNAS =

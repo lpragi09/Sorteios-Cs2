@@ -12,6 +12,20 @@ import Paginacao, { usePaginacao } from "@/components/Paginacao";
 
 type Dados = { sorteios: SorteioPublico[]; ganhadores: Ganhador[]; parceiros: Parceiro[] };
 
+/** Foto de quem ganhou; sem foto (ou se o link quebrar), a inicial. */
+function FotoGanhador({ src, nome }: { src: string | null; nome: string }) {
+  const [falhou, setFalhou] = useState(false);
+  if (!src || falhou) {
+    return (
+      <span className="w-11 h-11 shrink-0 rounded-full bg-sangue text-white font-display font-black text-xl grid place-items-center uppercase">
+        {nome.replace(/^@/, "").charAt(0) || "?"}
+      </span>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFalhou(true)} className="w-11 h-11 shrink-0 rounded-full object-cover bg-grafite" />;
+}
+
 const dataCurta = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "short" }).replace(".", "");
 
 export default function Home() {
@@ -156,16 +170,19 @@ export default function Home() {
       <section id="ganhadores" className="scroll-mt-20 pb-20">
         <div className="mx-auto w-[min(1180px,100%-40px)]">
           <h2 className="font-display font-black uppercase leading-[.95] text-[clamp(40px,5vw,64px)]">Quem já levou</h2>
-          <p className="text-cinza max-w-[56ch] mt-2 mb-10">Os últimos sorteios feitos na live.</p>
+          <p className="text-cinza max-w-[56ch] mt-2 mb-10">Quem ganhou nos últimos 30 dias.</p>
           <div className="grid lg:grid-cols-[1.3fr_.7fr] gap-6 items-start">
             <div className="border-t border-grafite">
               {dados?.ganhadores.length ? (
                 pagGanhadores.itensPagina.map((g) => (
                   <div key={g.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[100px_1fr_auto] gap-x-4 gap-y-0.5 items-center py-4 border-b border-grafite">
                     <time className="text-cinza text-[15px] max-sm:col-span-2">{dataCurta(g.criado_em)}</time>
-                    <div className="min-w-0">
-                      <b className="block text-[19px] truncate">{g.nome}</b>
-                      <span className="text-cinza text-[15px]">{g.sorteio_titulo}{g.rodada > 1 ? ` (rodada ${g.rodada})` : ""}</span>
+                    <div className="min-w-0 flex items-center gap-3">
+                      <FotoGanhador src={g.foto ?? null} nome={g.nome} />
+                      <div className="min-w-0">
+                        <b className="block text-[19px] truncate">{g.nome}</b>
+                        <span className="text-cinza text-[15px]">{g.sorteio_titulo}{g.rodada > 1 ? ` (rodada ${g.rodada})` : ""}</span>
+                      </div>
                     </div>
                     {g.fair_draw_id ? (
                       <Link href={`/provably-fair?id=${g.fair_draw_id}`} className="font-display font-black text-[28px] hover:text-vermelho" title="Conferir este sorteio">
@@ -177,7 +194,7 @@ export default function Home() {
                   </div>
                 ))
               ) : (
-                <p className="text-cinza py-6">{dados ? "Os ganhadores aparecem aqui depois do primeiro sorteio." : "Carregando..."}</p>
+                <p className="text-cinza py-6">{dados ? "Ninguém ganhou nos últimos 30 dias. O próximo ganhador aparece aqui." : "Carregando..."}</p>
               )}
               <Paginacao {...pagGanhadores} />
             </div>
