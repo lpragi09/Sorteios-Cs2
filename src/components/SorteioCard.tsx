@@ -28,26 +28,32 @@ export default function SorteioCard({ sorteio, onParticipar }: { sorteio: Sortei
   const aberto = inscricoesAbertas(sorteio);
   const ultimo = sorteio.ganhadores[sorteio.ganhadores.length - 1];
   const chat = sorteio.tipo === "chat";
+  // Fechado: acabou o tempo, foi encerrado ou (no chat) as entradas foram fechadas
+  const fechado = !aberto || (chat && !sorteio.captando);
 
   return (
-    <article className={`bg-carvao corte flex flex-col ${aberto ? "" : "opacity-90"}`}>
-      <div className="relative aspect-[4/3] grid place-items-center fundo-premio overflow-hidden">
+    <article className="bg-carvao corte flex flex-col">
+      <div className="relative aspect-video grid place-items-center fundo-premio overflow-hidden">
         {sorteio.imagem_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={sorteio.imagem_url}
             alt={sorteio.titulo}
             loading="lazy"
-            className={`w-[86%] h-[86%] object-contain drop-shadow-[0_14px_18px_rgba(0,0,0,.7)] ${aberto ? "" : "grayscale opacity-60"}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-[filter] duration-300 ${fechado ? "grayscale brightness-[.45]" : ""}`}
           />
         ) : (
-          <Gift className="w-20 h-20 text-grafite-2" aria-hidden />
+          <Gift className={`w-20 h-20 ${fechado ? "text-grafite" : "text-grafite-2"}`} aria-hidden />
         )}
-        <span className={`absolute right-3.5 top-3.5 px-2.5 py-1 text-sm font-bold ${aberto ? "bg-vermelho text-white" : "bg-preto/80 text-cinza"}`}>
-          {aberto ? (chat ? "Ao vivo no chat" : "Aberto") : "Encerrado"}
-        </span>
+        {fechado && (
+          <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
+            <span className="inline-block bg-vermelho text-white font-display font-black uppercase text-[26px] leading-none px-4 pt-2 pb-1.5 -rotate-3 shadow-[0_10px_30px_rgba(0,0,0,.6)]">
+              Sorteio fechado
+            </span>
+          </span>
+        )}
         {sorteio.valor != null && (
-          <span className={`absolute left-0 bottom-0 etiqueta pl-4 pr-6 pt-2 pb-1.5 font-display font-black text-[28px] leading-none text-white ${aberto ? "bg-vermelho" : "bg-grafite"}`}>
+          <span className={`absolute left-0 bottom-0 etiqueta pl-4 pr-6 pt-2 pb-1.5 font-display font-black text-[28px] leading-none text-white ${fechado ? "bg-grafite" : "bg-vermelho"}`}>
             {formatarReais(sorteio.valor)}
           </span>
         )}

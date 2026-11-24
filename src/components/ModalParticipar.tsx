@@ -86,15 +86,28 @@ export default function ModalParticipar({ sorteio, parceiros, onFechar }: { sort
         className="m-auto w-full max-w-lg bg-carvao corte relative animate-surge"
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={onFechar} disabled={enviando} className="absolute right-3 top-3 w-10 h-10 grid place-items-center text-cinza hover:text-osso" aria-label="Fechar">
+        <button onClick={onFechar} disabled={enviando} className="absolute z-10 right-3 top-3 w-10 h-10 grid place-items-center bg-preto/70 backdrop-blur-sm text-osso hover:bg-preto" aria-label="Fechar">
           <X />
         </button>
 
-        <div className="p-6 pb-0">
-          <p className="text-cinza font-semibold">Participar do sorteio</p>
-          <h2 id="participar-titulo" className="font-display font-black text-[40px] leading-[.95] uppercase pr-10">{sorteio.titulo}</h2>
-          {sorteio.valor != null && <p className="text-vermelho font-bold mt-1">{formatarReais(sorteio.valor)}</p>}
-        </div>
+        {/* Só a arte do sorteio no topo (o nome completo fica no cartão da home) */}
+        <h2 id="participar-titulo" className="sr-only">Participar do sorteio {sorteio.titulo}</h2>
+        {sorteio.imagem_url ? (
+          <div className="relative aspect-video fundo-premio overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={sorteio.imagem_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            {sorteio.valor != null && (
+              <span className="absolute left-0 bottom-0 etiqueta bg-vermelho text-white pl-4 pr-6 pt-2 pb-1.5 font-display font-black text-[26px] leading-none">
+                {formatarReais(sorteio.valor)}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="p-6 pb-0 pr-16">
+            <p className="font-display font-black text-[26px] leading-none uppercase line-clamp-2">{sorteio.titulo}</p>
+            {sorteio.valor != null && <p className="text-vermelho font-bold mt-1">{formatarReais(sorteio.valor)}</p>}
+          </div>
+        )}
 
         {status !== "authenticated" ? (
           <div className="p-6">

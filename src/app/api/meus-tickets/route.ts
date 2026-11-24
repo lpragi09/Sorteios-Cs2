@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return falha("Entre com o Google pra ver seus tickets.", 401);
+  const { data: conta } = await supabaseAdmin.from("usuarios").select("bloqueado").eq("email", user.email).maybeSingle();
+  if (conta?.bloqueado) return falha("Sua conta foi bloqueada.", 403);
 
   const [{ data: tickets, error }, { data: ganhos }] = await Promise.all([
     supabaseAdmin

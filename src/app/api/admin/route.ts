@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSessionUser } from "@/lib/auth";
+import { isAdmin } from "@/lib/admins";
 import { PARCEIRO_COLUNAS, SORTEIO_COLUNAS, limparInstagram } from "@/lib/sorteios";
 import { loginValido } from "@/lib/chat";
 import { registrarEntradaChat } from "@/lib/chatServer";
@@ -298,6 +299,7 @@ export async function POST(request: Request) {
     case "bloquearUsuario": {
       const email = String(b.email ?? "").toLowerCase();
       if (!email.includes("@")) return falha("Usuário inválido.");
+      if (b.bloqueado && isAdmin(email)) return falha("Conta de admin não pode ser bloqueada.");
       const { error } = await db.from("usuarios").update({ bloqueado: !!b.bloqueado }).eq("email", email);
       return error ? falha(error.message, 500) : semCache({ ok: true });
     }

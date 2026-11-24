@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "next-auth/react";
-import { Loader2, MessageCircle, UserRound } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import { Ban, Loader2, LogOut, MessageCircle, UserRound } from "lucide-react";
 import { formatarWhatsapp, limparNome, limparWhatsapp } from "@/lib/perfil";
 
 const ADIADO = "soares_cadastro_depois"; // "Agora não" vale só até fechar o navegador
@@ -13,6 +13,7 @@ export default function CompletarCadastro() {
   const { data: session, status } = useSession();
   const email = session?.user?.email ?? null;
   const [aberto, setAberto] = useState(false);
+  const [bloqueado, setBloqueado] = useState(false);
   const [nome, setNome] = useState("");
   const [whats, setWhats] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -20,12 +21,13 @@ export default function CompletarCadastro() {
 
   useEffect(() => {
     if (status !== "authenticated" || !email) return;
-    if (sessionStorage.getItem(ADIADO) === email) return;
     let ativo = true;
     fetch("/api/perfil", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {
-        if (!ativo || !p || p.completo) return;
+        if (!ativo || !p) return;
+        if (p.bloqueado) return setBloqueado(true);
+        if (p.completo || sessionStorage.getItem(ADIADO) === email) return;
         setNome(p.nome ?? "");
         setWhats(formatarWhatsapp(p.whatsapp));
         setAberto(true);
@@ -33,6 +35,25 @@ export default function CompletarCadastro() {
       .catch(() => {});
     return () => { ativo = false; };
   }, [status, email]);
+
+  // Conta bloqueada: cobre o site inteiro e só deixa sair
+  if (bloqueado) {
+    return createPortal(
+      <div className="fixed inset-0 z-[2000] bg-preto flex items-center justify-center p-6" role="alertdialog" aria-modal="true" aria-labelledby="bloqueio-titulo">
+        <div className="w-full max-w-md bg-carvao corte border-t-4 border-vermelho p-8 text-center">
+          <Ban className="w-14 h-14 text-vermelho mx-auto mb-4" />
+          <h2 id="bloqueio-titulo" className="font-display font-black uppercase text-[40px] leading-none">Sua conta foi bloqueada</h2>
+          <p className="text-cinza mt-3">
+            A conta {email} não pode mais participar dos sorteios do Soares. Se acha que é um engano, fale com a equipe pelo Instagram ou na live.
+          </p>
+          <button onClick={() => signOut({ callbackUrl: "/" })} className="btn btn-cinza mt-7 mx-auto">
+            <LogOut className="w-4 h-4" /> Sair da conta
+          </button>
+        </div>
+      </div>,
+      document.body
+    );
+  }
 
   if (!aberto) return null;
 

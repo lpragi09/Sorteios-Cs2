@@ -9,12 +9,13 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return falha("Entre com o Google.", 401);
-  const { data, error } = await supabaseAdmin.from("usuarios").select("nome_cadastro, whatsapp").eq("email", user.email).maybeSingle();
+  const { data, error } = await supabaseAdmin.from("usuarios").select("nome_cadastro, whatsapp, bloqueado").eq("email", user.email).maybeSingle();
   // Sem as colunas novas no banco (migração não rodada), não incomoda ninguém
   if (error) return semCache({ completo: true, nome: user.name, whatsapp: null });
   // Quem já estava logado antes da lista de usuários existir entra nela aqui
   if (!data) await supabaseAdmin.rpc("registrar_login", { p_email: user.email, p_nome: user.name, p_avatar: user.image });
   return semCache({
+    bloqueado: !!data?.bloqueado,
     completo: !!(data?.nome_cadastro && data?.whatsapp),
     nome: data?.nome_cadastro ?? user.name,
     whatsapp: data?.whatsapp ?? null,
@@ -29,6 +30,8 @@ export async function POST(req: Request) {
   const whatsapp = limparWhatsapp(String(b.whatsapp ?? ""));
   if (nome.length < 2) return falha("Digite o seu nome.");
   if (!whatsapp) return falha("Digite um WhatsApp com DDD, como (11) 98765-4321.");
+  const { data: conta } = await supabaseAdmin.from("usuarios").select("bloqueado").eq("email", user.email).maybeSingle();
+  if (conta?.bloqueado) return falha("Sua conta foi bloqueada.", 403);
 
   const { error } = await supabaseAdmin
     .from("usuarios")

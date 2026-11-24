@@ -21,7 +21,7 @@ export const viewport: Viewport = { themeColor: "#0a0a0b" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${texto.variable}`}>
+    <html lang="pt-BR" className={`${display.variable} ${texto.variable}`} data-scroll-behavior="smooth">
       <body>
         <Providers>
           <Navbar />

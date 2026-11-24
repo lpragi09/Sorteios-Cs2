@@ -16,7 +16,13 @@
 }
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  /* Rolagem suave nos links do menu (igual ao Barr4k), parando abaixo do menu fixo */
+  html { scroll-behavior: smooth; scroll-padding-top: 88px; scrollbar-color: var(--color-vermelho) var(--color-preto); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--color-preto); }
+  ::-webkit-scrollbar-thumb { background: var(--color-sangue); border: 2px solid var(--color-preto); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-vermelho); }
   body {
     background: var(--color-preto);
     color: var(--color-osso);

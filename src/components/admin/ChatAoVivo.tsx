@@ -15,6 +15,9 @@ type StatusBot = "conectando" | "conectado" | "desconectado";
 
 // Sorteio pelo chat da Twitch: o painel lê o chat (tmi.js, sem precisar de login na Twitch)
 // e manda pro servidor quem digitou o comando. Precisa ficar com esta tela aberta durante a live.
+// Opções do tempo pra responder (0 = sem limite)
+const PRAZOS: [number, string][] = [[30, "30s"], [60, "1 min"], [120, "2 min"], [0, "∞"]];
+
 export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { chat: number }; onMudou: () => void }) {
   const popup = usePopup();
   const [captando, setCaptando] = useState(sorteio.captando);
@@ -29,8 +32,9 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
   const aguardando = useRef<string | null>(null);
   // Segundos que o ganhador tem pra responder no chat (0 = sem limite). Fica salvo no navegador.
   const [prazo, setPrazo] = useState(() => {
-    const salvo = typeof window === "undefined" ? null : Number(localStorage.getItem("soares_prazo_resposta"));
-    return salvo != null && Number.isFinite(salvo) && salvo >= 0 ? salvo : 60;
+    const texto = typeof window === "undefined" ? null : localStorage.getItem("soares_prazo_resposta");
+    const salvo = texto === null ? null : Number(texto);
+    return salvo != null && PRAZOS.some(([v]) => v === salvo) ? salvo : 60;
   });
   const mudarPrazo = (v: number) => {
     const n = Math.min(600, Math.max(0, Math.floor(v) || 0));
@@ -173,21 +177,24 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
             {captando ? <><Pause className="w-5 h-5" /> Fechar chat</> : <><Play className="w-5 h-5" /> Abrir chat</>}
           </button>
           <button onClick={() => setSorteando(true)} disabled={ativos.length === 0} className="btn btn-vermelho"><Dices className="w-5 h-5" /> Sortear</button>
-          <label className="flex items-center gap-2 bg-preto border border-grafite px-3 h-11 text-[15px] text-cinza" title="Tempo que o ganhador tem pra responder no chat. 0 = sem limite.">
-            <Timer className="w-4 h-4 shrink-0" />
-            Responder em
-            <input
-              type="number"
-              min={0}
-              max={600}
-              step={5}
-              value={prazo}
-              onChange={(e) => mudarPrazo(Number(e.target.value))}
-              className="w-14 bg-transparent text-osso font-bold text-right outline-none"
-              aria-label="Segundos para o ganhador responder"
-            />
-            s
-          </label>
+          <div role="group" aria-label="Tempo que o ganhador tem pra responder no chat">
+            <p className="flex items-center gap-1.5 text-sm text-cinza mb-1.5"><Timer className="w-3.5 h-3.5" /> Tempo pra responder</p>
+            <div className="flex gap-0.5">
+              {PRAZOS.map(([segundos, rotulo]) => (
+                <button
+                  key={segundos}
+                  type="button"
+                  onClick={() => mudarPrazo(segundos)}
+                  aria-pressed={prazo === segundos}
+                  title={segundos ? undefined : "Sem limite"}
+                  aria-label={segundos ? undefined : "Sem limite"}
+                  className="flex-1 h-9 px-2.5 text-sm font-bold whitespace-nowrap bg-preto text-cinza hover:text-osso hover:bg-grafite aria-pressed:bg-vermelho aria-pressed:text-white transition-colors"
+                >
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

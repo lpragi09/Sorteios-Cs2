@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return falha("Entre com o Google pra participar.", 401);
   const { data: conta } = await supabaseAdmin.from("usuarios").select("bloqueado").eq("email", user.email).maybeSingle();
-  if (conta?.bloqueado) return falha("Sua conta não pode mandar tickets. Fale com a equipe do Soares.", 403);
+  if (conta?.bloqueado) return falha("Sua conta foi bloqueada.", 403);
   const body = await request.json().catch(() => null);
   const sorteio = await sorteioAberto(body?.sorteioId);
   if (!sorteio) return falha("Esse sorteio não está aceitando tickets.", 409);

@@ -69,7 +69,7 @@ export default function SecaoUsuarios() {
   const pag = usePaginacao(filtrados);
 
   const alternarBloqueio = async (u: Usuario) => {
-    if (!u.bloqueado && !(await popup.confirmar(`${u.nome ?? u.email} não vai mais conseguir mandar tickets. Os tickets que já mandou continuam como estão.`, { titulo: "Bloquear usuário?", textoOk: "Bloquear" }))) return;
+    if (!u.bloqueado && !(await popup.confirmar(`${u.nome_cadastro ?? u.nome ?? u.email} vai ver "Sua conta foi bloqueada" ao entrar no site e não consegue mais usar nada logado. Os tickets que já mandou continuam como estão; recuse-os no sorteio se não devem valer.`, { titulo: "Bloquear usuário?", textoOk: "Bloquear" }))) return;
     setLista((l) => l?.map((x) => (x.email === u.email ? { ...x, bloqueado: !u.bloqueado } : x)) ?? null);
     try {
       await adminApi("bloquearUsuario", { email: u.email, bloqueado: !u.bloqueado });
