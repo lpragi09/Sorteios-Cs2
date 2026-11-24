@@ -86,6 +86,16 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 /* Campos de formulário */
+/* Fundo da home depois do vídeo: brilhos vermelhos alternando os lados, sobre o preto */
+@utility fundo-home {
+  background:
+    radial-gradient(55% 900px at 0% 0%, rgba(227, 16, 31, .20), transparent 70%),
+    radial-gradient(50% 900px at 100% 32%, rgba(124, 9, 18, .45), transparent 70%),
+    radial-gradient(55% 900px at 0% 62%, rgba(124, 9, 18, .40), transparent 70%),
+    radial-gradient(60% 800px at 100% 100%, rgba(227, 16, 31, .16), transparent 70%),
+    linear-gradient(to bottom, var(--color-preto), #110406 45%, #0d0305 80%, var(--color-preto));
+}
+
 @utility campo {
   width: 100%;
   background: var(--color-preto);

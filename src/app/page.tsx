@@ -90,6 +90,8 @@ export default function Home() {
         </a>
       </section>
 
+      {/* Do fim do vídeo pra baixo: fundo com brilhos vermelhos */}
+      <div className="fundo-home">
       {/* Sorteios */}
       <section id="sorteios" className="scroll-mt-20 py-20">
         <div className="mx-auto w-[min(1180px,100%-40px)]">
@@ -209,6 +211,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      </div>
 
       {participando && <ModalParticipar sorteio={participando} parceiros={parceiros} onFechar={() => setParticipando(null)} />}
     </>
