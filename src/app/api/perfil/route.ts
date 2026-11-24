@@ -12,6 +12,8 @@ export async function GET() {
   const { data, error } = await supabaseAdmin.from("usuarios").select("nome_cadastro, whatsapp").eq("email", user.email).maybeSingle();
   // Sem as colunas novas no banco (migração não rodada), não incomoda ninguém
   if (error) return semCache({ completo: true, nome: user.name, whatsapp: null });
+  // Quem já estava logado antes da lista de usuários existir entra nela aqui
+  if (!data) await supabaseAdmin.rpc("registrar_login", { p_email: user.email, p_nome: user.name, p_avatar: user.image });
   return semCache({
     completo: !!(data?.nome_cadastro && data?.whatsapp),
     nome: data?.nome_cadastro ?? user.name,
