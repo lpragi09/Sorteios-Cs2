@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import tmi from "tmi.js";
-import { Dices, Eraser, Pause, Play, RotateCcw, Search, UserX } from "lucide-react";
+import { Dices, Eraser, Pause, Play, RotateCcw, Search, Timer, UserX } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { avatarTwitch, chancesPorTier, ehComando, tierPelosBadges } from "@/lib/chat";
 import { formatarNumero, type Sorteio } from "@/lib/sorteios";
@@ -27,6 +27,16 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
   const captandoRef = useRef(captando);
   const vistos = useRef(new Map<string, number>()); // login -> maior tier já enviado
   const aguardando = useRef<string | null>(null);
+  // Segundos que o ganhador tem pra responder no chat (0 = sem limite). Fica salvo no navegador.
+  const [prazo, setPrazo] = useState(() => {
+    const salvo = typeof window === "undefined" ? null : Number(localStorage.getItem("soares_prazo_resposta"));
+    return salvo != null && Number.isFinite(salvo) && salvo >= 0 ? salvo : 60;
+  });
+  const mudarPrazo = (v: number) => {
+    const n = Math.min(600, Math.max(0, Math.floor(v) || 0));
+    setPrazo(n);
+    localStorage.setItem("soares_prazo_resposta", String(n));
+  };
 
   useEffect(() => { captandoRef.current = captando; }, [captando]);
 
@@ -163,6 +173,21 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
             {captando ? <><Pause className="w-5 h-5" /> Fechar chat</> : <><Play className="w-5 h-5" /> Abrir chat</>}
           </button>
           <button onClick={() => setSorteando(true)} disabled={ativos.length === 0} className="btn btn-vermelho"><Dices className="w-5 h-5" /> Sortear</button>
+          <label className="flex items-center gap-2 bg-preto border border-grafite px-3 h-11 text-[15px] text-cinza" title="Tempo que o ganhador tem pra responder no chat. 0 = sem limite.">
+            <Timer className="w-4 h-4 shrink-0" />
+            Responder em
+            <input
+              type="number"
+              min={0}
+              max={600}
+              step={5}
+              value={prazo}
+              onChange={(e) => mudarPrazo(Number(e.target.value))}
+              className="w-14 bg-transparent text-osso font-bold text-right outline-none"
+              aria-label="Segundos para o ganhador responder"
+            />
+            s
+          </label>
         </div>
       </div>
 
@@ -203,6 +228,8 @@ export default function ChatAoVivo({ sorteio, onMudou }: { sorteio: Sorteio & { 
         <Roleta
           sorteio={sorteio}
           resposta={resposta}
+          prazo={prazo}
+          onEsgotou={() => { aguardando.current = null; }}
           onSorteado={(login) => {
             aguardando.current = login;
             setResposta(login ? null : undefined);

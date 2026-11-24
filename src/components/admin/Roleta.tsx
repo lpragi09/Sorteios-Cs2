@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { RotateCcw, ShieldCheck, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { RotateCcw, ShieldCheck, Timer, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import type { FairDraw } from "@/lib/fair";
 import { usePopup } from "@/components/Popup";
@@ -36,7 +36,7 @@ function Foto({ src, nome, tamanho }: { src: string | null; nome: string; tamanh
 // Quem ganha sai do servidor (provably fair); a roleta só mostra.
 // Animação por requestAnimationFrame + setTimeout que garante o resultado
 // (funciona mesmo com "efeitos de animação" do Windows desligados).
-export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, resposta }: {
+export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, resposta, prazo = 0, onEsgotou }: {
   sorteio: { id: string; titulo: string };
   onFechar: () => void;
   onConfirmado: () => void;
@@ -44,6 +44,10 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
   onSorteado?: (label: string | null) => void;
   /** Mensagem que o ganhador mandou no chat depois de sorteado. */
   resposta?: string | null;
+  /** Segundos pro ganhador responder no chat (0 = sem limite). */
+  prazo?: number;
+  /** O tempo acabou sem resposta. */
+  onEsgotou?: () => void;
 }) {
   const [fase, setFase] = useState<Fase>("contagem");
   const [numero, setNumero] = useState(3);
@@ -52,6 +56,8 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
   const [itens, setItens] = useState<Item[]>([]);
   const [fotos, setFotos] = useState<Record<string, string>>({});
   const [ocupado, setOcupado] = useState(false);
+  const [fim, setFim] = useState<number | null>(null); // quando acaba o tempo de resposta
+  const [agora, setAgora] = useState(0);
   const faixaRef = useRef<HTMLDivElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const giroId = useRef(0);
@@ -99,6 +105,10 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
         giroId.current++;
         if (faixaRef.current) faixaRef.current.style.transform = `translateX(${-alvo}px)`;
         sons.win();
+        if (prazo > 0) {
+          setAgora(Date.now());
+          setFim(Date.now() + prazo * 1000);
+        }
         setFase("resultado");
         onSorteado?.(d.winner_label);
       }, GIRO_MS + 100)
@@ -111,6 +121,7 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
     limpar();
     sons.unlock();
     setGiro(null);
+    setFim(null);
     setNumero(3);
     setEsperando(false);
     setFase("contagem");
@@ -154,6 +165,25 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
   }, []);
   // Ao fechar de verdade, para o giro e os timers
   useEffect(() => () => limpar(), []);
+
+  // Contagem do tempo de resposta (só enquanto espera a mensagem no chat)
+  const esperandoResposta = fase === "resultado" && resposta === null && fim !== null;
+  const restante = fim === null ? 0 : Math.max(0, Math.ceil((fim - agora) / 1000));
+  const esgotou = esperandoResposta && restante === 0;
+  useEffect(() => {
+    if (!esperandoResposta || esgotou) return;
+    const t = setInterval(() => setAgora(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [esperandoResposta, esgotou]);
+  const avisou = useRef<number | null>(null);
+  useEffect(() => {
+    if (esgotou && avisou.current !== fim) {
+      avisou.current = fim;
+      sons.tick(0.05);
+      onEsgotou?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esgotou, fim]);
 
   const descartar = (d: FairDraw | null) => {
     if (d) adminApi("descartarGiro", { drawId: d.id }).catch(() => {});
@@ -224,9 +254,23 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
               <p className="font-display font-black uppercase text-5xl leading-none break-all">{giro.winner_label}</p>
               <p className="text-cinza mt-2 mb-2">Ganhador de {sorteio.titulo}</p>
               {resposta !== undefined && (
-                <div className={`text-left px-4 py-3 mb-4 ${resposta ? "bg-sangue/40" : "bg-preto"}`}>
+                <div className={`text-left px-4 py-3 mb-4 ${resposta ? "bg-sangue/40" : esgotou ? "bg-preto border border-vermelho" : "bg-preto"}`}>
                   {resposta ? (
                     <><b className="block text-sm text-cinza">Respondeu no chat</b><span className="break-words">{resposta}</span></>
+                  ) : esgotou ? (
+                    <><b className="block text-vermelho">Não respondeu em {prazo}s</b><span className="text-cinza">Sorteie de novo pra escolher outra pessoa.</span></>
+                  ) : fim !== null ? (
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-cinza">Esperando {giro.winner_label} responder no chat</span>
+                        <span className={`flex items-center gap-1 font-display font-black text-3xl leading-none tabular-nums ${restante <= 10 ? "text-vermelho animate-pulse" : ""}`}>
+                          <Timer className="w-5 h-5" />{restante}s
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-grafite mt-2.5">
+                        <div className="h-full bg-vermelho transition-[width] duration-300 ease-linear" style={{ width: `${(restante / prazo) * 100}%` }} />
+                      </div>
+                    </>
                   ) : (
                     <span className="text-cinza animate-pulse">Esperando {giro.winner_label} responder no chat...</span>
                   )}
@@ -236,14 +280,14 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
                 <ShieldCheck className="w-4 h-4" /> Ver prova do sorteio
               </a>
               <div className="flex gap-2">
-                <button onClick={confirmar} disabled={ocupado} className="btn btn-vermelho flex-1 !px-3 !text-base"><Trophy className="w-4 h-4" /> Confirmar</button>
+                <button onClick={confirmar} disabled={ocupado} className={`btn ${esgotou ? "btn-cinza" : "btn-vermelho"} flex-1 !px-3 !text-base`}><Trophy className="w-4 h-4" /> Confirmar</button>
                 <button
                   onClick={() => {
                     descartar(giro);
                     comecar();
                   }}
                   disabled={ocupado}
-                  className="btn btn-cinza flex-1 !px-3 !text-base"
+                  className={`btn ${esgotou ? "btn-vermelho" : "btn-cinza"} flex-1 !px-3 !text-base`}
                 >
                   <RotateCcw className="w-4 h-4" /> Sortear de novo
                 </button>

@@ -17,7 +17,7 @@ export interface Parceiro {
 // Usados se a tabela não responder
 export const PARCEIROS_PADRAO: Parceiro[] = [
   { id: "csgobig", nome: "CSGOBIG", link: "https://csgobig.com/r/soares", destaque: "3 caixas grátis e 5% de bônus", imagem_url: "/parceiros/csgobig.webp", ordem: 1, ativo: true },
-  { id: "dastskin", nome: "DASTSKIN", link: "https://dastskin.com", destaque: "Bônus com o código SOARES", imagem_url: "/parceiros/dastskin.webp", ordem: 2, ativo: true },
+  { id: "dastskin", nome: "DASTSKIN", link: "https://dast.skin/?ref=SOARES", destaque: "Bônus com o código SOARES", imagem_url: "/parceiros/dastskin.webp", ordem: 2, ativo: true },
 ];
 
 export const PARCEIRO_COLUNAS = "id, nome, link, destaque, imagem_url, ordem, ativo";

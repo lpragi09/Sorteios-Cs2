@@ -47,7 +47,7 @@ create table if not exists public.parceiros (
 );
 insert into public.parceiros (id, nome, link, destaque, imagem_url, ordem) values
   ('csgobig',  'CSGOBIG',  'https://csgobig.com/r/soares', '3 caixas grátis e 5% de bônus', '/parceiros/csgobig.webp', 1),
-  ('dastskin', 'DASTSKIN', 'https://dastskin.com',         'Bônus com o código SOARES',     '/parceiros/dastskin.webp', 2)
+  ('dastskin', 'DASTSKIN', 'https://dast.skin/?ref=SOARES', 'Bônus com o código SOARES',     '/parceiros/dastskin.webp', 2)
 on conflict (id) do nothing;
 
 -- A casa do ticket agora é qualquer parceiro cadastrado
