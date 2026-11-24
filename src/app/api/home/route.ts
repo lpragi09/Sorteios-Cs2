@@ -14,7 +14,7 @@ export async function GET() {
   const [abertos, encerrados, ultimos, parceiros] = await Promise.all([
     db.from("sorteios").select(SORTEIO_COLUNAS).eq("status", "aberto").order("criado_em", { ascending: false }),
     db.from("sorteios").select(SORTEIO_COLUNAS).eq("status", "encerrado").order("criado_em", { ascending: false }).limit(30),
-    db.from("ganhadores").select("id, sorteio_id, rodada, nome, email, coins, criado_em, fair_draw_id, sorteios(titulo, valor, tipo)").gte("criado_em", desde).order("criado_em", { ascending: false }).limit(100),
+    db.from("ganhadores").select("id, sorteio_id, rodada, nome, email, criado_em, fair_draw_id, sorteios(titulo, valor, tipo)").gte("criado_em", desde).order("criado_em", { ascending: false }).limit(100),
     db.from("parceiros").select(PARCEIRO_COLUNAS).eq("ativo", true).order("ordem").order("nome"),
   ]);
   if (abertos.error || encerrados.error) return falha("Não foi possível carregar os sorteios.", 500);
@@ -23,7 +23,7 @@ export async function GET() {
   const ids = lista.map((s) => s.id);
   const [resumo, ganhos] = ids.length
     ? await Promise.all([
-        db.from("sorteios_resumo").select("id, tickets, coins, chat").in("id", ids),
+        db.from("sorteios_resumo").select("id, chat").in("id", ids),
         db.from("ganhadores").select("sorteio_id, rodada, nome").in("sorteio_id", ids).order("rodada"),
       ])
     : [{ data: [] }, { data: [] }];
@@ -31,8 +31,6 @@ export async function GET() {
   const porId = new Map((resumo.data ?? []).map((r) => [r.id, r]));
   const sorteios: SorteioPublico[] = lista.map((s) => ({
     ...s,
-    tickets: Number(porId.get(s.id)?.tickets ?? 0),
-    coins: Number(porId.get(s.id)?.coins ?? 0),
     chat: Number(porId.get(s.id)?.chat ?? 0),
     ganhadores: (ganhos.data ?? []).filter((g) => g.sorteio_id === s.id).map((g) => ({ rodada: g.rodada, nome: g.nome })),
   }));
@@ -54,7 +52,7 @@ export async function GET() {
   const ganhadores = vencedores.map((g) => {
     const s = g.sorteios as unknown as { titulo: string; valor: number | null; tipo: string } | null;
     const foto = s?.tipo === "chat" ? twitch.get(`${g.sorteio_id}:${g.nome}`) : g.email ? google.get(g.email) : null;
-    return { id: g.id, sorteio_id: g.sorteio_id, rodada: g.rodada, nome: g.nome, coins: g.coins, criado_em: g.criado_em, fair_draw_id: g.fair_draw_id, sorteio_titulo: s?.titulo ?? "", sorteio_valor: s?.valor ?? null, foto: foto ?? null };
+    return { id: g.id, sorteio_id: g.sorteio_id, rodada: g.rodada, nome: g.nome, coins: null, criado_em: g.criado_em, fair_draw_id: g.fair_draw_id, sorteio_titulo: s?.titulo ?? "", sorteio_valor: s?.valor ?? null, foto: foto ?? null };
   });
 
   return comCache({ sorteios, ganhadores, parceiros: parceiros.error ? PARCEIROS_PADRAO : parceiros.data ?? [] });

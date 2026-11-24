@@ -11,7 +11,7 @@ const display = Big_Shoulders({ subsets: ["latin"], weight: ["700", "900"], vari
 const texto = Barlow_Semi_Condensed({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-barlow" });
 
 export const metadata: Metadata = {
-  title: "Sorteios do Soares | Skins de CS2",
+  title: "Canal do Soares",
   description: "Skins de CS2 sorteadas na live do Soares. Deposite com o código SOARES e mande o print pra participar.",
   metadataBase: new URL("https://canalsoares.vercel.app"),
   openGraph: { images: ["/soares-hero.webp"] },

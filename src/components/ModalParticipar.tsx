@@ -97,7 +97,7 @@ export default function ModalParticipar({ sorteio, parceiros, onFechar }: { sort
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={sorteio.imagem_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
             {sorteio.valor != null && (
-              <span className="absolute left-0 bottom-0 etiqueta bg-vermelho text-white pl-4 pr-6 pt-2 pb-1.5 font-display font-black text-[26px] leading-none">
+              <span className="absolute left-0 bottom-0 etiqueta bg-vermelho text-white pl-3 pr-5 pt-1.5 pb-1 font-display font-black text-[21px] leading-none">
                 {formatarReais(sorteio.valor)}
               </span>
             )}

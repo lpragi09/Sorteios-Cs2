@@ -53,7 +53,7 @@ export default function SorteioCard({ sorteio, onParticipar }: { sorteio: Sortei
           </span>
         )}
         {sorteio.valor != null && (
-          <span className={`absolute left-0 bottom-0 etiqueta pl-4 pr-6 pt-2 pb-1.5 font-display font-black text-[28px] leading-none text-white ${fechado ? "bg-grafite" : "bg-vermelho"}`}>
+          <span className={`absolute left-0 bottom-0 etiqueta pl-3 pr-5 pt-1.5 pb-1 font-display font-black text-[21px] leading-none text-white ${fechado ? "bg-grafite" : "bg-vermelho"}`}>
             {formatarReais(sorteio.valor)}
           </span>
         )}
@@ -63,16 +63,12 @@ export default function SorteioCard({ sorteio, onParticipar }: { sorteio: Sortei
         <h3 className="font-display font-black text-[34px] leading-[.95] uppercase break-words">{sorteio.titulo}</h3>
         {sorteio.descricao && <p className="text-cinza text-base -mt-1.5 line-clamp-2">{sorteio.descricao}</p>}
 
-        <div className="flex gap-6 text-cinza text-[15px]">
-          {chat ? (
-            <div><strong className="block text-osso font-display font-black text-[26px] leading-none">{formatarNumero(sorteio.chat)}</strong>no chat</div>
-          ) : (
-            <>
-              <div><strong className="block text-osso font-display font-black text-[26px] leading-none">{formatarNumero(sorteio.coins)}</strong>coins no pote</div>
-              <div><strong className="block text-osso font-display font-black text-[26px] leading-none">{formatarNumero(sorteio.tickets)}</strong>tickets</div>
-            </>
-          )}
-        </div>
+        {/* Coins e tickets ficam só no painel: quem participa não vê o tamanho do pote */}
+        {chat && (
+          <div className="text-cinza text-[15px]">
+            <strong className="block text-osso font-display font-black text-[26px] leading-none">{formatarNumero(sorteio.chat)}</strong>no chat
+          </div>
+        )}
 
         {aberto ? (
           restante ? <p className="font-bold text-vermelho tabular-nums">Fecha em {restante}</p> : chat ? <p className="font-bold text-vermelho">Digite {sorteio.comando} no chat</p> : null

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import ProvablyFair from "@/components/ProvablyFair";
 
-export const metadata: Metadata = { title: "Provably fair | Sorteios do Soares" };
+export const metadata: Metadata = { title: "Provably fair | Canal do Soares" };
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ id?: string; sorteio?: string }> }) {
   const { id, sorteio } = await searchParams;

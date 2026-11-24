@@ -48,9 +48,7 @@ export interface Sorteio {
 
 /** O que a home recebe de cada sorteio (sem nada pesado). */
 export interface SorteioPublico extends Sorteio {
-  tickets: number;
-  coins: number;
-  chat: number;
+  chat: number; // coins e tickets não saem pro público
   ganhadores: { rodada: number; nome: string }[];
 }
 
