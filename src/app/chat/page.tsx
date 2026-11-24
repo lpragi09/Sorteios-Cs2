@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Gift, Loader2, Search, ShieldCheck, Trophy } from "lucide-react";
 import { avatarTwitch } from "@/lib/chat";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 import { formatarNumero, formatarReais, type Sorteio } from "@/lib/sorteios";
 
 type Participante = { twitch_login: string; avatar_url: string | null; sub_tier: number; chances: number; criado_em: string };
@@ -12,7 +13,7 @@ type GanhadorChat = { rodada: number; nome: string; criado_em: string; fair_draw
 type Dados = { sorteio: Sorteio | null; participantes: Participante[]; ganhadores: GanhadorChat[] };
 
 const ATUALIZA_MS = 4000;
-const POR_PAGINA = 60;
+const POR_PAGINA = 30;
 
 export default function Page() {
   return (
@@ -26,7 +27,6 @@ function SorteioChat() {
   const id = useSearchParams().get("id");
   const [dados, setDados] = useState<Dados | null>(null);
   const [busca, setBusca] = useState("");
-  const [limite, setLimite] = useState(POR_PAGINA);
 
   const carregar = useCallback(async () => {
     try {
@@ -49,6 +49,8 @@ function SorteioChat() {
     const q = busca.trim().toLowerCase().replace(/^@/, "");
     return (dados?.participantes ?? []).filter((p) => !q || p.twitch_login.includes(q));
   }, [dados, busca]);
+  const pag = usePaginacao(filtrados, POR_PAGINA);
+  const pagGanhadores = usePaginacao(dados?.ganhadores ?? []);
 
   if (!dados) return <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-vermelho" /></div>;
 
@@ -107,7 +109,7 @@ function SorteioChat() {
           {dados.ganhadores.length > 0 && (
             <div className="p-5 border-t border-grafite">
               <p className="font-display font-black uppercase text-2xl mb-2">Ganhadores</p>
-              {dados.ganhadores.map((g) => (
+              {pagGanhadores.itensPagina.map((g) => (
                 <div key={g.rodada} className="flex items-center gap-2 py-1.5">
                   <Trophy className="w-5 h-5 text-vermelho" />
                   <b className="text-lg">{g.nome}</b>
@@ -118,6 +120,7 @@ function SorteioChat() {
                   )}
                 </div>
               ))}
+              <Paginacao {...pagGanhadores} />
             </div>
           )}
         </div>
@@ -128,7 +131,7 @@ function SorteioChat() {
           <h2 className="font-display font-black uppercase text-[40px] leading-none">Quem entrou</h2>
           <label className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cinza" />
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Procurar seu nome" className="campo !pl-9" aria-label="Procurar participante" />
+            <input value={busca} onChange={(e) => { setBusca(e.target.value); pag.setPagina(1); }} placeholder="Procurar seu nome" className="campo !pl-9" aria-label="Procurar participante" />
           </label>
         </div>
         {filtrados.length === 0 ? (
@@ -136,7 +139,7 @@ function SorteioChat() {
         ) : (
           <>
             <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-0.5">
-              {filtrados.slice(0, limite).map((p) => (
+              {pag.itensPagina.map((p) => (
                 <li key={p.twitch_login} className="bg-carvao flex items-center gap-2.5 p-2.5 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={avatarTwitch(p.twitch_login, p.avatar_url)} alt="" className="w-9 h-9 shrink-0" loading="lazy" />
@@ -147,11 +150,7 @@ function SorteioChat() {
                 </li>
               ))}
             </ul>
-            {filtrados.length > limite && (
-              <button onClick={() => setLimite((l) => l + POR_PAGINA)} className="btn btn-cinza mt-5 mx-auto flex">
-                Mostrar mais ({formatarNumero(filtrados.length - limite)})
-              </button>
-            )}
+            <Paginacao {...pag} />
           </>
         )}
       </div>

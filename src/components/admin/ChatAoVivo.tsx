@@ -8,7 +8,7 @@ import { avatarTwitch, chancesPorTier, ehComando, tierPelosBadges } from "@/lib/
 import { formatarNumero, type Sorteio } from "@/lib/sorteios";
 import { usePopup } from "@/components/Popup";
 import Roleta from "@/components/admin/Roleta";
-import Paginacao, { usePaginacao } from "@/components/admin/Paginacao";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 
 type Participante = { id: number; twitch_login: string; avatar_url: string | null; sub_tier: number; removido: boolean; criado_em: string };
 type StatusBot = "conectando" | "conectado" | "desconectado";

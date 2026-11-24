@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Circle, Download, Loader2, Pencil, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { usePopup } from "@/components/Popup";
-import Paginacao, { usePaginacao } from "@/components/admin/Paginacao";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 import { formatarNumero, formatarReais, nomeCasa } from "@/lib/sorteios";
 import { baixarCsv } from "@/lib/csv";
 

@@ -6,6 +6,7 @@ import { adminApi } from "@/lib/adminApi";
 import { enviarImagemPremio } from "@/lib/upload";
 import { usePopup } from "@/components/Popup";
 import type { Parceiro } from "@/lib/sorteios";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 
 type Form = Parceiro & { novo: boolean };
 
@@ -17,6 +18,7 @@ export default function SecaoParceiros() {
   const [form, setForm] = useState<Form | null>(null);
   const [subindo, setSubindo] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const pag = usePaginacao(lista ?? [], 9);
 
   const carregar = useCallback(async () => {
     try {
@@ -85,8 +87,9 @@ export default function SecaoParceiros() {
       ) : lista.length === 0 ? (
         <p className="text-cinza bg-carvao p-6">Nenhum parceiro cadastrado. Sem parceiro ativo, ninguém consegue mandar ticket.</p>
       ) : (
+        <>
         <ul className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {lista.map((p) => (
+          {pag.itensPagina.map((p) => (
             <li key={p.id} className={`bg-carvao corte flex flex-col ${p.ativo ? "" : "opacity-50"}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.imagem_url || "/hero-poster.webp"} alt="" className="w-full aspect-[3/4] object-cover" />
@@ -106,6 +109,8 @@ export default function SecaoParceiros() {
             </li>
           ))}
         </ul>
+        <Paginacao {...pag} />
+        </>
       )}
 
       {form && (

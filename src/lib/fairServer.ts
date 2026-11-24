@@ -8,7 +8,8 @@ import {
 export const FAIR_COLUMNS =
   "id, kind, target_id, title, entries, total_weight, entries_hash, drand_round, drand_randomness, drand_signature, ticket, winner_label, status, created_at, drawn_at";
 
-type Pool = { title: string; entries: FairEntry[]; refs: Map<string, string> };
+// fotos: só pra roleta do painel (não entra na lista pública do provably fair)
+type Pool = { title: string; entries: FairEntry[]; refs: Map<string, string>; fotos: Record<string, string> };
 
 // A lista sai sempre do banco (nunca do navegador)
 async function buildPool(targetId: string): Promise<(Pool & { kind: FairKind }) | null> {
@@ -18,14 +19,14 @@ async function buildPool(targetId: string): Promise<(Pool & { kind: FairKind }) 
   const { data: ganhos } = await db.from("ganhadores").select("nome, email").eq("sorteio_id", targetId);
   const jaGanhou = new Set((ganhos ?? []).flatMap((g) => [g.nome, g.email]).filter(Boolean) as string[]);
 
-  const pesos = new Map<string, { weight: number; ref: string; label: string }>();
+  const pesos = new Map<string, { weight: number; ref: string; label: string; foto: string | null }>();
 
   if (s.tipo === "ticket") {
     // Tickets aprovados. Cada coin vale uma chance, somando os tickets da mesma conta Google.
     // Quem já ganhou este sorteio fica de fora das próximas rodadas.
     const { data: tickets } = await db
       .from("tickets")
-      .select("email, instagram, coins, criado_em")
+      .select("email, instagram, avatar_url, coins, criado_em")
       .eq("sorteio_id", targetId)
       .eq("status", "aprovado")
       .order("criado_em");
@@ -33,20 +34,22 @@ async function buildPool(targetId: string): Promise<(Pool & { kind: FairKind }) 
       if (jaGanhou.has(t.email)) continue;
       const atual = pesos.get(t.email);
       // O nome público é o Instagram do ticket mais recente da pessoa
-      pesos.set(t.email, { weight: (atual?.weight ?? 0) + Math.max(1, Math.floor(t.coins)), ref: t.email, label: t.instagram });
+      // Foto: a do Google gravada no ticket
+      pesos.set(t.email, { weight: (atual?.weight ?? 0) + Math.max(1, Math.floor(t.coins)), ref: t.email, label: t.instagram, foto: t.avatar_url ?? atual?.foto ?? null });
     }
   } else {
     // Chat: cada pessoa entra uma vez, com as chances do tier do sub
-    const { data: parts } = await db.from("chat_participantes").select("twitch_login, sub_tier").eq("sorteio_id", targetId).eq("removido", false);
+    const { data: parts } = await db.from("chat_participantes").select("twitch_login, sub_tier, avatar_url").eq("sorteio_id", targetId).eq("removido", false);
     for (const p of parts ?? []) {
       if (jaGanhou.has(p.twitch_login)) continue;
-      pesos.set(p.twitch_login, { weight: chancesPorTier(p.sub_tier, s), ref: p.twitch_login, label: p.twitch_login });
+      pesos.set(p.twitch_login, { weight: chancesPorTier(p.sub_tier, s), ref: p.twitch_login, label: p.twitch_login, foto: p.avatar_url });
     }
   }
 
   // Nomes repetidos (duas contas com o mesmo Instagram) ganham um sufixo pra lista não ter linha igual
   const usados = new Map<string, number>();
   const refs = new Map<string, string>();
+  const fotos: Record<string, string> = {};
   const entries = [...pesos.values()]
     .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : a.ref < b.ref ? -1 : 1))
     .map((p) => {
@@ -54,9 +57,10 @@ async function buildPool(targetId: string): Promise<(Pool & { kind: FairKind }) 
       usados.set(p.label, n);
       const label = n === 1 ? p.label : `${p.label} #${n}`;
       refs.set(label, p.ref);
+      if (p.foto) fotos[label] = p.foto;
       return { label, weight: p.weight };
     });
-  return { kind: s.tipo as FairKind, title: s.titulo, entries, refs };
+  return { kind: s.tipo as FairKind, title: s.titulo, entries, refs, fotos };
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
@@ -65,7 +69,7 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
  * Congela a lista, grava (com a rodada futura do drand) e, quando a rodada sai,
  * calcula e grava o ganhador. Leva de 3 a 7 segundos.
  */
-export async function runFairDraw(targetId: string): Promise<{ draw?: FairDraw; error?: string; status?: number }> {
+export async function runFairDraw(targetId: string): Promise<{ draw?: FairDraw; fotos?: Record<string, string>; error?: string; status?: number }> {
   const db = supabaseAdmin;
   const pool = await buildPool(targetId);
   if (!pool) return { error: "Sorteio não encontrado.", status: 404 };
@@ -124,7 +128,7 @@ export async function runFairDraw(targetId: string): Promise<{ draw?: FairDraw; 
     .select(FAIR_COLUMNS)
     .single();
   if (updateError || !draw) return { error: updateError?.message ?? "Erro ao sortear.", status: 500 };
-  return { draw: draw as FairDraw };
+  return { draw: draw as FairDraw, fotos: pool.fotos };
 }
 
 /** Confirma o giro: grava o ganhador (dados tirados do banco, não do navegador). */

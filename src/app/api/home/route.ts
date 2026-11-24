@@ -9,8 +9,8 @@ export async function GET() {
   const db = supabaseAdmin;
   const [abertos, encerrados, ultimos, parceiros] = await Promise.all([
     db.from("sorteios").select(SORTEIO_COLUNAS).eq("status", "aberto").order("criado_em", { ascending: false }),
-    db.from("sorteios").select(SORTEIO_COLUNAS).eq("status", "encerrado").order("criado_em", { ascending: false }).limit(6),
-    db.from("ganhadores").select("id, sorteio_id, rodada, nome, coins, criado_em, fair_draw_id, sorteios(titulo, valor)").order("criado_em", { ascending: false }).limit(8),
+    db.from("sorteios").select(SORTEIO_COLUNAS).eq("status", "encerrado").order("criado_em", { ascending: false }).limit(30),
+    db.from("ganhadores").select("id, sorteio_id, rodada, nome, coins, criado_em, fair_draw_id, sorteios(titulo, valor)").order("criado_em", { ascending: false }).limit(50),
     db.from("parceiros").select(PARCEIRO_COLUNAS).eq("ativo", true).order("ordem").order("nome"),
   ]);
   if (abertos.error || encerrados.error) return falha("Não foi possível carregar os sorteios.", 500);

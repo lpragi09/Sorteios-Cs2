@@ -8,6 +8,7 @@ import ModalParticipar from "@/components/ModalParticipar";
 import ComoParticipar from "@/components/ComoParticipar";
 import { CODIGO, formatarReais, PARCEIROS_PADRAO, type Ganhador, type Parceiro, type SorteioPublico } from "@/lib/sorteios";
 import { dataVersionQuery, useRefreshOnReturn } from "@/lib/freshData";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 
 type Dados = { sorteios: SorteioPublico[]; ganhadores: Ganhador[]; parceiros: Parceiro[] };
 
@@ -36,6 +37,9 @@ export default function Home() {
   const abertos = dados?.sorteios.filter((s) => s.status === "aberto") ?? [];
   const encerrados = dados?.sorteios.filter((s) => s.status === "encerrado") ?? [];
   const parceiros = dados?.parceiros?.length ? dados.parceiros : PARCEIROS_PADRAO;
+  const pagAbertos = usePaginacao(abertos, 6);
+  const pagEncerrados = usePaginacao(encerrados, 6);
+  const pagGanhadores = usePaginacao(dados?.ganhadores ?? [], 8);
 
   return (
     <>
@@ -97,16 +101,20 @@ export default function Home() {
           )}
           {abertos.length > 0 && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {abertos.map((s) => <SorteioCard key={s.id} sorteio={s} onParticipar={setParticipando} />)}
+              {pagAbertos.itensPagina.map((s) => <SorteioCard key={s.id} sorteio={s} onParticipar={setParticipando} />)}
             </div>
+          )}
+          {abertos.length > 0 && (
+            <Paginacao {...pagAbertos} />
           )}
 
           {encerrados.length > 0 && (
             <>
               <h3 className="font-display font-black uppercase text-[32px] leading-none mt-16 mb-6 text-cinza">Encerrados</h3>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {encerrados.map((s) => <SorteioCard key={s.id} sorteio={s} onParticipar={setParticipando} />)}
+                {pagEncerrados.itensPagina.map((s) => <SorteioCard key={s.id} sorteio={s} onParticipar={setParticipando} />)}
               </div>
+              <Paginacao {...pagEncerrados} />
             </>
           )}
         </div>
@@ -152,7 +160,7 @@ export default function Home() {
           <div className="grid lg:grid-cols-[1.3fr_.7fr] gap-6 items-start">
             <div className="border-t border-grafite">
               {dados?.ganhadores.length ? (
-                dados.ganhadores.map((g) => (
+                pagGanhadores.itensPagina.map((g) => (
                   <div key={g.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[100px_1fr_auto] gap-x-4 gap-y-0.5 items-center py-4 border-b border-grafite">
                     <time className="text-cinza text-[15px] max-sm:col-span-2">{dataCurta(g.criado_em)}</time>
                     <div className="min-w-0">
@@ -171,6 +179,7 @@ export default function Home() {
               ) : (
                 <p className="text-cinza py-6">{dados ? "Os ganhadores aparecem aqui depois do primeiro sorteio." : "Carregando..."}</p>
               )}
+              <Paginacao {...pagGanhadores} />
             </div>
             <div className="bg-carvao border-l-[3px] border-vermelho p-7">
               <ShieldCheck className="w-8 h-8 text-vermelho mb-3" />

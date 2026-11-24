@@ -162,7 +162,7 @@ export async function POST(request: Request) {
     case "sortear": {
       if (!ehId(b.sorteioId)) return falha("Sorteio inválido.");
       const r = await runFairDraw(b.sorteioId);
-      return r.error ? falha(r.error, r.status) : semCache({ draw: r.draw });
+      return r.error ? falha(r.error, r.status) : semCache({ draw: r.draw, fotos: r.fotos ?? {} });
     }
 
     case "confirmarGanhador": {

@@ -6,6 +6,7 @@ import { signIn, useSession } from "next-auth/react";
 import { Gift, Loader2, Trophy } from "lucide-react";
 import { formatarNumero, formatarReais, nomeCasa, type StatusTicket } from "@/lib/sorteios";
 import { useRefreshOnReturn } from "@/lib/freshData";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 
 type Ticket = {
   id: number;
@@ -20,7 +21,6 @@ type Ticket = {
   sorteio: { titulo: string; valor: number | null; status: string; imagem_url: string | null } | null;
 };
 
-const POR_PAGINA = 10;
 
 const STATUS: Record<StatusTicket, { texto: string; cls: string }> = {
   pendente: { texto: "Esperando aprovação", cls: "bg-grafite text-osso" },
@@ -32,7 +32,6 @@ export default function MeusTickets() {
   const { status } = useSession();
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [pagina, setPagina] = useState(1);
 
   const carregar = useCallback(async () => {
     try {
@@ -51,8 +50,7 @@ export default function MeusTickets() {
   useRefreshOnReturn(() => { if (status === "authenticated") carregar(); });
 
   const total = tickets?.length ?? 0;
-  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  const visiveis = tickets?.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA) ?? [];
+  const pag = usePaginacao(tickets ?? []);
   const aprovados = tickets?.filter((t) => t.status === "aprovado") ?? [];
 
   return (
@@ -87,7 +85,7 @@ export default function MeusTickets() {
           </div>
 
           <ul className="border-t border-grafite">
-            {visiveis.map((t) => (
+            {pag.itensPagina.map((t) => (
               <li key={t.id} className="grid grid-cols-[64px_1fr] sm:grid-cols-[64px_1fr_auto] gap-x-4 gap-y-2 items-center py-4 border-b border-grafite">
                 <div className="w-16 h-16 fundo-premio grid place-items-center overflow-hidden">
                   {t.sorteio?.imagem_url ? (
@@ -112,13 +110,7 @@ export default function MeusTickets() {
             ))}
           </ul>
 
-          {paginas > 1 && (
-            <nav className="flex items-center justify-center gap-3 mt-8" aria-label="Páginas">
-              <button onClick={() => setPagina((p) => p - 1)} disabled={pagina === 1} className="btn btn-cinza !py-2 !px-4 !text-base">Anterior</button>
-              <span className="text-cinza tabular-nums">{pagina} de {paginas}</span>
-              <button onClick={() => setPagina((p) => p + 1)} disabled={pagina === paginas} className="btn btn-cinza !py-2 !px-4 !text-base">Próxima</button>
-            </nav>
-          )}
+          <Paginacao {...pag} />
         </>
       )}
     </div>

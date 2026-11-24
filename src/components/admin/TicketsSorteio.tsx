@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Loader2, Pencil, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { usePopup } from "@/components/Popup";
-import Paginacao, { usePaginacao } from "@/components/admin/Paginacao";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 import { formatarNumero, nomeCasa, type StatusTicket } from "@/lib/sorteios";
 
 type Ticket = {

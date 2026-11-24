@@ -7,6 +7,7 @@ import {
   DRAND_CHAIN, DRAND_RELAYS, drandRandomnessMatches, drandRoundTime, drandRoundUrl, entriesText, FAIR_KIND_LABEL,
   pickWinner, sha256Hex, type FairDraw,
 } from "@/lib/fair";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 
 type ItemLista = Pick<FairDraw, "id" | "kind" | "target_id" | "title" | "total_weight" | "drand_round" | "winner_label" | "status" | "created_at" | "drawn_at">;
 
@@ -68,6 +69,7 @@ function ComoFunciona() {
 
 function Lista({ sorteio }: { sorteio: string | null }) {
   const [giros, setGiros] = useState<ItemLista[] | null>(null);
+  const pag = usePaginacao(giros ?? []);
   useEffect(() => {
     fetch(`/api/provably-fair${sorteio ? `?sorteio=${encodeURIComponent(sorteio)}` : ""}`)
       .then((r) => r.json())
@@ -87,7 +89,7 @@ function Lista({ sorteio }: { sorteio: string | null }) {
         <div className="bg-carvao p-8 text-cinza">Nenhum giro registrado ainda.</div>
       ) : (
         <div className="border-t border-grafite">
-          {giros.map((d) => (
+          {pag.itensPagina.map((d) => (
             <Link key={d.id} href={`/provably-fair?id=${d.id}`} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-4 border-b border-grafite hover:bg-carvao px-2 -mx-2 transition-colors">
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-lg truncate">{d.title}</p>
@@ -97,6 +99,7 @@ function Lista({ sorteio }: { sorteio: string | null }) {
               <Selo status={d.status} />
             </Link>
           ))}
+          <Paginacao {...pag} />
         </div>
       )}
     </div>

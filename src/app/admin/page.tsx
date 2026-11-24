@@ -15,6 +15,7 @@ import SecaoProvablyFair from "@/components/admin/SecaoProvablyFair";
 import SecaoVencedores from "@/components/admin/SecaoVencedores";
 import SecaoUsuarios from "@/components/admin/SecaoUsuarios";
 import SecaoParceiros from "@/components/admin/SecaoParceiros";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 
 type SorteioAdmin = Sorteio & { tickets: number; coins: number; pendentes: number; chat: number };
 type GanhadorAdmin = { id: number; rodada: number; nome: string; email: string | null; casa: string | null; casa_id: string | null; coins: number | null; fair_draw_id: string | null; criado_em: string };
@@ -135,6 +136,7 @@ function SecaoSorteios({ tipo }: { tipo: TipoSorteio }) {
   useEffect(() => { carregar(); }, [carregar]);
 
   const selecionado = sorteios?.find((s) => s.id === selecionadoId) ?? null;
+  const pagSorteios = usePaginacao(sorteios ?? []);
 
   return (
     <>
@@ -156,8 +158,9 @@ function SecaoSorteios({ tipo }: { tipo: TipoSorteio }) {
         </div>
       ) : (
         <div className="grid xl:grid-cols-[300px_1fr] gap-6 items-start">
-          <ul className="flex flex-col gap-0.5 xl:max-h-[calc(100vh-160px)] xl:overflow-y-auto">
-            {sorteios.map((s) => (
+          <div>
+          <ul className="flex flex-col gap-0.5">
+            {pagSorteios.itensPagina.map((s) => (
               <li key={s.id}>
                 <button
                   onClick={() => setSelecionadoId(s.id)}
@@ -181,6 +184,8 @@ function SecaoSorteios({ tipo }: { tipo: TipoSorteio }) {
               </li>
             ))}
           </ul>
+          <Paginacao {...pagSorteios} />
+          </div>
 
           {selecionado && <Detalhe key={selecionado.id} sorteio={selecionado} onEditar={() => setForm({ sorteio: selecionado })} onMudou={carregar} />}
         </div>
@@ -208,6 +213,7 @@ function Detalhe({ sorteio, onEditar, onMudou }: { sorteio: SorteioAdmin; onEdit
   const [aba, setAba] = useState<"principal" | "ganhadores">("principal");
   const [sorteando, setSorteando] = useState(false);
   const [ganhadores, setGanhadores] = useState<GanhadorAdmin[] | null>(null);
+  const pagGanhadores = usePaginacao(ganhadores ?? []);
 
   const carregarGanhadores = useCallback(async () => {
     try {
@@ -316,8 +322,9 @@ function Detalhe({ sorteio, onEditar, onMudou }: { sorteio: SorteioAdmin; onEdit
         ) : ganhadores.length === 0 ? (
           <p className="text-cinza bg-preto p-6">Ninguém ganhou este sorteio ainda.</p>
         ) : (
+          <>
           <ul className="divide-y divide-grafite border-y border-grafite">
-            {ganhadores.map((g) => (
+            {pagGanhadores.itensPagina.map((g) => (
               <li key={g.id} className="flex flex-wrap items-center gap-3 py-3">
                 <span className="font-display font-black text-3xl text-vermelho w-10">{g.rodada}º</span>
                 <div className="min-w-0 flex-1">
@@ -337,6 +344,8 @@ function Detalhe({ sorteio, onEditar, onMudou }: { sorteio: SorteioAdmin; onEdit
               </li>
             ))}
           </ul>
+          <Paginacao {...pagGanhadores} />
+          </>
         )}
       </div>
 

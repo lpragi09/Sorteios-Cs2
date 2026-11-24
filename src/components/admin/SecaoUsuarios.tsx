@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Ban, Download, Loader2, Search, Trophy, Undo2, UserCheck, UserPlus, Users } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { usePopup } from "@/components/Popup";
-import Paginacao, { usePaginacao } from "@/components/admin/Paginacao";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 import { formatarNumero } from "@/lib/sorteios";
 import { baixarCsv } from "@/lib/csv";
 

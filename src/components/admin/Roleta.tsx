@@ -16,6 +16,22 @@ const GIRO_MS = 9000;
 const CONTAGEM_MS = 900;
 
 type Fase = "contagem" | "girando" | "resultado";
+type Sorteado = { draw: FairDraw; fotos: Record<string, string> };
+type Item = { nome: string; foto: string | null };
+
+/** Foto da Twitch (diário) ou do Google (mensal); sem foto, a inicial. */
+function Foto({ src, nome, tamanho }: { src: string | null; nome: string; tamanho: string }) {
+  const [falhou, setFalhou] = useState(false);
+  if (!src || falhou) {
+    return (
+      <span className={`${tamanho} shrink-0 rounded-full bg-sangue text-white font-display font-black grid place-items-center uppercase`}>
+        {nome.replace(/^@/, "").charAt(0) || "?"}
+      </span>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setFalhou(true)} className={`${tamanho} shrink-0 rounded-full object-cover bg-grafite`} />;
+}
 
 // Quem ganha sai do servidor (provably fair); a roleta só mostra.
 // Animação por requestAnimationFrame + setTimeout que garante o resultado
@@ -33,12 +49,13 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
   const [numero, setNumero] = useState(3);
   const [esperando, setEsperando] = useState(false);
   const [giro, setGiro] = useState<FairDraw | null>(null);
-  const [itens, setItens] = useState<string[]>([]);
+  const [itens, setItens] = useState<Item[]>([]);
+  const [fotos, setFotos] = useState<Record<string, string>>({});
   const [ocupado, setOcupado] = useState(false);
   const faixaRef = useRef<HTMLDivElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const giroId = useRef(0);
-  const pedido = useRef<Promise<FairDraw> | null>(null);
+  const pedido = useRef<Promise<Sorteado> | null>(null);
   const sons = useSounds();
   const popup = usePopup();
 
@@ -48,11 +65,13 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
     timers.current = [];
   };
 
-  const girar = (d: FairDraw) => {
+  const girar = ({ draw: d, fotos: f }: Sorteado) => {
     const nomes = d.entries.map((e) => e.label);
-    const faixa = Array.from({ length: TAMANHO }, () => nomes[Math.floor(Math.random() * nomes.length)]);
-    faixa[INDICE_GANHADOR] = d.winner_label ?? "";
+    const item = (nome: string): Item => ({ nome, foto: f[nome] ?? null });
+    const faixa = Array.from({ length: TAMANHO }, () => item(nomes[Math.floor(Math.random() * nomes.length)]));
+    faixa[INDICE_GANHADOR] = item(d.winner_label ?? "");
     setItens(faixa);
+    setFotos(f);
     setGiro(d);
     setFase("girando");
 
@@ -96,7 +115,7 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
     setEsperando(false);
     setFase("contagem");
     onSorteado?.(null);
-    const p = adminApi<{ draw: FairDraw }>("sortear", { sorteioId: sorteio.id }).then((r) => r.draw);
+    const p = adminApi<Sorteado>("sortear", { sorteioId: sorteio.id }).then((r) => ({ draw: r.draw, fotos: r.fotos ?? {} }));
     p.catch(() => {});
     pedido.current = p;
   };
@@ -174,12 +193,13 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
             {fase === "resultado" ? "Temos um ganhador" : "Sorteando..."}
           </h2>
 
-          <div className="relative w-full h-40 bg-carvao border-y-4 border-sangue overflow-hidden flex items-center">
+          <div className="relative w-full h-44 bg-carvao border-y-4 border-sangue overflow-hidden flex items-center">
             <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-vermelho z-10 -translate-x-1/2 shadow-[0_0_15px_rgba(227,16,31,1)]" />
             <div ref={faixaRef} className="flex gap-3 w-full will-change-transform" style={{ paddingLeft: `calc(50% - ${ITEM_W / 2}px)` }}>
-              {itens.map((nome, i) => (
-                <div key={i} className="w-[200px] h-[112px] shrink-0 bg-preto border border-grafite corte-sm grid place-items-center px-3">
-                  <span className="font-display font-black text-3xl uppercase truncate max-w-full">{nome}</span>
+              {itens.map(({ nome, foto }, i) => (
+                <div key={i} className="w-[200px] h-[124px] shrink-0 bg-preto border border-grafite corte-sm flex flex-col items-center justify-center gap-2 px-3">
+                  <Foto src={foto} nome={nome} tamanho="w-14 h-14 text-2xl" />
+                  <span className="font-display font-black text-2xl uppercase truncate max-w-full leading-none">{nome}</span>
                 </div>
               ))}
             </div>
@@ -197,7 +217,10 @@ export default function Roleta({ sorteio, onFechar, onConfirmado, onSorteado, re
           {fase === "resultado" && giro && (
             <div className="mt-10 bg-carvao corte w-full max-w-md p-8 text-center relative border-t-4 border-vermelho animate-surge">
               <button onClick={cancelar} title="Fechar (o giro fica como descartado)" className="absolute top-4 right-4 text-cinza hover:text-osso"><X className="w-5 h-5" /></button>
-              <Trophy className="w-12 h-12 text-vermelho mx-auto mb-3" />
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <Foto src={fotos[giro.winner_label ?? ""] ?? null} nome={giro.winner_label ?? ""} tamanho="w-24 h-24 ring-4 ring-vermelho text-5xl" />
+                <Trophy className="absolute -bottom-1 -right-1 w-9 h-9 p-1.5 bg-vermelho text-white rounded-full" />
+              </div>
               <p className="font-display font-black uppercase text-5xl leading-none break-all">{giro.winner_label}</p>
               <p className="text-cinza mt-2 mb-2">Ganhador de {sorteio.titulo}</p>
               {resposta !== undefined && (

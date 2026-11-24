@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, Loader2, RefreshCw, Search } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { usePopup } from "@/components/Popup";
-import Paginacao, { usePaginacao } from "@/components/admin/Paginacao";
+import Paginacao, { usePaginacao } from "@/components/Paginacao";
 import { FAIR_KIND_LABEL, type FairKind } from "@/lib/fair";
 import { formatarNumero } from "@/lib/sorteios";
 
