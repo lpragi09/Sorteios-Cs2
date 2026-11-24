@@ -16,6 +16,8 @@ export async function GET(request: Request) {
     if (!/^[0-9a-f-]{36}$/i.test(id)) return falha("Giro não encontrado.", 404);
     const { data } = await supabaseAdmin.from("fair_draws").select(FAIR_COLUMNS).eq("id", id).maybeSingle();
     if (!data) return falha("Giro não encontrado.", 404);
+    // Enquanto gira, a lista (com as coins de cada um) ainda não é pública
+    if (data.status === "waiting") return falha("Esse giro ainda está acontecendo. Atualize em alguns segundos.", 404);
     return comCache({ draw: data });
   }
 

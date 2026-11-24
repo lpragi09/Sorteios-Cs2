@@ -63,24 +63,10 @@ export default function MixPage() {
 
     setIsSorting(true);
 
-    // Easter egg mantido
-    const _0x7a = atob('bHVpeg==');
-    const _0x8b = atob('bHVpcw==');
-    const _0x9c = disponiveis.filter(n => n.toLowerCase().includes(_0x7a) || n.toLowerCase().includes(_0x8b));
-    
-    let escolhidoNome: string;
-    const vagasRestantes = 10 - totalSorteados;
-
-    const _0x1d = _0x9c.length > 0 && (
-        (totalSorteados > 0 && Math.random() > 0.4) || 
-        (vagasRestantes <= 2) 
-    );
-
-    if (_0x1d && totalSorteados > 0) {
-         escolhidoNome = _0x9c[Math.floor(Math.random() * _0x9c.length)];
-    } else {
-         escolhidoNome = disponiveis[Math.floor(Math.random() * disponiveis.length)];
-    }
+    // Todo nome tem a mesma chance (sorteio do próprio navegador, sem favorecer ninguém)
+    const aleatorio = new Uint32Array(1);
+    crypto.getRandomValues(aleatorio);
+    const escolhidoNome = disponiveis[aleatorio[0] % disponiveis.length];
 
     for (let i = 5; i > 0; i--) {
         setStatusMsg(`SORTEANDO EM: ${i}`);
