@@ -15,9 +15,14 @@
   --font-sans: var(--font-barlow), system-ui, sans-serif;
 }
 
+/* Rolagem com inércia do Lenis (SmoothScroll.tsx); sem JS, cai no smooth nativo */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: clip; }
+
 @layer base {
-  /* Rolagem suave nos links do menu (igual ao Barr4k), parando abaixo do menu fixo */
-  html { scroll-behavior: smooth; scroll-padding-top: 88px; scrollbar-color: var(--color-vermelho) var(--color-preto); }
+  /* Rolagem suave nos links do menu; cada seção tem scroll-mt-20 pra parar abaixo do menu fixo */
+  html { scroll-behavior: smooth; scrollbar-color: var(--color-vermelho) var(--color-preto); }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: var(--color-preto); }

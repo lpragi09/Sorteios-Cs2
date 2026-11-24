@@ -6,6 +6,7 @@ import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Rodape from "@/components/Rodape";
 import CompletarCadastro from "@/components/CompletarCadastro";
+import SmoothScroll from "@/components/SmoothScroll";
 
 const display = Big_Shoulders({ subsets: ["latin"], weight: ["700", "900"], variable: "--font-big-shoulders" });
 const texto = Barlow_Semi_Condensed({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-barlow" });
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="min-h-[70vh]">{children}</main>
           <Rodape />
           <CompletarCadastro />
+          <SmoothScroll />
         </Providers>
         <Analytics />
       </body>
