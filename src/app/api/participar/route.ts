@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSessionUser } from "@/lib/auth";
-import { CASAS, inscricoesAbertas, limparInstagram } from "@/lib/sorteios";
+import { inscricoesAbertas, limparInstagram } from "@/lib/sorteios";
 import { PRINTS_BUCKET } from "@/lib/prints";
 import { falha, semCache } from "@/lib/http";
 
@@ -18,6 +18,8 @@ async function sorteioAberto(id: unknown) {
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return falha("Entre com o Google pra participar.", 401);
+  const { data: conta } = await supabaseAdmin.from("usuarios").select("bloqueado").eq("email", user.email).maybeSingle();
+  if (conta?.bloqueado) return falha("Sua conta não pode mandar tickets. Fale com a equipe do Soares.", 403);
   const body = await request.json().catch(() => null);
   const sorteio = await sorteioAberto(body?.sorteioId);
   if (!sorteio) return falha("Esse sorteio não está aceitando tickets.", 409);
@@ -30,7 +32,8 @@ export async function POST(request: Request) {
   }
 
   if (body.acao === "enviar") {
-    const casa = CASAS.find((c) => c.id === body.casa)?.id;
+    const { data: parceiro } = await supabaseAdmin.from("parceiros").select("id").eq("id", String(body.casa ?? "")).eq("ativo", true).maybeSingle();
+    const casa = parceiro?.id;
     const casaId = String(body.casaId ?? "").trim().slice(0, 80);
     const coins = Math.floor(Number(body.coins));
     const instagram = limparInstagram(String(body.instagram ?? "")).slice(0, 40);

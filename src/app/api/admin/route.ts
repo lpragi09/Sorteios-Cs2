@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSessionUser } from "@/lib/auth";
-import { SORTEIO_COLUNAS, limparInstagram } from "@/lib/sorteios";
+import { PARCEIRO_COLUNAS, SORTEIO_COLUNAS, limparInstagram } from "@/lib/sorteios";
 import { loginValido } from "@/lib/chat";
 import { registrarEntradaChat } from "@/lib/chatServer";
 import { desligarCaptura, ligarCaptura, type StatusCaptura } from "@/lib/eventsub";
@@ -233,6 +233,116 @@ export async function POST(request: Request) {
       if (!ehId(b.sorteioId)) return falha("Sorteio inválido.");
       const { error } = await db.from("chat_participantes").delete().eq("sorteio_id", b.sorteioId);
       return error ? falha(error.message, 500) : semCache({ ok: true });
+    }
+
+    // ---------- vencedores (todos os sorteios) ----------
+    case "listarVencedores": {
+      const { data, error } = await db
+        .from("ganhadores")
+        .select("id, sorteio_id, rodada, nome, email, casa, casa_id, coins, fair_draw_id, entregue, entregue_em, criado_em, sorteios(titulo, valor, tipo)")
+        .order("criado_em", { ascending: false })
+        .limit(2000);
+      if (error) return falha(error.message, 500);
+      return semCache({
+        vencedores: (data ?? []).map(({ sorteios, ...g }) => {
+          const s = sorteios as unknown as { titulo: string; valor: number | null; tipo: string } | null;
+          return { ...g, sorteio_titulo: s?.titulo ?? "", sorteio_valor: s?.valor ?? null, sorteio_tipo: s?.tipo ?? "" };
+        }),
+      });
+    }
+
+    case "marcarEntregue": {
+      if (!ehNumero(b.id)) return falha("Vencedor inválido.");
+      const entregue = !!b.entregue;
+      const { error } = await db.from("ganhadores").update({ entregue, entregue_em: entregue ? new Date().toISOString() : null }).eq("id", b.id);
+      return error ? falha(error.message, 500) : semCache({ ok: true });
+    }
+
+    case "editarVencedor": {
+      if (!ehNumero(b.id)) return falha("Vencedor inválido.");
+      const nome = String(b.nome ?? "").trim().slice(0, 60);
+      if (!nome) return falha("Informe o nome.");
+      const { error } = await db.from("ganhadores").update({ nome }).eq("id", b.id);
+      return error ? falha(error.message, 500) : semCache({ ok: true });
+    }
+
+    // ---------- provably fair (visão do admin, com quem ganhou) ----------
+    case "listarGiros": {
+      const { data, error } = await db
+        .from("fair_draws")
+        .select("id, kind, target_id, title, total_weight, drand_round, winner_label, winner_ref, status, created_at, drawn_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      return error ? falha(error.message, 500) : semCache({ giros: data ?? [] });
+    }
+
+    // ---------- usuários do site ----------
+    case "listarUsuarios": {
+      const [{ data: usuarios, error }, { data: tickets }, { data: ganhos }] = await Promise.all([
+        db.from("usuarios").select("email, nome, avatar_url, criado_em, ultimo_acesso, acessos, bloqueado").order("ultimo_acesso", { ascending: false }).limit(10000),
+        db.from("tickets").select("email, status, coins").limit(100000),
+        db.from("ganhadores").select("email").not("email", "is", null),
+      ]);
+      if (error) return falha(error.message, 500);
+      const porEmail = new Map<string, { tickets: number; aprovados: number; coins: number; vitorias: number }>();
+      const conta = (e: string) => porEmail.get(e) ?? porEmail.set(e, { tickets: 0, aprovados: 0, coins: 0, vitorias: 0 }).get(e)!;
+      for (const t of tickets ?? []) {
+        const c = conta(t.email);
+        c.tickets++;
+        if (t.status === "aprovado") { c.aprovados++; c.coins += t.coins; }
+      }
+      for (const g of ganhos ?? []) if (g.email) conta(g.email).vitorias++;
+      return semCache({ usuarios: (usuarios ?? []).map((u) => ({ ...u, ...(porEmail.get(u.email) ?? { tickets: 0, aprovados: 0, coins: 0, vitorias: 0 }) })) });
+    }
+
+    case "bloquearUsuario": {
+      const email = String(b.email ?? "").toLowerCase();
+      if (!email.includes("@")) return falha("Usuário inválido.");
+      const { error } = await db.from("usuarios").update({ bloqueado: !!b.bloqueado }).eq("email", email);
+      return error ? falha(error.message, 500) : semCache({ ok: true });
+    }
+
+    // ---------- parceiros ----------
+    case "listarParceiros": {
+      const { data, error } = await db.from("parceiros").select(PARCEIRO_COLUNAS).order("ordem").order("nome");
+      return error ? falha(error.message, 500) : semCache({ parceiros: data ?? [] });
+    }
+
+    case "salvarParceiro": {
+      const id = String(b.id ?? "").trim().toLowerCase();
+      const nome = String(b.nome ?? "").trim().slice(0, 60);
+      const link = String(b.link ?? "").trim().slice(0, 500);
+      if (!/^[a-z0-9-]{2,30}$/.test(id)) return falha("O identificador precisa ter de 2 a 30 letras minúsculas, números ou hífen.");
+      if (!nome) return falha("Informe o nome do parceiro.");
+      if (!/^https?:\/\//i.test(link)) return falha("O link precisa começar com https://");
+      const linha = {
+        id,
+        nome,
+        link,
+        destaque: String(b.destaque ?? "").trim().slice(0, 80) || null,
+        imagem_url: String(b.imagem_url ?? "").trim().slice(0, 600) || null,
+        ordem: Math.floor(Number(b.ordem)) || 0,
+        ativo: b.ativo !== false,
+      };
+      if (b.novo) {
+        const { error } = await db.from("parceiros").insert(linha);
+        if (error?.code === "23505") return falha("Já existe um parceiro com esse identificador.");
+        return error ? falha(error.message, 500) : semCache({ ok: true });
+      }
+      const { data: antes } = await db.from("parceiros").select("imagem_url").eq("id", id).maybeSingle();
+      const { error } = await db.from("parceiros").update(linha).eq("id", id);
+      if (error) return falha(error.message, 500);
+      if (antes?.imagem_url && antes.imagem_url !== linha.imagem_url) await removerImagemPremio(antes.imagem_url);
+      return semCache({ ok: true });
+    }
+
+    case "excluirParceiro": {
+      const id = String(b.id ?? "");
+      const { data: p } = await db.from("parceiros").select("imagem_url").eq("id", id).maybeSingle();
+      const { error } = await db.from("parceiros").delete().eq("id", id);
+      if (error) return falha(error.message, 500);
+      await removerImagemPremio(p?.imagem_url);
+      return semCache({ ok: true });
     }
 
     default:

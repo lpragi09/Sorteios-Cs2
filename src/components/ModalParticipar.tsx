@@ -7,16 +7,16 @@ import { signIn, useSession } from "next-auth/react";
 import { ImageUp, Loader2, X } from "lucide-react";
 import { usePopup } from "@/components/Popup";
 import { enviarPrint } from "@/lib/upload";
-import { CASAS, CODIGO, formatarReais, type Casa, type SorteioPublico } from "@/lib/sorteios";
+import { CODIGO, formatarReais, type Parceiro, type SorteioPublico } from "@/lib/sorteios";
 import { markDataChanged } from "@/lib/freshData";
 
 const MAX_ARQUIVO = 15 * 1024 * 1024; // o navegador comprime antes de enviar
 
-export default function ModalParticipar({ sorteio, onFechar }: { sorteio: SorteioPublico; onFechar: () => void }) {
+export default function ModalParticipar({ sorteio, parceiros, onFechar }: { sorteio: SorteioPublico; parceiros: Parceiro[]; onFechar: () => void }) {
   const { status } = useSession();
   const popup = usePopup();
   const router = useRouter();
-  const [casa, setCasa] = useState<Casa>("csgobig");
+  const [casa, setCasa] = useState(parceiros[0]?.id ?? "");
   const [casaId, setCasaId] = useState("");
   const [coins, setCoins] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -106,7 +106,7 @@ export default function ModalParticipar({ sorteio, onFechar }: { sorteio: Sortei
             <fieldset>
               <legend className="font-semibold mb-2">Onde você depositou com o código {CODIGO}?</legend>
               <div className="grid grid-cols-2 gap-2">
-                {CASAS.map((c) => (
+                {parceiros.map((c) => (
                   <label key={c.id} className={`cursor-pointer text-center py-3 font-bold border ${casa === c.id ? "border-vermelho bg-sangue/30" : "border-grafite hover:border-grafite-2"}`}>
                     <input type="radio" name="casa" value={c.id} checked={casa === c.id} onChange={() => setCasa(c.id)} className="sr-only" />
                     {c.nome}

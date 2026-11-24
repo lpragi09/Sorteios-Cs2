@@ -5,10 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, Copy, ShieldCheck } from "lucide-react";
 import SorteioCard from "@/components/SorteioCard";
 import ModalParticipar from "@/components/ModalParticipar";
-import { CASAS, CODIGO, formatarReais, type Ganhador, type SorteioPublico } from "@/lib/sorteios";
+import { CODIGO, formatarReais, PARCEIROS_PADRAO, type Ganhador, type Parceiro, type SorteioPublico } from "@/lib/sorteios";
 import { dataVersionQuery, useRefreshOnReturn } from "@/lib/freshData";
 
-type Dados = { sorteios: SorteioPublico[]; ganhadores: Ganhador[] };
+type Dados = { sorteios: SorteioPublico[]; ganhadores: Ganhador[]; parceiros: Parceiro[] };
 
 const dataCurta = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "short" }).replace(".", "");
 
@@ -43,6 +43,7 @@ export default function Home() {
 
   const abertos = dados?.sorteios.filter((s) => s.status === "aberto") ?? [];
   const encerrados = dados?.sorteios.filter((s) => s.status === "encerrado") ?? [];
+  const parceiros = dados?.parceiros?.length ? dados.parceiros : PARCEIROS_PADRAO;
 
   return (
     <>
@@ -139,7 +140,7 @@ export default function Home() {
             <li className="bg-carvao p-7">
               <span className="block font-display font-black text-[64px] leading-none text-vermelho mb-2.5">1</span>
               <h3 className="text-[23px] font-bold mb-1.5">Deposite com o código</h3>
-              <p className="text-cinza">Na {CASAS.map((c) => c.nome).join(" ou na ")}, use o código do Soares no depósito.</p>
+              <p className="text-cinza">Na {parceiros.map((c) => c.nome).join(" ou na ")}, use o código do Soares no depósito.</p>
               <button onClick={copiar} className="inline-flex items-center gap-3 mt-5 border border-dashed border-vermelho pl-3.5 pr-1.5 py-1.5 font-display font-black text-[26px] tracking-wide">
                 {CODIGO}
                 <span className="font-sans text-sm font-bold bg-vermelho text-white px-3 py-2 flex items-center gap-1.5">
@@ -166,11 +167,11 @@ export default function Home() {
         <div className="mx-auto w-[min(1180px,100%-40px)]">
           <h2 className="font-display font-black uppercase leading-[.95] text-[clamp(40px,5vw,64px)]">Parceiros</h2>
           <p className="text-cinza max-w-[56ch] mt-2 mb-10">Depósitos com o código {CODIGO} nessas casas valem ticket.</p>
-          <div className="grid sm:grid-cols-[repeat(2,minmax(0,360px))] gap-6">
-            {CASAS.map((c) => (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),360px))] gap-6">
+            {parceiros.map((c) => (
               <a key={c.id} href={c.link} target="_blank" rel="noreferrer" className="bg-carvao corte block transition-transform hover:-translate-y-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.imagem} alt={`${c.nome}: ${c.destaque} com o código ${CODIGO}`} loading="lazy" className="w-full aspect-[3/4] object-cover" />
+                <img src={c.imagem_url || "/hero-poster.webp"} alt={`${c.nome}${c.destaque ? `: ${c.destaque}` : ""} com o código ${CODIGO}`} loading="lazy" className="w-full aspect-[3/4] object-cover" />
                 <div className="flex justify-between items-center px-4.5 py-3.5 font-bold text-[19px]">
                   {c.nome} <span className="text-vermelho text-[15px]">{c.destaque}</span>
                 </div>
@@ -220,7 +221,7 @@ export default function Home() {
         </div>
       </section>
 
-      {participando && <ModalParticipar sorteio={participando} onFechar={() => setParticipando(null)} />}
+      {participando && <ModalParticipar sorteio={participando} parceiros={parceiros} onFechar={() => setParticipando(null)} />}
     </>
   );
 }

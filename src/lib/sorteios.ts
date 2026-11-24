@@ -1,16 +1,30 @@
 // Tipos e regras compartilhados entre servidor, home e painel.
 
-export type Casa = "csgobig" | "dastskin";
 export type TipoSorteio = "ticket" | "chat";
 export type StatusTicket = "pendente" | "aprovado" | "recusado";
 
-export const CASAS: { id: Casa; nome: string; link: string; destaque: string; imagem: string }[] = [
-  { id: "csgobig", nome: "CSGOBIG", link: "https://csgobig.com/r/soares", destaque: "3 caixas grátis e 5% de bônus", imagem: "/parceiros/csgobig.webp" },
-  // TODO: link de indicação da DASTSKIN (o Soares ainda vai mandar)
-  { id: "dastskin", nome: "DASTSKIN", link: "https://dastskin.com", destaque: "Bônus com o código SOARES", imagem: "/parceiros/dastskin.webp" },
+/** Casa parceira (tabela "parceiros", editada em Painel > Parceiros). O id vai no ticket. */
+export interface Parceiro {
+  id: string;
+  nome: string;
+  link: string;
+  destaque: string | null;
+  imagem_url: string | null;
+  ordem: number;
+  ativo: boolean;
+}
+
+// Usados se a tabela não responder
+export const PARCEIROS_PADRAO: Parceiro[] = [
+  { id: "csgobig", nome: "CSGOBIG", link: "https://csgobig.com/r/soares", destaque: "3 caixas grátis e 5% de bônus", imagem_url: "/parceiros/csgobig.webp", ordem: 1, ativo: true },
+  { id: "dastskin", nome: "DASTSKIN", link: "https://dastskin.com", destaque: "Bônus com o código SOARES", imagem_url: "/parceiros/dastskin.webp", ordem: 2, ativo: true },
 ];
 
-export const nomeCasa = (id: string | null | undefined) => CASAS.find((c) => c.id === id)?.nome ?? id ?? "";
+export const PARCEIRO_COLUNAS = "id, nome, link, destaque, imagem_url, ordem, ativo";
+
+/** Nome da casa pelo id; sem a lista, mostra o id em maiúsculas. */
+export const nomeCasa = (id: string | null | undefined, lista: Pick<Parceiro, "id" | "nome">[] = PARCEIROS_PADRAO) =>
+  lista.find((c) => c.id === id)?.nome ?? (id ?? "").toUpperCase();
 
 export const CODIGO = "SOARES";
 

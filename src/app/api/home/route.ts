@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { SORTEIO_COLUNAS, type SorteioPublico } from "@/lib/sorteios";
+import { PARCEIRO_COLUNAS, PARCEIROS_PADRAO, SORTEIO_COLUNAS, type SorteioPublico } from "@/lib/sorteios";
 import { comCache, falha } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
@@ -7,10 +7,11 @@ export const dynamic = "force-dynamic";
 // Tudo o que a home precisa numa chamada só, sem imagem pesada (as imagens são links do Storage)
 export async function GET() {
   const db = supabaseAdmin;
-  const [abertos, encerrados, ultimos] = await Promise.all([
+  const [abertos, encerrados, ultimos, parceiros] = await Promise.all([
     db.from("sorteios").select(SORTEIO_COLUNAS).eq("status", "aberto").order("criado_em", { ascending: false }),
     db.from("sorteios").select(SORTEIO_COLUNAS).eq("status", "encerrado").order("criado_em", { ascending: false }).limit(6),
     db.from("ganhadores").select("id, sorteio_id, rodada, nome, coins, criado_em, fair_draw_id, sorteios(titulo, valor)").order("criado_em", { ascending: false }).limit(8),
+    db.from("parceiros").select(PARCEIRO_COLUNAS).eq("ativo", true).order("ordem").order("nome"),
   ]);
   if (abertos.error || encerrados.error) return falha("Não foi possível carregar os sorteios.", 500);
 
@@ -37,5 +38,5 @@ export async function GET() {
     return { id: g.id, sorteio_id: g.sorteio_id, rodada: g.rodada, nome: g.nome, coins: g.coins, criado_em: g.criado_em, fair_draw_id: g.fair_draw_id, sorteio_titulo: s?.titulo ?? "", sorteio_valor: s?.valor ?? null };
   });
 
-  return comCache({ sorteios, ganhadores });
+  return comCache({ sorteios, ganhadores, parceiros: parceiros.error ? PARCEIROS_PADRAO : parceiros.data ?? [] });
 }

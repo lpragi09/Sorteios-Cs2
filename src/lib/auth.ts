@@ -2,6 +2,7 @@ import type { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { isAdmin } from "@/lib/admins";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,6 +13,17 @@ export const authOptions: NextAuthOptions = {
       authorization: { params: { prompt: "select_account" } },
     }),
   ],
+  events: {
+    // Cada login entra na lista "Usuários do site" do painel
+    async signIn({ user }) {
+      if (!user.email) return;
+      try {
+        await supabaseAdmin.rpc("registrar_login", { p_email: user.email, p_nome: user.name ?? null, p_avatar: user.image ?? null });
+      } catch (err) {
+        console.error("registrar_login:", err);
+      }
+    },
+  },
   callbacks: {
     async session({ session }) {
       if (session.user) {

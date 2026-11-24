@@ -16,13 +16,14 @@ const paraCampoData = (iso: string | null) => {
   return d.toISOString().slice(0, 16);
 };
 
-export default function FormSorteio({ sorteio, onFechar, onSalvo }: {
+export default function FormSorteio({ sorteio, tipoNovo, onFechar, onSalvo }: {
   sorteio: Sorteio | null; // null = novo
+  tipoNovo?: TipoSorteio; // seção do painel que abriu (já decide o tipo)
   onFechar: () => void;
   onSalvo: (s: Sorteio) => void;
 }) {
   const popup = usePopup();
-  const [tipo, setTipo] = useState<TipoSorteio>(sorteio?.tipo ?? "ticket");
+  const [tipo, setTipo] = useState<TipoSorteio>(sorteio?.tipo ?? tipoNovo ?? "ticket");
   const [titulo, setTitulo] = useState(sorteio?.titulo ?? "");
   const [descricao, setDescricao] = useState(sorteio?.descricao ?? "");
   const [valor, setValor] = useState(sorteio?.valor != null ? String(sorteio.valor) : "");
@@ -81,9 +82,9 @@ export default function FormSorteio({ sorteio, onFechar, onSalvo }: {
     <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-sm flex overflow-y-auto p-4" onClick={() => !salvando && onFechar()}>
       <form onSubmit={salvar} onClick={(e) => e.stopPropagation()} className="m-auto w-full max-w-2xl bg-carvao corte p-6 relative animate-surge flex flex-col gap-4">
         <button type="button" onClick={onFechar} className="absolute right-3 top-3 w-10 h-10 grid place-items-center text-cinza hover:text-osso" aria-label="Fechar"><X /></button>
-        <h2 className="font-display font-black uppercase text-[40px] leading-none">{sorteio ? "Editar sorteio" : "Novo sorteio"}</h2>
+        <h2 className="font-display font-black uppercase text-[40px] leading-none">{sorteio ? "Editar sorteio" : tipo === "chat" ? "Novo sorteio da live" : "Novo sorteio mensal"}</h2>
 
-        {!sorteio && (
+        {!sorteio && !tipoNovo && (
           <fieldset>
             <legend className="font-semibold mb-2">Como as pessoas entram</legend>
             <div className="grid sm:grid-cols-2 gap-2">

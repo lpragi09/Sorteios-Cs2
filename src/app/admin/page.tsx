@@ -3,44 +3,55 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { Dices, ExternalLink, Gift, Loader2, Lock, MessageSquare, Pencil, Plus, ShieldCheck, Ticket, Trash2, Trophy, Unlock } from "lucide-react";
+import { Dices, ExternalLink, Gift, Handshake, Loader2, Lock, MessageSquare, Pencil, Plus, Radio, ShieldCheck, Ticket, Trash2, Trophy, Unlock, User } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
-import { formatarNumero, formatarReais, nomeCasa, type Sorteio } from "@/lib/sorteios";
+import { formatarNumero, formatarReais, nomeCasa, type Sorteio, type TipoSorteio } from "@/lib/sorteios";
 import { usePopup } from "@/components/Popup";
 import FormSorteio from "@/components/admin/FormSorteio";
 import TicketsSorteio from "@/components/admin/TicketsSorteio";
 import ChatAoVivo from "@/components/admin/ChatAoVivo";
 import Roleta from "@/components/admin/Roleta";
+import SecaoProvablyFair from "@/components/admin/SecaoProvablyFair";
+import SecaoVencedores from "@/components/admin/SecaoVencedores";
+import SecaoUsuarios from "@/components/admin/SecaoUsuarios";
+import SecaoParceiros from "@/components/admin/SecaoParceiros";
 
 type SorteioAdmin = Sorteio & { tickets: number; coins: number; pendentes: number; chat: number };
 type GanhadorAdmin = { id: number; rodada: number; nome: string; email: string | null; casa: string | null; casa_id: string | null; coins: number | null; fair_draw_id: string | null; criado_em: string };
+
+const ABAS = [
+  { id: "mensais", nome: "Sorteios Mensais", Icone: Gift },
+  { id: "diario", nome: "Sorteio Diário (Live)", Icone: Radio },
+  { id: "provably-fair", nome: "Provably Fair", Icone: ShieldCheck },
+  { id: "vencedores", nome: "Vencedores dos Sorteios", Icone: Trophy },
+  { id: "usuarios", nome: "Usuários do Site", Icone: User },
+  { id: "parceiros", nome: "Parceiros", Icone: Handshake },
+] as const;
+type Aba = (typeof ABAS)[number]["id"];
+
+const abaDaUrl = (): Aba => {
+  if (typeof window === "undefined") return "mensais";
+  const a = new URLSearchParams(window.location.search).get("aba");
+  return ABAS.some((x) => x.id === a) ? (a as Aba) : "mensais";
+};
 
 export default function Admin() {
   const { data: session, status } = useSession();
   const isAdmin = !!(session?.user as { isAdmin?: boolean } | undefined)?.isAdmin;
   const popup = usePopup();
-  const [sorteios, setSorteios] = useState<SorteioAdmin[] | null>(null);
-  const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
-  const [form, setForm] = useState<{ sorteio: Sorteio | null } | null>(null);
+  const [aba, setAba] = useState<Aba>(abaDaUrl);
 
-  const carregar = useCallback(async () => {
-    try {
-      const { sorteios } = await adminApi<{ sorteios: SorteioAdmin[] }>("listarSorteios");
-      setSorteios(sorteios);
-      setSelecionadoId((atual) => (atual && sorteios.some((s) => s.id === atual) ? atual : sorteios[0]?.id ?? null));
-    } catch (err) {
-      popup.erro(err);
-    }
-  }, [popup]);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- busca de dados: o state só muda depois da resposta
-  useEffect(() => { if (isAdmin) carregar(); }, [isAdmin, carregar]);
+  const trocarAba = (a: Aba) => {
+    setAba(a);
+    window.history.replaceState(null, "", a === "mensais" ? "/admin" : `/admin?aba=${a}`);
+    window.scrollTo({ top: 0 });
+  };
 
   // Volta da autorização da Twitch (/api/twitch/callback manda ?twitch=ok:login)
   useEffect(() => {
     const r = new URLSearchParams(window.location.search).get("twitch");
     if (!r) return;
-    window.history.replaceState(null, "", "/admin");
+    window.history.replaceState(null, "", "/admin?aba=diario");
     if (r.startsWith("ok")) {
       const login = r.split(":")[1];
       popup.alerta(`${login ? `A conta ${login} autorizou` : "Autorizado"}. Feche e abra o chat do sorteio de novo pra ligar a captação pelo servidor.`, { tipo: "sucesso", titulo: "Twitch autorizada" });
@@ -61,25 +72,91 @@ export default function Admin() {
     );
   }
 
+  const atual = ABAS.find((a) => a.id === aba)!;
+
+  return (
+    <div className="mx-auto w-[min(1440px,100%-32px)] py-8 grid lg:grid-cols-[260px_1fr] gap-6 items-start">
+      <aside className="lg:sticky lg:top-24">
+        <p className="font-display font-black uppercase text-[34px] leading-none mb-5">
+          Painel <span className="text-vermelho">admin</span>
+        </p>
+        <nav aria-label="Seções do painel">
+          <ul className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0">
+            {ABAS.map(({ id, nome, Icone }) => (
+              <li key={id} className="shrink-0">
+                <button
+                  onClick={() => trocarAba(id)}
+                  aria-current={aba === id ? "page" : undefined}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left font-semibold border-l-4 transition-colors ${
+                    aba === id ? "bg-sangue/40 border-vermelho text-osso" : "border-transparent text-cinza hover:text-osso hover:bg-carvao"
+                  }`}
+                >
+                  <Icone className="w-5 h-5 shrink-0" /> {nome}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+
+      <section className="min-w-0">
+        <h1 className="font-display font-black uppercase text-[clamp(36px,4.5vw,56px)] leading-none mb-6">{atual.nome}</h1>
+        {aba === "mensais" && <SecaoSorteios key="ticket" tipo="ticket" />}
+        {aba === "diario" && <SecaoSorteios key="chat" tipo="chat" />}
+        {aba === "provably-fair" && <SecaoProvablyFair />}
+        {aba === "vencedores" && <SecaoVencedores />}
+        {aba === "usuarios" && <SecaoUsuarios />}
+        {aba === "parceiros" && <SecaoParceiros />}
+      </section>
+    </div>
+  );
+}
+
+// Lista + detalhe dos sorteios de um tipo (Mensais = por depósito, Diário = chat da live)
+function SecaoSorteios({ tipo }: { tipo: TipoSorteio }) {
+  const popup = usePopup();
+  const [sorteios, setSorteios] = useState<SorteioAdmin[] | null>(null);
+  const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
+  const [form, setForm] = useState<{ sorteio: Sorteio | null } | null>(null);
+  const chat = tipo === "chat";
+
+  const carregar = useCallback(async () => {
+    try {
+      const { sorteios: todos } = await adminApi<{ sorteios: SorteioAdmin[] }>("listarSorteios");
+      const lista = todos.filter((s) => s.tipo === tipo);
+      setSorteios(lista);
+      setSelecionadoId((atual) => (atual && lista.some((s) => s.id === atual) ? atual : lista[0]?.id ?? null));
+    } catch (err) {
+      popup.erro(err);
+    }
+  }, [popup, tipo]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- busca de dados: o state só muda depois da resposta
+  useEffect(() => { carregar(); }, [carregar]);
+
   const selecionado = sorteios?.find((s) => s.id === selecionadoId) ?? null;
 
   return (
-    <div className="mx-auto w-[min(1280px,100%-32px)] py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-        <h1 className="font-display font-black uppercase text-[clamp(44px,6vw,72px)] leading-none">Painel</h1>
-        <button onClick={() => setForm({ sorteio: null })} className="btn btn-vermelho"><Plus className="w-5 h-5" /> Novo sorteio</button>
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <p className="text-cinza max-w-[60ch]">
+          {chat
+            ? "Quem digita o comando no chat da Twitch entra. Sub tem mais chances. Abra o chat durante a live e sorteie na hora."
+            : "Quem deposita com o código SOARES manda o print. Você aprova os tickets e cada coin aprovada vale uma chance."}
+        </p>
+        <button onClick={() => setForm({ sorteio: null })} className="btn btn-vermelho !py-2.5"><Plus className="w-5 h-5" /> {chat ? "Novo sorteio da live" : "Novo sorteio mensal"}</button>
       </div>
 
       {!sorteios ? (
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-vermelho" /></div>
       ) : sorteios.length === 0 ? (
         <div className="bg-carvao p-8 border-l-4 border-vermelho">
-          <p className="font-bold text-lg">Nenhum sorteio criado ainda.</p>
-          <p className="text-cinza mt-1">Crie um sorteio por print de depósito ou pelo chat da Twitch.</p>
+          <p className="font-bold text-lg">Nenhum {chat ? "sorteio da live" : "sorteio mensal"} criado ainda.</p>
+          <p className="text-cinza mt-1">Clique em &quot;{chat ? "Novo sorteio da live" : "Novo sorteio mensal"}&quot; pra começar.</p>
         </div>
       ) : (
-        <div className="grid lg:grid-cols-[340px_1fr] gap-6 items-start">
-          <ul className="flex flex-col gap-0.5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+        <div className="grid xl:grid-cols-[300px_1fr] gap-6 items-start">
+          <ul className="flex flex-col gap-0.5 xl:max-h-[calc(100vh-160px)] xl:overflow-y-auto">
             {sorteios.map((s) => (
               <li key={s.id}>
                 <button
@@ -90,13 +167,13 @@ export default function Admin() {
                     {s.imagem_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={s.imagem_url} alt="" className="w-[90%] h-[90%] object-contain" />
-                    ) : s.tipo === "chat" ? <MessageSquare className="w-5 h-5 text-cinza" /> : <Gift className="w-5 h-5 text-cinza" />}
+                    ) : chat ? <MessageSquare className="w-5 h-5 text-cinza" /> : <Gift className="w-5 h-5 text-cinza" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <b className="block truncate">{s.titulo}</b>
                     <span className="text-cinza text-sm">
-                      {s.status === "encerrado" ? "Encerrado" : s.tipo === "chat" ? (s.captando ? "Chat aberto" : "Chat fechado") : "Aberto"}
-                      {s.tipo === "chat" ? `, ${formatarNumero(s.chat)} no chat` : `, ${formatarNumero(s.tickets)} tickets`}
+                      {s.status === "encerrado" ? "Encerrado" : chat ? (s.captando ? "Chat aberto" : "Chat fechado") : "Aberto"}
+                      {chat ? `, ${formatarNumero(s.chat)} no chat` : `, ${formatarNumero(s.tickets)} tickets`}
                     </span>
                   </span>
                   {s.pendentes > 0 && <span className="shrink-0 bg-vermelho text-white text-sm font-bold px-2 py-0.5" title="Tickets esperando aprovação">{s.pendentes}</span>}
@@ -112,6 +189,7 @@ export default function Admin() {
       {form && (
         <FormSorteio
           sorteio={form.sorteio}
+          tipoNovo={tipo}
           onFechar={() => setForm(null)}
           onSalvo={(s) => {
             setForm(null);
@@ -120,7 +198,7 @@ export default function Admin() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
