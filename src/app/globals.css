@@ -127,4 +127,8 @@ html.lenis, html.lenis body { height: auto; }
    (as animações essenciais, como a roleta, usam requestAnimationFrame) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  /* Com "efeitos de animação" desligados no Windows, a faixa do código e o 3-2-1 da roleta continuam
+     (sem isso a faixa ficava parada e o número da contagem sumia) */
+  .animate-faixa { animation-duration: 30s !important; animation-iteration-count: infinite !important; }
+  .animate-contagem { animation-duration: 1s !important; }
 }

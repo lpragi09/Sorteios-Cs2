@@ -58,7 +58,7 @@ export default function Home() {
   return (
     <>
       {/* Abertura: a arte do Soares em tela cheia */}
-      <section className="relative overflow-hidden lg:min-h-[min(calc(100svh-72px),900px)] lg:flex lg:items-end">
+      <section className="relative overflow-hidden lg:min-h-[min(max(calc(100svh-72px),52vw),900px)] lg:flex lg:items-end">
         {/* Arte do Soares animada em loop; a capa aparece enquanto o vídeo carrega */}
         <video
           autoPlay
